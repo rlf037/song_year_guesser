@@ -1,2 +1,2 @@
-streamlit=>1.52.0
-sport=>2.25.2
+streamlit>=1.52.0
+sport>=2.25.2
