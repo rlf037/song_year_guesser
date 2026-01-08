@@ -250,6 +250,14 @@ def initialize_game_state():
         st.session_state.blur_level = 25
     if 'year_options' not in st.session_state:
         st.session_state.year_options = []
+    if 'start_year' not in st.session_state:
+        st.session_state.start_year = 1980
+    if 'end_year' not in st.session_state:
+        st.session_state.end_year = 2020
+    if 'current_round' not in st.session_state:
+        st.session_state.current_round = 0
+    if 'session_scores' not in st.session_state:
+        st.session_state.session_scores = []
 
 
 def start_new_game(sp, start_year: int, end_year: int):
@@ -259,6 +267,9 @@ def start_new_game(sp, start_year: int, end_year: int):
     if song is None:
         st.error("Could not find a song in that year range. Try a different range!")
         return
+
+    # Increment round counter
+    st.session_state.current_round += 1
 
     st.session_state.current_song = song
     st.session_state.game_active = True
@@ -308,6 +319,9 @@ def render_game_interface(sp):
 
     if not song:
         return
+
+    # Display round counter
+    st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
     # Calculate elapsed time
     elapsed = int(time.time() - st.session_state.start_time)
@@ -437,17 +451,18 @@ def render_game_interface(sp):
 
         st.markdown("---")
 
-        # Play again button
+        # Next song and end game buttons
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🎮 Play Again", type="primary", use_container_width=True):
-                st.session_state.game_active = False
-                st.session_state.game_over = False
+            if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
+                # Load a new song in the same game session
+                start_new_game(sp, st.session_state.start_year, st.session_state.end_year)
                 st.rerun()
         with col2:
-            if st.button("📊 View Leaderboard", use_container_width=True):
+            if st.button("🏁 End Game", use_container_width=True, key="end_game"):
                 st.session_state.game_active = False
                 st.session_state.game_over = False
+                st.session_state.current_round = 0  # Reset round counter
                 st.rerun()
 
 
@@ -512,15 +527,19 @@ def main():
             "Start Year",
             min_value=1950,
             max_value=datetime.now().year - 1,
-            value=1980,
+            value=st.session_state.start_year,
         )
 
         end_year = st.slider(
             "End Year",
             min_value=start_year,
             max_value=datetime.now().year,
-            value=2020,
+            value=st.session_state.end_year,
         )
+
+        # Update session state when sliders change
+        st.session_state.start_year = start_year
+        st.session_state.end_year = end_year
 
         st.markdown("---")
         st.markdown("### 📊 Stats")
@@ -558,6 +577,7 @@ def main():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("🎵 Start New Game", type="primary", use_container_width=True, key="start_game"):
+                st.session_state.current_round = 0  # Reset for new game
                 start_new_game(sp, start_year, end_year)
                 st.rerun()
 
