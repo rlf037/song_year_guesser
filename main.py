@@ -4,6 +4,7 @@ import io
 import time
 from datetime import datetime
 from typing import Optional, List, Dict
+from urllib.parse import quote
 
 import spotipy
 import streamlit as st
@@ -116,21 +117,32 @@ def blur_image(image_url: str, blur_amount: int) -> str:
 
 
 def get_deezer_preview(track_name: str, artist_name: str) -> Optional[str]:
-    """Get Deezer preview URL for a song"""
-    try:
-        # Search Deezer for the track
-        query = f"{track_name} {artist_name}".replace(' ', '+')
-        deezer_search_url = f"https://api.deezer.com/search/track?q={query}"
+    """Get Deezer preview URL for a song with multiple search strategies"""
 
-        response = requests.get(deezer_search_url, timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('data') and len(data['data']) > 0:
-                # Get the first result's preview URL
-                preview_url = data['data'][0].get('preview')
-                return preview_url
-    except Exception as e:
-        print(f"Error fetching Deezer preview: {e}")
+    # Try multiple search strategies
+    search_queries = [
+        f"{artist_name} {track_name}",  # Artist first (often better results)
+        f"{track_name} {artist_name}",  # Track first
+        f"{track_name}",                 # Track name only
+        f"{artist_name}",                # Artist only as last resort
+    ]
+
+    for query in search_queries:
+        try:
+            encoded_query = quote(query)
+            deezer_search_url = f"https://api.deezer.com/search/track?q={encoded_query}"
+
+            response = requests.get(deezer_search_url, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('data') and len(data['data']) > 0:
+                    # Check first 10 results for a valid preview
+                    for result in data['data'][:10]:
+                        preview_url = result.get('preview')
+                        if preview_url:
+                            return preview_url
+        except Exception:
+            continue  # Try next search strategy
 
     return None
 
