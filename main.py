@@ -6,11 +6,9 @@ from datetime import datetime
 from typing import Optional, List, Dict
 from urllib.parse import quote
 
-import spotipy
 import streamlit as st
 import requests
 from PIL import Image, ImageFilter
-from spotipy.oauth2 import SpotifyClientCredentials
 from streamlit_autorefresh import st_autorefresh
 
 
@@ -21,9 +19,6 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
-
-
-# Custom CSS for a clean, modern look
 st.markdown("""
 <style>
     .main-header {
@@ -90,15 +85,38 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# Initialize Spotify client
-@st.cache_resource
-def get_spotify_client():
-    return spotipy.Spotify(
-        client_credentials_manager=SpotifyClientCredentials(
-            client_id=st.secrets["spotify"]["client_id"],
-            client_secret=st.secrets["spotify"]["client_secret"]
-        )
-    )
+def get_deezer_songs_by_year(year: int, limit: int = 50) -> List[Dict]:
+    """Search for popular songs from a specific year using Deezer API"""
+    try:
+        # Search for top tracks from that year
+        search_url = f"https://api.deezer.com/search?q=year:{year}&limit={limit}"
+        response = requests.get(search_url, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            tracks = data.get('data', [])
+
+            # Filter and enrich track data
+            valid_tracks = []
+            for track in tracks:
+                # Only include tracks with preview URLs
+                if track.get('preview'):
+                    valid_tracks.append({
+                        'id': track['id'],
+                        'name': track['title'],
+                        'artist': track['artist']['name'],
+                        'album': track['album']['title'],
+                        'preview_url': track['preview'],
+                        'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
+                        'release_date': track.get('release_date', str(year)),
+                        'rank': track.get('rank', 0)  # Popularity metric
+                    })
+
+            return valid_tracks
+    except Exception as e:
+        st.error(f"Error fetching songs from Deezer: {e}")
+
+    return []
 
 
 def blur_image(image_url: str, blur_amount: int) -> str:
@@ -119,76 +137,43 @@ def blur_image(image_url: str, blur_amount: int) -> str:
         return ""
 
 
-def get_deezer_preview(track_name: str, artist_name: str) -> Optional[str]:
-    """Get Deezer preview URL for a song with multiple search strategies"""
-
-    # Try multiple search strategies
-    search_queries = [
-        f"{artist_name} {track_name}",  # Artist first (often better results)
-        f"{track_name} {artist_name}",  # Track first
-        f"{track_name}",                 # Track name only
-        f"{artist_name}",                # Artist only as last resort
-    ]
-
-    for query in search_queries:
-        try:
-            encoded_query = quote(query)
-            deezer_search_url = f"https://api.deezer.com/search/track?q={encoded_query}"
-
-            response = requests.get(deezer_search_url, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('data') and len(data['data']) > 0:
-                    # Check first 10 results for a valid preview
-                    for result in data['data'][:10]:
-                        preview_url = result.get('preview')
-                        if preview_url:
-                            return preview_url
-        except Exception:
-            continue  # Try next search strategy
-
-    return None
-
-
-def get_random_song(sp, start_year: int, end_year: int) -> Optional[Dict]:
-    """Get a random popular song from the specified year range"""
+def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
+    """Get a random popular song from the specified year range using Deezer"""
     year = random.randint(start_year, end_year)
 
-    # Search for popular songs from that year
-    query = f'year:{year}'
-    results = sp.search(q=query, type='track', limit=50, market='US')
+    # Get songs from Deezer
+    tracks = get_deezer_songs_by_year(year, limit=100)
 
-    if not results['tracks']['items']:
+    if not tracks:
         return None
 
-    # Sort by popularity and pick from top songs
-    tracks = sorted(results['tracks']['items'], key=lambda x: x['popularity'], reverse=True)
-    top_tracks = tracks[:20]  # Top 20 most popular
+    # Sort by rank (popularity) and pick from top songs
+    tracks_sorted = sorted(tracks, key=lambda x: x.get('rank', 0), reverse=True)
+    top_tracks = tracks_sorted[:30]  # Top 30 most popular
 
     if not top_tracks:
         return None
 
     track = random.choice(top_tracks)
 
-    # Get album details for release year
-    album = sp.album(track['album']['id'])
-    release_date = album['release_date']
-
-    # Parse year from release date (format: YYYY-MM-DD or YYYY)
-    actual_year = int(release_date.split('-')[0])
-
-    # Get Deezer preview URL (fallback to Spotify if not available)
-    deezer_preview = get_deezer_preview(track['name'], track['artists'][0]['name'])
-    preview_url = deezer_preview if deezer_preview else track['preview_url']
+    # Parse year from release date
+    release_date = track['release_date']
+    try:
+        if '-' in release_date:
+            actual_year = int(release_date.split('-')[0])
+        else:
+            actual_year = int(release_date) if release_date.isdigit() else year
+    except:
+        actual_year = year
 
     return {
         'name': track['name'],
-        'artist': track['artists'][0]['name'],
-        'album': album['name'],
+        'artist': track['artist'],
+        'album': track['album'],
         'year': actual_year,
-        'preview_url': preview_url,
-        'image_url': album['images'][0]['url'] if album['images'] else None,
-        'spotify_url': track['external_urls']['spotify']
+        'preview_url': track['preview_url'],
+        'image_url': track['image_url'],
+        'spotify_url': f"https://www.deezer.com/track/{track['id']}"  # Link to Deezer instead
     }
 
 
@@ -263,9 +248,9 @@ def initialize_game_state():
         st.session_state.session_scores = []
 
 
-def start_new_game(sp, start_year: int, end_year: int):
+def start_new_game(start_year: int, end_year: int):
     """Start a new game round"""
-    song = get_random_song(sp, start_year, end_year)
+    song = get_random_song(start_year, end_year)
 
     if song is None:
         st.error("Could not find a song in that year range. Try a different range!")
@@ -316,7 +301,7 @@ def make_guess(guess_year: int):
     st.session_state.blur_level = 0
 
 
-def render_game_interface(sp):
+def render_game_interface():
     """Render the main game interface"""
     song = st.session_state.current_song
 
@@ -354,7 +339,7 @@ def render_game_interface(sp):
         st.audio(song['preview_url'], format='audio/mp3', start_time=0)
     else:
         st.warning("No audio preview available for this song")
-        st.markdown(f"[Listen on Spotify]({song['spotify_url']})")
+        st.markdown(f"[Listen on Deezer]({song['spotify_url']})")
 
     st.write("")
 
@@ -444,7 +429,7 @@ def render_game_interface(sp):
             st.markdown(f"**Album:** {song['album']}")
             st.markdown(f"**Year:** {song['year']}")
 
-        st.markdown(f"[🎧 Listen on Spotify]({song['spotify_url']})")
+        st.markdown(f"[🎧 Listen on Deezer]({song['spotify_url']})")
 
         st.markdown("---")
 
@@ -453,7 +438,7 @@ def render_game_interface(sp):
         with col1:
             if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
                 # Load a new song in the same game session
-                start_new_game(sp, st.session_state.start_year, st.session_state.end_year)
+                start_new_game(st.session_state.start_year, st.session_state.end_year)
                 st.rerun()
         with col2:
             if st.button("🏁 End Game", use_container_width=True, key="end_game"):
@@ -494,13 +479,6 @@ def render_leaderboard():
 def main():
     """Main application"""
     initialize_game_state()
-
-    try:
-        sp = get_spotify_client()
-    except Exception as e:
-        st.error("Error connecting to Spotify. Please check your credentials.")
-        st.error(f"Details: {e}")
-        return
 
     # Header
     st.markdown('<h1 class="main-header">🎵 Song Year Guesser 🎵</h1>', unsafe_allow_html=True)
@@ -575,7 +553,7 @@ def main():
         with col2:
             if st.button("🎵 Start New Game", type="primary", use_container_width=True, key="start_game"):
                 st.session_state.current_round = 0  # Reset for new game
-                start_new_game(sp, start_year, end_year)
+                start_new_game(start_year, end_year)
                 st.rerun()
 
         st.markdown("---")
@@ -585,7 +563,7 @@ def main():
 
     else:
         # Game is active
-        render_game_interface(sp)
+        render_game_interface()
 
 
 if __name__ == "__main__":
