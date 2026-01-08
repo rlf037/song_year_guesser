@@ -321,11 +321,19 @@ def render_game_interface():
     # Display timer
     st.markdown(f'<div class="timer">⏱️ {elapsed}s</div>', unsafe_allow_html=True)
 
+    # Calculate progressive blur based on time (starts at 25, decreases to 0 over 30 seconds)
+    if not st.session_state.game_over:
+        # Gradually reduce blur over 30 seconds
+        time_based_blur = max(0, 25 - (elapsed * 25 / 30))
+        current_blur = min(st.session_state.blur_level, time_based_blur)
+    else:
+        current_blur = 0
+
     # Display album artwork with progressive reveal
     if song['image_url']:
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            blurred_image = blur_image(song['image_url'], st.session_state.blur_level)
+            blurred_image = blur_image(song['image_url'], int(current_blur))
             if blurred_image:
                 st.markdown(
                     f'<div style="text-align: center;"><img src="{blurred_image}" width="300" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>',
@@ -334,9 +342,9 @@ def render_game_interface():
 
     st.write("")
 
-    # Audio player
+    # Audio player with autoplay
     if song['preview_url']:
-        st.audio(song['preview_url'], format='audio/mp3', start_time=0)
+        st.audio(song['preview_url'], format='audio/mp3', start_time=0, autoplay=True)
     else:
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Deezer]({song['spotify_url']})")
