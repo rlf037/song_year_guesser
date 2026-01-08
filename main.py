@@ -11,6 +11,7 @@ import streamlit as st
 import requests
 from PIL import Image, ImageFilter
 from spotipy.oauth2 import SpotifyClientCredentials
+from streamlit_autorefresh import st_autorefresh
 
 
 # Page configuration
@@ -322,10 +323,14 @@ def render_game_interface(sp):
     if not song:
         return
 
+    # Auto-refresh every second to update timer (only when game is active)
+    if not st.session_state.game_over:
+        st_autorefresh(interval=1000, key="game_timer")
+
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
-    # Calculate elapsed time
+    # Calculate elapsed time and display timer
     elapsed = int(time.time() - st.session_state.start_time)
 
     # Display timer
@@ -381,31 +386,21 @@ def render_game_interface(sp):
     st.write("")
     st.markdown("### 📅 What year was this song released?")
 
-    # Year guessing interface
+    # Year guessing interface with slider
     if not st.session_state.game_over:
-        # Multiple choice buttons
-        cols = st.columns(4)
-        for idx, year in enumerate(st.session_state.year_options):
-            with cols[idx]:
-                if st.button(str(year), key=f"year_{year}", use_container_width=True):
-                    make_guess(year)
-                    st.rerun()
-
-        st.write("")
-        st.markdown("##### Or enter a specific year:")
+        guess_year = st.slider(
+            "Select the year:",
+            min_value=1950,
+            max_value=datetime.now().year,
+            value=2000,
+            step=1,
+            key="guess_slider"
+        )
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            custom_year = st.number_input(
-                "Year",
-                min_value=1950,
-                max_value=datetime.now().year,
-                value=2000,
-                step=1,
-                label_visibility="collapsed"
-            )
-            if st.button("Submit Guess", type="primary", use_container_width=True):
-                make_guess(custom_year)
+            if st.button("🎯 Submit Guess", type="primary", use_container_width=True, key="submit_guess"):
+                make_guess(guess_year)
                 st.rerun()
 
     # Game over display
