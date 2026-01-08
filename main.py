@@ -50,6 +50,7 @@ st.markdown("""
         border-radius: 10px;
         margin: 0.5em 0;
         border-left: 4px solid #667eea;
+        color: #262730;
     }
     .timer {
         font-size: 2em;
@@ -74,6 +75,7 @@ st.markdown("""
         padding: 1em;
         border-radius: 10px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        color: #262730;
     }
     .game-over {
         text-align: center;
@@ -251,9 +253,9 @@ def initialize_game_state():
     if 'year_options' not in st.session_state:
         st.session_state.year_options = []
     if 'start_year' not in st.session_state:
-        st.session_state.start_year = 1980
+        st.session_state.start_year = 1995
     if 'end_year' not in st.session_state:
-        st.session_state.end_year = 2020
+        st.session_state.end_year = 2010
     if 'current_round' not in st.session_state:
         st.session_state.current_round = 0
     if 'session_scores' not in st.session_state:
