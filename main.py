@@ -115,6 +115,26 @@ def blur_image(image_url: str, blur_amount: int) -> str:
         return ""
 
 
+def get_deezer_preview(track_name: str, artist_name: str) -> Optional[str]:
+    """Get Deezer preview URL for a song"""
+    try:
+        # Search Deezer for the track
+        query = f"{track_name} {artist_name}".replace(' ', '+')
+        deezer_search_url = f"https://api.deezer.com/search/track?q={query}"
+
+        response = requests.get(deezer_search_url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('data') and len(data['data']) > 0:
+                # Get the first result's preview URL
+                preview_url = data['data'][0].get('preview')
+                return preview_url
+    except Exception as e:
+        print(f"Error fetching Deezer preview: {e}")
+
+    return None
+
+
 def get_random_song(sp, start_year: int, end_year: int) -> Optional[Dict]:
     """Get a random popular song from the specified year range"""
     year = random.randint(start_year, end_year)
@@ -142,12 +162,16 @@ def get_random_song(sp, start_year: int, end_year: int) -> Optional[Dict]:
     # Parse year from release date (format: YYYY-MM-DD or YYYY)
     actual_year = int(release_date.split('-')[0])
 
+    # Get Deezer preview URL (fallback to Spotify if not available)
+    deezer_preview = get_deezer_preview(track['name'], track['artists'][0]['name'])
+    preview_url = deezer_preview if deezer_preview else track['preview_url']
+
     return {
         'name': track['name'],
         'artist': track['artists'][0]['name'],
         'album': album['name'],
         'year': actual_year,
-        'preview_url': track['preview_url'],
+        'preview_url': preview_url,
         'image_url': album['images'][0]['url'] if album['images'] else None,
         'spotify_url': track['external_urls']['spotify']
     }
