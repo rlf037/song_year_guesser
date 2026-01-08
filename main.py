@@ -374,12 +374,13 @@ def render_game_interface():
     # Year guessing interface with slider
     if not st.session_state.game_over:
         guess_year = st.slider(
-            "Select the year:",
+            "Year",
             min_value=1950,
             max_value=datetime.now().year,
             value=2000,
             step=1,
-            key="guess_slider"
+            key="guess_slider",
+            label_visibility="collapsed"
         )
 
         col1, col2, col3 = st.columns([1, 2, 1])
