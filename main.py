@@ -122,11 +122,12 @@ def strip_numbers_from_title(title: str) -> str:
 def get_popular_songs_by_year(year: int) -> List[Dict]:
     """
     Get popular songs from a specific year using Deezer API.
-    Uses multiple search strategies to find 50-100+ genuinely popular tracks.
+    Optimized to minimize API calls while still finding quality tracks.
     """
     all_tracks = {}  # Use dict to dedupe by track ID
     
-    # Strategy 1: Search by year with high limit
+    # Single optimized search - just search by year with high limit
+    # This is much faster than multiple genre searches
     try:
         search_url = f"https://api.deezer.com/search?q=year:{year}&limit=100"
         response = requests.get(search_url, timeout=10)
@@ -138,25 +139,10 @@ def get_popular_songs_by_year(year: int) -> List[Dict]:
     except Exception:
         pass
     
-    # Strategy 2: Search popular genre terms + year (expanded list)
-    genres = ['pop', 'rock', 'hip hop', 'r&b', 'dance', 'electronic', 'indie', 
-              'country', 'latin', 'soul', 'disco', 'funk', 'alternative', 'metal']
-    for genre in genres:
+    # If we don't have enough tracks, do ONE additional genre search
+    if len(all_tracks) < 20:
         try:
-            search_url = f"https://api.deezer.com/search?q={genre} {year}&limit=50"
-            response = requests.get(search_url, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                for track in data.get('data', []):
-                    if track['id'] not in all_tracks:
-                        all_tracks[track['id']] = track
-        except Exception:
-            pass
-    
-    # Strategy 3: Search by "hits" + year and "best" + year
-    for term in ['hits', 'best', 'top', 'chart']:
-        try:
-            search_url = f"https://api.deezer.com/search?q={term} {year}&limit=50"
+            search_url = f"https://api.deezer.com/search?q=pop rock {year}&limit=100"
             response = requests.get(search_url, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -167,56 +153,64 @@ def get_popular_songs_by_year(year: int) -> List[Dict]:
             pass
     
     # Filter tracks: must have preview, high popularity rank, not a compilation
-    valid_tracks = []
+    # Sort by rank first so we only verify albums for top candidates
+    candidates = []
     for track in all_tracks.values():
         album_title = track['album']['title']
         song_title = track['title']
         rank = track.get('rank', 0)
         
-        # Only include songs with high popularity rank
         if (track.get('preview') and 
             rank >= MIN_POPULARITY_RANK and
             not is_compilation_or_remaster(album_title) and 
             not is_compilation_or_remaster(song_title)):
-            
-            # Fetch album details to get accurate release date
-            album_id = track['album']['id']
-            album_release_date = None
+            candidates.append(track)
+    
+    # Sort by popularity and only verify album dates for top 15 candidates
+    candidates.sort(key=lambda x: x.get('rank', 0), reverse=True)
+    
+    valid_tracks = []
+    albums_checked = {}  # Cache album lookups
+    
+    for track in candidates[:15]:  # Only check top 15 to limit API calls
+        album_id = track['album']['id']
+        
+        # Check cache first
+        if album_id in albums_checked:
+            album_year = albums_checked[album_id]
+        else:
+            # Fetch album details
+            album_year = None
             try:
                 album_url = f"https://api.deezer.com/album/{album_id}"
                 album_response = requests.get(album_url, timeout=5)
                 if album_response.status_code == 200:
                     album_data = album_response.json()
-                    album_release_date = album_data.get('release_date')
+                    release_date = album_data.get('release_date', '')
+                    if '-' in str(release_date):
+                        album_year = int(str(release_date).split('-')[0])
+                    elif str(release_date).isdigit():
+                        album_year = int(release_date)
             except Exception:
                 pass
-            
-            # Use album release date if available, otherwise fall back to track date
-            release_date = album_release_date or track.get('release_date', str(year))
-            
-            # Verify the album year matches the requested year
-            try:
-                if '-' in str(release_date):
-                    album_year = int(str(release_date).split('-')[0])
-                else:
-                    album_year = int(release_date) if str(release_date).isdigit() else None
-                
-                # Skip if album year doesn't match requested year
-                if album_year is not None and album_year != year:
-                    continue
-            except (ValueError, TypeError):
-                pass
-            
+            albums_checked[album_id] = album_year
+        
+        # Only include if album year matches requested year
+        if album_year == year:
             valid_tracks.append({
                 'id': track['id'],
                 'name': strip_numbers_from_title(track['title']),
                 'artist': track['artist']['name'],
-                'album': album_title,
+                'album': track['album']['title'],
                 'preview_url': track['preview'],
                 'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
-                'release_date': release_date,
-                'rank': rank
+                'release_date': str(year),
+                'rank': track.get('rank', 0)
             })
+        
+        # Stop once we have enough verified tracks
+        if len(valid_tracks) >= 10:
+            break
     
     return valid_tracks
 
@@ -283,10 +277,10 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
             'spotify_url': f"https://www.deezer.com/track/{track['id']}"
         }
     
-    # Fallback: if no popular songs found, get ANY song with a preview from the year range
-    for year in years_to_try[:5]:
+    # Fallback: if no popular songs found, try a simpler search with fewer API calls
+    for year in years_to_try[:3]:  # Reduced from 5 to 3
         try:
-            search_url = f"https://api.deezer.com/search?q=year:{year}&limit=50"
+            search_url = f"https://api.deezer.com/search?q=year:{year}&limit=30"
             response = requests.get(search_url, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -299,9 +293,8 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
                     # Sort by rank and pick from top
                     tracks_sorted = sorted(tracks, key=lambda x: x.get('rank', 0), reverse=True)
                     
-                    # Try each track until we find one with matching album year
-                    for track in tracks_sorted[:10]:
-                        # Verify album release year
+                    # Only check top 3 tracks to minimize API calls
+                    for track in tracks_sorted[:3]:
                         album_id = track['album']['id']
                         try:
                             album_url = f"https://api.deezer.com/album/{album_id}"
@@ -314,14 +307,12 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
                                 else:
                                     album_year = int(album_release_date) if str(album_release_date).isdigit() else None
                                 
-                                # Only use if album year matches
                                 if album_year == year:
-                                    album_title = track['album']['title']
                                     return {
                                         'id': track['id'],
                                         'name': strip_numbers_from_title(track['title']),
                                         'artist': track['artist']['name'],
-                                        'album': album_title,
+                                        'album': track['album']['title'],
                                         'year': year,
                                         'preview_url': track['preview'],
                                         'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
@@ -513,25 +504,40 @@ def render_game_interface():
 
     st.write("")
 
-    # Audio player - only show and autoplay when game is active (not after guess)
-    if song['preview_url'] and not st.session_state.game_over:
-        audio_html = f'''
-        <html>
-        <body style="margin:0; padding:0;">
-        <audio id="gameAudio" controls autoplay style="width: 100%;">
-            <source src="{song['preview_url']}" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-        <script>
-            var audio = document.getElementById('gameAudio');
-            audio.volume = 1.0;
-            audio.play();
-        </script>
-        </body>
-        </html>
-        '''
-        components.html(audio_html, height=60)
-    elif not song['preview_url']:
+    # Audio player
+    if song['preview_url']:
+        if not st.session_state.game_over:
+            # During gameplay - autoplay with JavaScript
+            audio_html = f'''
+            <html>
+            <body style="margin:0; padding:0; background: transparent;">
+            <audio id="gameAudio" controls autoplay style="width: 100%; border-radius: 10px;">
+                <source src="{song['preview_url']}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            <script>
+                var audio = document.getElementById('gameAudio');
+                audio.volume = 1.0;
+                audio.play();
+            </script>
+            </body>
+            </html>
+            '''
+            components.html(audio_html, height=60)
+        else:
+            # After guess - styled player without autoplay
+            audio_html = f'''
+            <html>
+            <body style="margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+            <audio id="gameAudio" controls style="width: 100%; border-radius: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                <source src="{song['preview_url']}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            </body>
+            </html>
+            '''
+            components.html(audio_html, height=70)
+    else:
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Deezer]({song['spotify_url']})")
 
