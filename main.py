@@ -2,6 +2,7 @@ import random
 import base64
 import io
 import time
+import re
 from datetime import datetime
 from typing import Optional, List, Dict
 from urllib.parse import quote
@@ -95,6 +96,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+def is_compilation_album(album_title: str) -> bool:
+    """Check if album title suggests it's a compilation"""
+    compilation_keywords = [
+        'greatest hits', 'best of', 'collection', 'anthology',
+        'compilation', 'essentials', 'hits', 'singles',
+        'retrospective', 'very best', 'ultimate', 'deluxe'
+    ]
+    album_lower = album_title.lower()
+    return any(keyword in album_lower for keyword in compilation_keywords)
+
+
+def strip_numbers_from_title(title: str) -> str:
+    """Remove all numbers from song title to prevent year leaks"""
+    import re
+    return re.sub(r'\d+', '', title)
+
+
 def get_deezer_songs_by_year(year: int, limit: int = 50) -> List[Dict]:
     """Search for popular songs from a specific year using Deezer API"""
     try:
@@ -109,13 +127,15 @@ def get_deezer_songs_by_year(year: int, limit: int = 50) -> List[Dict]:
             # Filter and enrich track data
             valid_tracks = []
             for track in tracks:
-                # Only include tracks with preview URLs
-                if track.get('preview'):
+                album_title = track['album']['title']
+
+                # Skip compilation albums and tracks without preview URLs
+                if track.get('preview') and not is_compilation_album(album_title):
                     valid_tracks.append({
                         'id': track['id'],
-                        'name': track['title'],
+                        'name': strip_numbers_from_title(track['title']),
                         'artist': track['artist']['name'],
-                        'album': track['album']['title'],
+                        'album': album_title,
                         'preview_url': track['preview'],
                         'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
                         'release_date': track.get('release_date', str(year)),
@@ -368,22 +388,22 @@ def render_game_interface():
 
     st.write("")
 
-    # Progressive hints
-    hints_container = st.container()
-    with hints_container:
-        if st.session_state.hints_revealed >= 1:
-            st.markdown(f'<div class="hint-box">🎵 <strong>Album:</strong> {song["album"]}</div>', unsafe_allow_html=True)
-
-        if st.session_state.hints_revealed >= 2:
-            st.markdown(f'<div class="hint-box">🎤 <strong>Artist:</strong> {song["artist"]}</div>', unsafe_allow_html=True)
-
-        if st.session_state.hints_revealed >= 3:
-            st.markdown(f'<div class="hint-box">🎸 <strong>Song:</strong> {song["name"]}</div>', unsafe_allow_html=True)
-
-    st.write("")
-
-    # Hint button
+    # Progressive hints (only show during active gameplay)
     if not st.session_state.game_over:
+        hints_container = st.container()
+        with hints_container:
+            if st.session_state.hints_revealed >= 1:
+                st.markdown(f'<div class="hint-box">🎵 <strong>Album:</strong> {song["album"]}</div>', unsafe_allow_html=True)
+
+            if st.session_state.hints_revealed >= 2:
+                st.markdown(f'<div class="hint-box">🎤 <strong>Artist:</strong> {song["artist"]}</div>', unsafe_allow_html=True)
+
+            if st.session_state.hints_revealed >= 3:
+                st.markdown(f'<div class="hint-box">🎸 <strong>Song:</strong> {song["name"]}</div>', unsafe_allow_html=True)
+
+        st.write("")
+
+        # Hint button
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.session_state.hints_revealed < 3:
