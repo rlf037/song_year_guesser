@@ -81,6 +81,16 @@ st.markdown("""
         border-radius: 15px;
         margin: 1em 0;
     }
+    .stSlider {
+        padding-top: 0;
+        margin-top: 0;
+    }
+    .stSlider > div {
+        background: transparent !important;
+    }
+    .stSlider > div > div {
+        background: transparent !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -246,6 +256,8 @@ def initialize_game_state():
         st.session_state.current_round = 0
     if 'session_scores' not in st.session_state:
         st.session_state.session_scores = []
+    if 'audio_started' not in st.session_state:
+        st.session_state.audio_started = False
 
 
 def start_new_game(start_year: int, end_year: int):
@@ -261,11 +273,12 @@ def start_new_game(start_year: int, end_year: int):
 
     st.session_state.current_song = song
     st.session_state.game_active = True
-    st.session_state.start_time = time.time()
+    st.session_state.start_time = None  # Don't start timer yet
     st.session_state.hints_revealed = 0
     st.session_state.game_over = False
     st.session_state.blur_level = 25
     st.session_state.year_options = generate_year_options(song['year'])
+    st.session_state.audio_started = False
 
 
 def reveal_hint():
@@ -308,6 +321,10 @@ def render_game_interface():
     if not song:
         return
 
+    # Initialize timer on first audio interaction
+    if st.session_state.start_time is None:
+        st.session_state.start_time = time.time()
+
     # Auto-refresh every second to update timer (only when game is active)
     if not st.session_state.game_over:
         st_autorefresh(interval=1000, key="game_timer")
@@ -342,9 +359,9 @@ def render_game_interface():
 
     st.write("")
 
-    # Audio player with autoplay
+    # Audio player (autoplay doesn't work in most browsers, so no autoplay)
     if song['preview_url']:
-        st.audio(song['preview_url'], format='audio/mp3', start_time=0, autoplay=True)
+        st.audio(song['preview_url'], format='audio/mp3', start_time=0)
     else:
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Deezer]({song['spotify_url']})")
@@ -377,15 +394,16 @@ def render_game_interface():
                 st.info("All hints revealed!")
 
     st.write("")
-    st.markdown("### 📅 What year was this song released?")
 
-    # Year guessing interface with slider
+    # Year guessing interface with slider (constrained to sidebar year range)
     if not st.session_state.game_over:
+        st.markdown("### 📅 What year was this song released?")
+
         guess_year = st.slider(
             "Year",
-            min_value=1950,
-            max_value=datetime.now().year,
-            value=2000,
+            min_value=st.session_state.start_year,
+            max_value=st.session_state.end_year,
+            value=(st.session_state.start_year + st.session_state.end_year) // 2,
             step=1,
             key="guess_slider",
             label_visibility="collapsed"
