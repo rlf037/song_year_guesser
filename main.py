@@ -5,7 +5,6 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 import requests
 import streamlit as st
@@ -20,7 +19,8 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
-st.markdown("""
+st.markdown(
+    """
 <style>
     .main-header {
         text-align: center;
@@ -72,17 +72,49 @@ st.markdown("""
         margin: 1em 0;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 COMPILATION_KEYWORDS = [
-    'greatest hits', 'best of', 'collection', 'anthology',
-    'compilation', 'essentials', 'hits', 'singles',
-    'retrospective', 'very best', 'ultimate', 'deluxe', 'remastered',
-    'live', 'remix', 'acoustic', 'version', 'edition', 'anniversary', 
-    'remaster', 'expanded', 'bonus', 'special', 'complete', 'definitive',
-    'gold', 'platinum', 'legend', 'classic', 'chronicles', 'archive',
-    're-issue', 'reissue', 're-release', 'mono', 'stereo', 'digitally'
+    "greatest hits",
+    "best of",
+    "collection",
+    "anthology",
+    "compilation",
+    "essentials",
+    "hits",
+    "singles",
+    "retrospective",
+    "very best",
+    "ultimate",
+    "deluxe",
+    "remastered",
+    "live",
+    "remix",
+    "acoustic",
+    "version",
+    "edition",
+    "anniversary",
+    "remaster",
+    "expanded",
+    "bonus",
+    "special",
+    "complete",
+    "definitive",
+    "gold",
+    "platinum",
+    "legend",
+    "classic",
+    "chronicles",
+    "archive",
+    "re-issue",
+    "reissue",
+    "re-release",
+    "mono",
+    "stereo",
+    "digitally",
 ]
 
 # Minimum Spotify popularity to be considered (0-100 scale)
@@ -97,70 +129,73 @@ def is_compilation_or_remaster(text: str) -> bool:
 
 def strip_numbers_from_title(title: str) -> str:
     """Remove all numbers from song title to prevent year leaks"""
-    return re.sub(r'\d+', '', title)
+    return re.sub(r"\d+", "", title)
 
 
-def get_spotify_token() -> Optional[str]:
+def get_spotify_token() -> str | None:
     """Get Spotify access token using client credentials flow"""
     try:
         client_id = st.secrets["spotify"]["client_id"]
         client_secret = st.secrets["spotify"]["client_secret"]
     except Exception:
         return None
-    
+
     # Check if we have a cached valid token
-    if 'spotify_token' in st.session_state and 'spotify_token_expires' in st.session_state:
-        if time.time() < st.session_state.spotify_token_expires:
-            return st.session_state.spotify_token
-    
+    if (
+        "spotify_token" in st.session_state
+        and "spotify_token_expires" in st.session_state
+        and time.time() < st.session_state.spotify_token_expires
+    ):
+        return st.session_state.spotify_token
+
     # Get new token
     try:
         auth_str = f"{client_id}:{client_secret}"
         auth_b64 = base64.b64encode(auth_str.encode()).decode()
-        
+
         response = requests.post(
             "https://accounts.spotify.com/api/token",
             headers={"Authorization": f"Basic {auth_b64}"},
             data={"grant_type": "client_credentials"},
-            timeout=10
+            timeout=10,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
-            st.session_state.spotify_token = data['access_token']
-            st.session_state.spotify_token_expires = time.time() + data['expires_in'] - 60
-            return data['access_token']
+            st.session_state.spotify_token = data["access_token"]
+            st.session_state.spotify_token_expires = time.time() + data["expires_in"] - 60
+            return data["access_token"]
     except Exception:
         pass
-    
+
     return None
 
 
-def get_deezer_preview(artist: str, track: str) -> Optional[str]:
+def get_deezer_preview(artist: str, track: str) -> str | None:
     """Find a Deezer preview URL for a song"""
     try:
         query = f"{artist} {track}"
         search_url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=5"
         response = requests.get(search_url, timeout=5)
-        
+
         if response.status_code == 200:
             data = response.json()
-            for result in data.get('data', []):
-                if result.get('preview'):
-                    return result['preview']
+            for result in data.get("data", []):
+                if result.get("preview"):
+                    return result["preview"]
     except Exception:
         pass
-    
+
     return None
 
 
 # Cache for playlist IDs (year -> playlist_id)
-_playlist_cache: Dict[int, Optional[str]] = {}
+_playlist_cache: dict[int, str | None] = {}
 # Cache for tracks by year
-_tracks_cache: Dict[int, List[Dict]] = {}
+_tracks_cache: dict[int, list[dict]] = {}
 
 
-def search_top_hits_playlist(year: int, token: str) -> Optional[str]:
+def search_top_hits_playlist(year: int, token: str) -> str | None:
     """
     Search for Spotify's official "Top Hits of [Year]" playlist.
     Returns the playlist ID if found. Uses cache to avoid repeated API calls.
@@ -168,46 +203,46 @@ def search_top_hits_playlist(year: int, token: str) -> Optional[str]:
     # Check cache first
     if year in _playlist_cache:
         return _playlist_cache[year]
-    
+
     headers = {"Authorization": f"Bearer {token}"}
-    
+
     # Single optimized search query
     try:
         query = f"Top Hits {year}"
         search_url = f"https://api.spotify.com/v1/search?q={requests.utils.quote(query)}&type=playlist&limit=20"
         response = requests.get(search_url, headers=headers, timeout=10)
-        
+
         if response.status_code == 200:
             data = response.json()
-            playlists = data.get('playlists', {}).get('items', [])
-            
+            playlists = data.get("playlists", {}).get("items", [])
+
             # First pass: look for Spotify official playlists
             for playlist in playlists:
                 if not playlist:
                     continue
-                name = playlist.get('name', '').lower()
-                owner = playlist.get('owner', {}).get('display_name', '').lower()
-                
-                if 'spotify' in owner and str(year) in name:
-                    _playlist_cache[year] = playlist['id']
-                    return playlist['id']
-            
+                name = playlist.get("name", "").lower()
+                owner = playlist.get("owner", {}).get("display_name", "").lower()
+
+                if "spotify" in owner and str(year) in name:
+                    _playlist_cache[year] = playlist["id"]
+                    return playlist["id"]
+
             # Second pass: accept good community playlists
             for playlist in playlists:
                 if not playlist:
                     continue
-                name = playlist.get('name', '').lower()
-                if 'top' in name and str(year) in name and ('hit' in name or '100' in name):
-                    _playlist_cache[year] = playlist['id']
-                    return playlist['id']
+                name = playlist.get("name", "").lower()
+                if "top" in name and str(year) in name and ("hit" in name or "100" in name):
+                    _playlist_cache[year] = playlist["id"]
+                    return playlist["id"]
     except Exception:
         pass
-    
+
     _playlist_cache[year] = None
     return None
 
 
-def get_songs_from_spotify(year: int) -> List[Dict]:
+def get_songs_from_spotify(year: int) -> list[dict]:
     """
     Get top 100 chart songs from a specific year using Spotify's Top Hits playlists.
     Returns songs that actually charted that year. Uses cache.
@@ -215,143 +250,148 @@ def get_songs_from_spotify(year: int) -> List[Dict]:
     # Check cache first
     if year in _tracks_cache:
         return _tracks_cache[year]
-    
+
     token = get_spotify_token()
     if not token:
         return []
-    
+
     headers = {"Authorization": f"Bearer {token}"}
     tracks = []
-    
+
     # First try to find the Top Hits playlist for this year
     playlist_id = search_top_hits_playlist(year, token)
-    
+
     if playlist_id:
         # Get tracks from the playlist
         try:
             playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100"
             response = requests.get(playlist_url, headers=headers, timeout=10)
-            
+
             if response.status_code == 200:
                 data = response.json()
-                for item in data.get('items', []):
-                    track = item.get('track')
+                for item in data.get("items", []):
+                    track = item.get("track")
                     if not track:
                         continue
-                    
-                    album = track.get('album', {})
-                    track_name = track.get('name', '')
-                    album_name = album.get('name', '')
-                    
+
+                    album = track.get("album", {})
+                    track_name = track.get("name", "")
+                    album_name = album.get("name", "")
+
                     # Skip compilations and remasters
-                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(track_name):
+                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(
+                        track_name
+                    ):
                         continue
-                    
+
                     # Get artist name
-                    artists = track.get('artists', [])
-                    artist_name = artists[0]['name'] if artists else 'Unknown'
-                    
+                    artists = track.get("artists", [])
+                    artist_name = artists[0]["name"] if artists else "Unknown"
+
                     # Get album artwork
-                    images = album.get('images', [])
-                    image_url = images[0]['url'] if images else None
-                    
+                    images = album.get("images", [])
+                    image_url = images[0]["url"] if images else None
+
                     # Get release year from album
-                    release_date = album.get('release_date', '')
-                    if len(release_date) >= 4:
-                        album_year = int(release_date[:4])
-                    else:
-                        album_year = year
-                    
-                    tracks.append({
-                        'id': track['id'],
-                        'name': track_name,
-                        'artist': artist_name,
-                        'album': album_name,
-                        'year': year,  # Use the chart year, not album year
-                        'image_url': image_url,
-                        'popularity': track.get('popularity', 50),
-                        'spotify_id': track['id']
-                    })
+                    release_date = album.get("release_date", "")
+                    album_year = int(release_date[:4]) if len(release_date) >= 4 else year
+
+                    tracks.append(
+                        {
+                            "id": track["id"],
+                            "name": track_name,
+                            "artist": artist_name,
+                            "album": album_name,
+                            "year": year,  # Use the chart year, not album year
+                            "image_url": image_url,
+                            "popularity": track.get("popularity", 50),
+                            "spotify_id": track["id"],
+                        }
+                    )
         except Exception:
             pass
-    
+
     # Fallback: search for popular tracks from that year
     if not tracks:
         try:
             search_url = f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50"
             response = requests.get(search_url, headers=headers, timeout=10)
-            
+
             if response.status_code == 200:
                 data = response.json()
-                for item in data.get('tracks', {}).get('items', []):
-                    album = item['album']
-                    release_date = album.get('release_date', '')
-                    
+                for item in data.get("tracks", {}).get("items", []):
+                    album = item["album"]
+                    release_date = album.get("release_date", "")
+
                     if len(release_date) >= 4:
                         album_year = int(release_date[:4])
                         if album_year != year:
                             continue
-                    
-                    album_name = album.get('name', '')
-                    track_name = item.get('name', '')
-                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(track_name):
+
+                    album_name = album.get("name", "")
+                    track_name = item.get("name", "")
+                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(
+                        track_name
+                    ):
                         continue
-                    
-                    popularity = item.get('popularity', 0)
+
+                    popularity = item.get("popularity", 0)
                     if popularity < MIN_SPOTIFY_POPULARITY:
                         continue
-                    
-                    artists = item.get('artists', [])
-                    artist_name = artists[0]['name'] if artists else 'Unknown'
-                    images = album.get('images', [])
-                    image_url = images[0]['url'] if images else None
-                    
-                    tracks.append({
-                        'id': item['id'],
-                        'name': track_name,
-                        'artist': artist_name,
-                        'album': album_name,
-                        'year': year,
-                        'image_url': image_url,
-                        'popularity': popularity,
-                        'spotify_id': item['id']
-                    })
+
+                    artists = item.get("artists", [])
+                    artist_name = artists[0]["name"] if artists else "Unknown"
+                    images = album.get("images", [])
+                    image_url = images[0]["url"] if images else None
+
+                    tracks.append(
+                        {
+                            "id": item["id"],
+                            "name": track_name,
+                            "artist": artist_name,
+                            "album": album_name,
+                            "year": year,
+                            "image_url": image_url,
+                            "popularity": popularity,
+                            "spotify_id": item["id"],
+                        }
+                    )
         except Exception:
             pass
-    
+
     # Sort by popularity
-    tracks.sort(key=lambda x: x.get('popularity', 0), reverse=True)
-    
+    tracks.sort(key=lambda x: x.get("popularity", 0), reverse=True)
+
     result = tracks[:50]  # Return top 50 for variety
     _tracks_cache[year] = result
     return result
 
 
-def _fetch_deezer_preview(track: Dict) -> Tuple[Dict, Optional[str]]:
+def _fetch_deezer_preview(track: dict) -> tuple[dict, str | None]:
     """Helper to fetch Deezer preview for a track (used in parallel)"""
-    preview_url = get_deezer_preview(track['artist'], track['name'])
+    preview_url = get_deezer_preview(track["artist"], track["name"])
     return (track, preview_url)
 
 
-def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
+def get_random_song(start_year: int, end_year: int) -> dict | None:
     """Get a random popular song from the specified year range using Spotify + Deezer"""
     years_to_try = list(range(start_year, end_year + 1))
     random.shuffle(years_to_try)
-    
+
     for year in years_to_try[:3]:  # Try up to 3 years (reduced for speed)
         tracks = get_songs_from_spotify(year)
-        
+
         if not tracks:
             continue
-        
+
         # Shuffle and pick candidates
         random.shuffle(tracks)
         candidates = tracks[:8]  # Check 8 tracks in parallel
-        
+
         # Fetch Deezer previews in parallel for speed
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = {executor.submit(_fetch_deezer_preview, t): t for t in candidates}
-            
+
             for future in as_completed(futures):
                 try:
                     track, preview_url = future.result()
@@ -360,18 +400,18 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
                         for f in futures:
                             f.cancel()
                         return {
-                            'id': track['id'],
-                            'name': strip_numbers_from_title(track['name']),
-                            'artist': track['artist'],
-                            'album': track['album'],
-                            'year': track['year'],
-                            'preview_url': preview_url,
-                            'image_url': track['image_url'],
-                            'deezer_url': f"https://open.spotify.com/track/{track['spotify_id']}"
+                            "id": track["id"],
+                            "name": strip_numbers_from_title(track["name"]),
+                            "artist": track["artist"],
+                            "album": track["album"],
+                            "year": track["year"],
+                            "preview_url": preview_url,
+                            "image_url": track["image_url"],
+                            "deezer_url": f"https://open.spotify.com/track/{track['spotify_id']}",
                         }
                 except Exception:
                     continue
-    
+
     return None
 
 
@@ -421,7 +461,7 @@ def calculate_score(guess: int, actual: int, time_taken: int, hints_used: int) -
     return int(total_score)
 
 
-def generate_year_options(actual_year: int) -> List[int]:
+def generate_year_options(actual_year: int) -> list[int]:
     """Generate 4 year options including the correct one"""
     years = {actual_year}
 
@@ -436,35 +476,35 @@ def generate_year_options(actual_year: int) -> List[int]:
 
 def initialize_game_state():
     """Initialize session state variables"""
-    if 'game_active' not in st.session_state:
+    if "game_active" not in st.session_state:
         st.session_state.game_active = False
-    if 'current_song' not in st.session_state:
+    if "current_song" not in st.session_state:
         st.session_state.current_song = None
-    if 'start_time' not in st.session_state:
+    if "start_time" not in st.session_state:
         st.session_state.start_time = None
-    if 'hints_revealed' not in st.session_state:
+    if "hints_revealed" not in st.session_state:
         st.session_state.hints_revealed = 0
-    if 'game_over' not in st.session_state:
+    if "game_over" not in st.session_state:
         st.session_state.game_over = False
-    if 'player_scores' not in st.session_state:
+    if "player_scores" not in st.session_state:
         st.session_state.player_scores = []
-    if 'current_player' not in st.session_state:
+    if "current_player" not in st.session_state:
         st.session_state.current_player = "Player 1"
-    if 'blur_level' not in st.session_state:
+    if "blur_level" not in st.session_state:
         st.session_state.blur_level = 25
-    if 'year_options' not in st.session_state:
+    if "year_options" not in st.session_state:
         st.session_state.year_options = []
-    if 'start_year' not in st.session_state:
+    if "start_year" not in st.session_state:
         st.session_state.start_year = 1995
-    if 'end_year' not in st.session_state:
+    if "end_year" not in st.session_state:
         st.session_state.end_year = 2010
-    if 'current_round' not in st.session_state:
+    if "current_round" not in st.session_state:
         st.session_state.current_round = 0
-    if 'session_scores' not in st.session_state:
+    if "session_scores" not in st.session_state:
         st.session_state.session_scores = []
-    if 'audio_started' not in st.session_state:
+    if "audio_started" not in st.session_state:
         st.session_state.audio_started = False
-    if 'song_loaded_time' not in st.session_state:
+    if "song_loaded_time" not in st.session_state:
         st.session_state.song_loaded_time = None
 
 
@@ -485,7 +525,7 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.hints_revealed = 0
     st.session_state.game_over = False
     st.session_state.blur_level = 25
-    st.session_state.year_options = generate_year_options(song['year'])
+    st.session_state.year_options = generate_year_options(song["year"])
     st.session_state.audio_started = False
     st.session_state.song_loaded_time = time.time()  # Track when song loaded
 
@@ -502,22 +542,19 @@ def make_guess(guess_year: int):
     song = st.session_state.current_song
     time_taken = int(time.time() - st.session_state.start_time)
 
-    score = calculate_score(
-        guess_year,
-        song['year'],
-        time_taken,
-        st.session_state.hints_revealed
-    )
+    score = calculate_score(guess_year, song["year"], time_taken, st.session_state.hints_revealed)
 
     # Add to player scores
-    st.session_state.player_scores.append({
-        'player': st.session_state.current_player,
-        'song': f"{song['name']} by {song['artist']}",
-        'guess': guess_year,
-        'actual': song['year'],
-        'score': score,
-        'time': time_taken
-    })
+    st.session_state.player_scores.append(
+        {
+            "player": st.session_state.current_player,
+            "song": f"{song['name']} by {song['artist']}",
+            "guess": guess_year,
+            "actual": song["year"],
+            "score": score,
+            "time": time_taken,
+        }
+    )
 
     st.session_state.game_over = True
     st.session_state.blur_level = 0
@@ -536,10 +573,12 @@ def render_game_interface():
 
     # Timer starts after a short delay to allow audio to load and start playing
     # We use song_loaded_time + 2 seconds as a reasonable estimate for audio start
-    if st.session_state.start_time is None and st.session_state.song_loaded_time is not None:
-        # Give 2 seconds for audio to buffer and start
-        if time.time() - st.session_state.song_loaded_time >= 2:
-            st.session_state.start_time = time.time()
+    if (
+        st.session_state.start_time is None
+        and st.session_state.song_loaded_time is not None
+        and time.time() - st.session_state.song_loaded_time >= 2
+    ):
+        st.session_state.start_time = time.time()
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
@@ -562,33 +601,33 @@ def render_game_interface():
         current_blur = 0
 
     # Display album artwork with progressive reveal
-    if song['image_url']:
+    if song["image_url"]:
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            blurred_image = blur_image(song['image_url'], int(current_blur))
+            blurred_image = blur_image(song["image_url"], int(current_blur))
             if blurred_image:
                 st.markdown(
                     f'<div style="text-align: center;"><img src="{blurred_image}" width="300" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>',
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
 
     st.write("")
 
     # Audio player
-    if song['preview_url']:
+    if song["preview_url"]:
         if not st.session_state.game_over:
             # During gameplay - autoplay with JavaScript that notifies when playback starts
             audio_html = f'''
             <html>
             <body style="margin:0; padding:0; background: transparent;">
             <audio id="gameAudio" controls autoplay style="width: 100%; border-radius: 10px;">
-                <source src="{song['preview_url']}" type="audio/mpeg">
+                <source src="{song["preview_url"]}" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>
             <script>
                 var audio = document.getElementById('gameAudio');
                 audio.volume = 1.0;
-                
+
                 // Notify Streamlit when audio actually starts playing
                 audio.addEventListener('playing', function() {{
                     // Store the play start time in sessionStorage
@@ -598,7 +637,7 @@ def render_game_interface():
                         window.parent.postMessage({{type: 'streamlit:rerun'}}, '*');
                     }}
                 }});
-                
+
                 audio.play().catch(function(e) {{
                     console.log('Autoplay prevented:', e);
                 }});
@@ -613,7 +652,7 @@ def render_game_interface():
             <html>
             <body style="margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
             <audio id="gameAudio" controls style="width: 100%; border-radius: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
-                <source src="{song['preview_url']}" type="audio/mpeg">
+                <source src="{song["preview_url"]}" type="audio/mpeg">
                 Your browser does not support the audio element.
             </audio>
             </body>
@@ -631,13 +670,22 @@ def render_game_interface():
         hints_container = st.container()
         with hints_container:
             if st.session_state.hints_revealed >= 1:
-                st.markdown(f'<div class="hint-box">🎵 <strong>Album:</strong> {song["album"]}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="hint-box">🎵 <strong>Album:</strong> {song["album"]}</div>',
+                    unsafe_allow_html=True,
+                )
 
             if st.session_state.hints_revealed >= 2:
-                st.markdown(f'<div class="hint-box">🎤 <strong>Artist:</strong> {song["artist"]}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="hint-box">🎤 <strong>Artist:</strong> {song["artist"]}</div>',
+                    unsafe_allow_html=True,
+                )
 
             if st.session_state.hints_revealed >= 3:
-                st.markdown(f'<div class="hint-box">🎸 <strong>Song:</strong> {song["name"]}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="hint-box">🎸 <strong>Song:</strong> {song["name"]}</div>',
+                    unsafe_allow_html=True,
+                )
 
     # Hint button (only show during active gameplay)
     if not st.session_state.game_over:
@@ -645,7 +693,10 @@ def render_game_interface():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.session_state.hints_revealed < 3:
-                if st.button(f"💡 Reveal Hint ({st.session_state.hints_revealed}/3)", use_container_width=True):
+                if st.button(
+                    f"💡 Reveal Hint ({st.session_state.hints_revealed}/3)",
+                    use_container_width=True,
+                ):
                     reveal_hint()
                     st.rerun()
             else:
@@ -664,19 +715,21 @@ def render_game_interface():
             value=st.session_state.start_year,
             step=1,
             key="guess_slider",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🎯 Submit Guess", type="primary", use_container_width=True, key="submit_guess"):
+            if st.button(
+                "🎯 Submit Guess", type="primary", use_container_width=True, key="submit_guess"
+            ):
                 make_guess(guess_year)
                 st.rerun()
 
     # Game over display
     if st.session_state.game_over:
         last_score = st.session_state.player_scores[-1]
-        year_diff = abs(last_score['guess'] - last_score['actual'])
+        year_diff = abs(last_score["guess"] - last_score["actual"])
 
         st.markdown('<div class="game-over">', unsafe_allow_html=True)
 
@@ -695,12 +748,12 @@ def render_game_interface():
             st.markdown(f"## Off by {year_diff} years.")
 
         st.markdown(f"### The correct answer: **{song['year']}**")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
         # Score display
         st.markdown(
             f'<div class="score-card">🏆 Score: {last_score["score"]} points</div>',
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         # Reveal all info
@@ -742,22 +795,18 @@ def render_leaderboard():
     st.markdown("### 🏆 Leaderboard")
 
     # Sort by score
-    sorted_scores = sorted(
-        st.session_state.player_scores,
-        key=lambda x: x['score'],
-        reverse=True
-    )
+    sorted_scores = sorted(st.session_state.player_scores, key=lambda x: x["score"], reverse=True)
 
     for idx, score in enumerate(sorted_scores[:10], 1):
         with st.container():
             st.markdown(
                 f"""
                 <div class="leaderboard" style="margin: 0.5em 0;">
-                    <strong>#{idx} {score['player']}</strong> - {score['score']} points<br>
-                    <small>{score['song']} | Guessed: {score['guess']} | Actual: {score['actual']} | Time: {score['time']}s</small>
+                    <strong>#{idx} {score["player"]}</strong> - {score["score"]} points<br>
+                    <small>{score["song"]} | Guessed: {score["guess"]} | Actual: {score["actual"]} | Time: {score["time"]}s</small>
                 </div>
                 """,
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
 
@@ -774,9 +823,7 @@ def main():
 
         # Player name
         player_name = st.text_input(
-            "Player Name",
-            value=st.session_state.current_player,
-            max_chars=20
+            "Player Name", value=st.session_state.current_player, max_chars=20
         )
         st.session_state.current_player = player_name
 
@@ -805,9 +852,9 @@ def main():
         st.markdown("### 📊 Stats")
 
         if st.session_state.player_scores:
-            player_games = [s for s in st.session_state.player_scores if s['player'] == player_name]
+            player_games = [s for s in st.session_state.player_scores if s["player"] == player_name]
             if player_games:
-                total_score = sum(s['score'] for s in player_games)
+                total_score = sum(s["score"] for s in player_games)
                 avg_score = total_score // len(player_games)
                 st.metric("Games Played", len(player_games))
                 st.metric("Total Score", total_score)
@@ -836,7 +883,9 @@ def main():
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🎵 Start New Game", type="primary", use_container_width=True, key="start_game"):
+            if st.button(
+                "🎵 Start New Game", type="primary", use_container_width=True, key="start_game"
+            ):
                 st.session_state.current_round = 0  # Reset for new game
                 start_new_game(start_year, end_year)
                 st.rerun()
