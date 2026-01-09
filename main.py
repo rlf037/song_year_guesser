@@ -78,13 +78,27 @@ COMPILATION_KEYWORDS = [
     'greatest hits', 'best of', 'collection', 'anthology',
     'compilation', 'essentials', 'hits', 'singles',
     'retrospective', 'very best', 'ultimate', 'deluxe', 'remastered',
-    'live', 'remix', 'acoustic', 'version', 'edition', 'anniversary', 'remaster'
+    'live', 'remix', 'acoustic', 'version', 'edition', 'anniversary', 
+    'remaster', 'expanded', 'bonus', 'special', 'complete', 'definitive',
+    'gold', 'platinum', 'legend', 'classic', 'chronicles', 'archive',
+    're-issue', 'reissue', 're-release', 'mono', 'stereo', 'digitally'
 ]
 
 # Minimum Deezer rank to be considered a "popular" song
 # Deezer rank is based on total plays - higher = more popular
 # 200,000+ filters out very obscure songs while allowing popular tracks
 MIN_POPULARITY_RANK = 200000
+
+# Classic rock/legacy artists who often have re-releases that confuse year detection
+# Songs from these artists before 2000 should be treated with extra caution
+LEGACY_ARTISTS = {
+    'the rolling stones', 'the beatles', 'led zeppelin', 'pink floyd', 
+    'queen', 'the who', 'the doors', 'jimi hendrix', 'bob dylan',
+    'david bowie', 'the beach boys', 'cream', 'deep purple', 'black sabbath',
+    'aerosmith', 'fleetwood mac', 'eagles', 'elton john', 'eric clapton',
+    'bruce springsteen', 'u2', 'ac/dc', 'van halen', 'def leppard',
+    'guns n\' roses', 'bon jovi', 'metallica', 'nirvana', 'pearl jam'
+}
 
 
 def is_compilation_or_remaster(text: str) -> bool:
@@ -137,7 +151,14 @@ def get_popular_songs_by_year(year: int) -> List[Dict]:
     for track in all_tracks.values():
         album_title = track['album']['title']
         song_title = track['title']
+        artist_name = track['artist']['name'].lower()
         rank = track.get('rank', 0)
+        
+        # Skip legacy artists for years after their prime (likely re-releases)
+        # e.g., Rolling Stones album from 2006 is probably a re-release of 60s music
+        is_legacy = artist_name in LEGACY_ARTISTS
+        if is_legacy and year > 1999:
+            continue  # Skip legacy artists in modern years (likely re-releases)
         
         if (track.get('preview') and 
             rank >= MIN_POPULARITY_RANK and
@@ -264,10 +285,18 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
             if response.status_code == 200:
                 data = response.json()
                 # Filter: must have preview and not be a compilation/remaster
-                tracks = [t for t in data.get('data', []) 
-                         if t.get('preview') 
-                         and not is_compilation_or_remaster(t['album']['title'])
-                         and not is_compilation_or_remaster(t['title'])]
+                # Also skip legacy artists in modern years
+                tracks = []
+                for t in data.get('data', []):
+                    artist_name = t['artist']['name'].lower()
+                    is_legacy = artist_name in LEGACY_ARTISTS
+                    if is_legacy and year > 1999:
+                        continue
+                    if (t.get('preview') 
+                        and not is_compilation_or_remaster(t['album']['title'])
+                        and not is_compilation_or_remaster(t['title'])):
+                        tracks.append(t)
+                
                 if tracks:
                     # Sort by rank and pick from top
                     tracks_sorted = sorted(tracks, key=lambda x: x.get('rank', 0), reverse=True)
