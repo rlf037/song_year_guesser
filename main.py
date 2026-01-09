@@ -264,7 +264,7 @@ def get_songs_from_spotify(year: int) -> list[dict]:
     if playlist_id:
         # Get tracks from the playlist
         try:
-            playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100"
+            playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100&market=US"
             response = requests.get(playlist_url, headers=headers, timeout=10)
 
             if response.status_code == 200:
@@ -314,7 +314,7 @@ def get_songs_from_spotify(year: int) -> list[dict]:
     # Fallback: search for popular tracks from that year
     if not tracks:
         try:
-            search_url = f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50"
+            search_url = f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
             response = requests.get(search_url, headers=headers, timeout=10)
 
             if response.status_code == 200:

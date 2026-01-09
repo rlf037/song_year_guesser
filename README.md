@@ -34,7 +34,7 @@ A fun and interactive web game built with Streamlit where players guess the rele
 ## 🚀 Quick Start
 
 ### Play Online
-Visit the deployed app: **[songyearguesser.streamlit.app](https://songyearguesser.streamlit.app)**
+Visit the deployed app: **[songyearguesser.streamlit.app](https://song-year-game.streamlit.app)**
 
 ### Run Locally
 
