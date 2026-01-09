@@ -178,6 +178,35 @@ def get_popular_songs_by_year(year: int) -> List[Dict]:
             rank >= MIN_POPULARITY_RANK and
             not is_compilation_or_remaster(album_title) and 
             not is_compilation_or_remaster(song_title)):
+            
+            # Fetch album details to get accurate release date
+            album_id = track['album']['id']
+            album_release_date = None
+            try:
+                album_url = f"https://api.deezer.com/album/{album_id}"
+                album_response = requests.get(album_url, timeout=5)
+                if album_response.status_code == 200:
+                    album_data = album_response.json()
+                    album_release_date = album_data.get('release_date')
+            except Exception:
+                pass
+            
+            # Use album release date if available, otherwise fall back to track date
+            release_date = album_release_date or track.get('release_date', str(year))
+            
+            # Verify the album year matches the requested year
+            try:
+                if '-' in str(release_date):
+                    album_year = int(str(release_date).split('-')[0])
+                else:
+                    album_year = int(release_date) if str(release_date).isdigit() else None
+                
+                # Skip if album year doesn't match requested year
+                if album_year is not None and album_year != year:
+                    continue
+            except (ValueError, TypeError):
+                pass
+            
             valid_tracks.append({
                 'id': track['id'],
                 'name': strip_numbers_from_title(track['title']),
@@ -185,7 +214,7 @@ def get_popular_songs_by_year(year: int) -> List[Dict]:
                 'album': album_title,
                 'preview_url': track['preview'],
                 'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
-                'release_date': track.get('release_date', str(year)),
+                'release_date': release_date,
                 'rank': rank
             })
     
@@ -269,19 +298,37 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
                 if tracks:
                     # Sort by rank and pick from top
                     tracks_sorted = sorted(tracks, key=lambda x: x.get('rank', 0), reverse=True)
-                    track = tracks_sorted[0]  # Get most popular available
                     
-                    album_title = track['album']['title']
-                    return {
-                        'id': track['id'],
-                        'name': strip_numbers_from_title(track['title']),
-                        'artist': track['artist']['name'],
-                        'album': album_title,
-                        'year': year,
-                        'preview_url': track['preview'],
-                        'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
-                        'spotify_url': f"https://www.deezer.com/track/{track['id']}"
-                    }
+                    # Try each track until we find one with matching album year
+                    for track in tracks_sorted[:10]:
+                        # Verify album release year
+                        album_id = track['album']['id']
+                        try:
+                            album_url = f"https://api.deezer.com/album/{album_id}"
+                            album_response = requests.get(album_url, timeout=5)
+                            if album_response.status_code == 200:
+                                album_data = album_response.json()
+                                album_release_date = album_data.get('release_date', '')
+                                if '-' in str(album_release_date):
+                                    album_year = int(str(album_release_date).split('-')[0])
+                                else:
+                                    album_year = int(album_release_date) if str(album_release_date).isdigit() else None
+                                
+                                # Only use if album year matches
+                                if album_year == year:
+                                    album_title = track['album']['title']
+                                    return {
+                                        'id': track['id'],
+                                        'name': strip_numbers_from_title(track['title']),
+                                        'artist': track['artist']['name'],
+                                        'album': album_title,
+                                        'year': year,
+                                        'preview_url': track['preview'],
+                                        'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
+                                        'spotify_url': f"https://www.deezer.com/track/{track['id']}"
+                                    }
+                        except Exception:
+                            pass
         except Exception:
             pass
     
