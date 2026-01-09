@@ -22,76 +22,277 @@ st.set_page_config(
 st.markdown(
     """
 <style>
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Dark game theme */
+    .stApp {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    
+    /* Main header styling */
     .main-header {
         text-align: center;
-        font-size: 3em;
-        font-weight: bold;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        font-size: 3.5em;
+        font-weight: 800;
+        background: linear-gradient(90deg, #e94560 0%, #f39c12 50%, #e94560 100%);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5em;
+        animation: shimmer 3s linear infinite;
+        margin-bottom: 0.3em;
+        text-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
     }
+    
+    @keyframes shimmer {
+        0% { background-position: 0% center; }
+        100% { background-position: 200% center; }
+    }
+    
+    /* Round indicator */
+    .round-badge {
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #e94560;
+        background: rgba(233, 69, 96, 0.15);
+        padding: 0.5em 1.5em;
+        border-radius: 25px;
+        display: inline-block;
+        margin: 0 auto 1em auto;
+        border: 2px solid rgba(233, 69, 96, 0.3);
+    }
+    
+    /* Center container */
+    .center-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+    }
+    
+    /* Score card */
     .score-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5em;
-        border-radius: 15px;
+        background: linear-gradient(135deg, #e94560 0%, #f39c12 100%);
+        padding: 1.5em 3em;
+        border-radius: 20px;
         text-align: center;
         color: white;
-        font-size: 1.3em;
-        margin: 1em 0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        font-size: 1.8em;
+        font-weight: 700;
+        margin: 1em auto;
+        box-shadow: 0 8px 32px rgba(233, 69, 96, 0.4);
+        max-width: 400px;
     }
+    
+    /* Hint box */
     .hint-box {
-        background: #f0f2f6;
-        padding: 1em;
-        border-radius: 10px;
-        margin: 0.5em 0;
-        border-left: 4px solid #667eea;
-        color: #262730;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1em 1.5em;
+        border-radius: 12px;
+        margin: 0.5em auto;
+        border-left: 4px solid #e94560;
+        color: #ffffff;
+        max-width: 500px;
+        text-align: left;
     }
+    
+    /* Timer */
     .timer {
-        font-size: 2em;
+        font-size: 2.5em;
         font-weight: bold;
         text-align: center;
-        color: #667eea;
-        margin: 0.5em 0;
+        color: #00d9ff;
+        margin: 0.3em 0;
+        text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
     }
+    
+    /* Leaderboard */
     .leaderboard {
-        background: white;
-        padding: 1em;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        color: #262730;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        padding: 1em 1.5em;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
+    
+    /* Game over styling */
     .game-over {
         text-align: center;
-        font-size: 1.5em;
-        padding: 2em;
-        background: transparent;
-        border-radius: 15px;
-        margin: 1em 0;
+        padding: 1em;
+        margin: 0.5em 0;
     }
+    
+    .game-over h1 {
+        font-size: 3em !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .game-over h2 {
+        font-size: 1.3em !important;
+        color: #a0a0a0 !important;
+        font-weight: 400 !important;
+    }
+    
+    /* Status line */
     .status-line {
         text-align: center;
-        padding: 0.5em 1em;
-        background: linear-gradient(90deg, #667eea20 0%, #764ba220 100%);
-        border-radius: 8px;
-        margin: 0.5em 0;
-        font-size: 0.9em;
-        color: #667eea;
+        padding: 0.8em 1.5em;
+        background: rgba(0, 217, 255, 0.15);
+        border-radius: 25px;
+        margin: 0.5em auto;
+        font-size: 1em;
+        color: #00d9ff;
         animation: pulse 2s infinite;
+        max-width: 400px;
+        border: 1px solid rgba(0, 217, 255, 0.3);
     }
+    
     @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+        0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(0, 217, 255, 0.3); }
+        50% { opacity: 0.8; box-shadow: 0 0 20px rgba(0, 217, 255, 0.5); }
     }
-    .countdown-urgent {
-        animation: shake 0.5s infinite;
+    
+    /* Album artwork container */
+    .album-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 1em auto;
     }
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-2px); }
-        75% { transform: translateX(2px); }
+    
+    .album-art {
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 60px rgba(233, 69, 96, 0.2);
+        border: 3px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Audio player styling */
+    .audio-container {
+        margin: 1em auto;
+        max-width: 400px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Year question */
+    .year-question {
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: 600;
+        color: #ffffff;
+        margin: 1em 0 0.5em 0;
+    }
+    
+    /* How to play box */
+    .how-to-play {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2em;
+        margin: 1em auto;
+        max-width: 600px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
+    
+    .how-to-play h3 {
+        color: #e94560;
+        margin-bottom: 1em;
+    }
+    
+    .how-to-play ol {
+        text-align: left;
+        line-height: 2;
+    }
+    
+    /* Song details card */
+    .song-details {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 1.5em;
+        margin: 1em auto;
+        max-width: 500px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
+    
+    /* Correct answer highlight */
+    .correct-answer {
+        font-size: 2em;
+        font-weight: 700;
+        color: #00d9ff;
+        text-align: center;
+        margin: 0.5em 0;
+        text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+    }
+    
+    /* Button styling overrides */
+    .stButton > button {
+        background: linear-gradient(135deg, #e94560 0%, #f39c12 100%);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 0.6em 2em;
+        font-weight: 600;
+        font-size: 1.1em;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(233, 69, 96, 0.6);
+    }
+    
+    .stButton > button[kind="secondary"] {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Slider styling */
+    .stSlider > div > div {
+        background: linear-gradient(90deg, #e94560, #f39c12) !important;
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background: rgba(15, 52, 96, 0.95);
+        backdrop-filter: blur(10px);
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #ffffff;
+    }
+    
+    /* Input fields */
+    .stTextInput input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        border-radius: 10px;
+    }
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {
+        color: #00d9ff;
+    }
+    
+    /* Info box */
+    .stAlert {
+        background: rgba(0, 217, 255, 0.1);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        color: #ffffff;
     }
 </style>
 """,
@@ -501,8 +702,7 @@ def get_random_song(
 
         # Filter out already played songs by ID and by artist+name key
         available_tracks = [
-            t for t in tracks
-            if t["id"] not in played_ids and t.get("song_key") not in played_keys
+            t for t in tracks if t["id"] not in played_ids and t.get("song_key") not in played_keys
         ]
 
         if not available_tracks:
@@ -532,7 +732,9 @@ def get_random_song(
                             "preview_url": preview_url,
                             "image_url": track["image_url"],
                             "deezer_url": f"https://open.spotify.com/track/{track['spotify_id']}",
-                            "song_key": track.get("song_key", f"{track['artist'].lower()}|{track['name'].lower()}"),
+                            "song_key": track.get(
+                                "song_key", f"{track['artist'].lower()}|{track['name'].lower()}"
+                            ),
                         }
                 except Exception:
                     continue
@@ -648,7 +850,9 @@ def initialize_game_state():
     if "played_song_ids" not in st.session_state:
         st.session_state.played_song_ids = set()  # Track played songs to prevent repeats
     if "played_song_keys" not in st.session_state:
-        st.session_state.played_song_keys = set()  # Track by artist+name to catch duplicates across playlists
+        st.session_state.played_song_keys = (
+            set()
+        )  # Track by artist+name to catch duplicates across playlists
     if "next_song_cache" not in st.session_state:
         st.session_state.next_song_cache = None  # Pre-fetched next song for instant loading
     if "audio_play_time" not in st.session_state:
@@ -797,8 +1001,11 @@ def render_game_interface():
             # Refresh more frequently to detect when audio starts
             st_autorefresh(interval=500, key="audio_start_check")
 
-    # Display round counter
-    st.markdown(f"### 🎮 Round {st.session_state.current_round}")
+    # Display round counter with styled badge
+    st.markdown(
+        f'<div class="center-container"><div class="round-badge">🎮 Round {st.session_state.current_round}</div></div>',
+        unsafe_allow_html=True,
+    )
 
     # Calculate elapsed time for server-side checks
     if st.session_state.start_time is not None:
@@ -824,8 +1031,10 @@ def render_game_interface():
     # Display timer using JavaScript for smooth millisecond updates without blocking UI
     if st.session_state.audio_started and not st.session_state.game_over:
         timer_html = f"""
-        <div id="js-timer" class="timer" style="font-size: 2em; font-weight: bold; text-align: center; color: #667eea; margin: 0.5em 0;">
-            ⏱️ <span id="timer-value">0.0</span>s
+        <div class="center-container">
+            <div id="js-timer" class="timer">
+                ⏱️ <span id="timer-value">0.0</span>s
+            </div>
         </div>
         <script>
             (function() {{
@@ -848,10 +1057,13 @@ def render_game_interface():
                     // Update color based on time
                     if (secs >= 50) {{
                         containerEl.style.color = '#ff4444';
+                        containerEl.style.textShadow = '0 0 20px rgba(255, 68, 68, 0.8)';
                     }} else if (secs >= 40) {{
                         containerEl.style.color = '#ff8844';
+                        containerEl.style.textShadow = '0 0 20px rgba(255, 136, 68, 0.6)';
                     }} else {{
-                        containerEl.style.color = '#667eea';
+                        containerEl.style.color = '#00d9ff';
+                        containerEl.style.textShadow = '0 0 20px rgba(0, 217, 255, 0.5)';
                     }}
                 }}
                 
@@ -860,10 +1072,10 @@ def render_game_interface():
             }})();
         </script>
         """
-        components.html(timer_html, height=60)
+        components.html(timer_html, height=70)
     elif not st.session_state.game_over:
         st.markdown(
-            '<div class="timer" style="color: #667eea;">⏱️ 0.0s</div>',
+            '<div class="center-container"><div class="timer">⏱️ 0.0s</div></div>',
             unsafe_allow_html=True,
         )
 
@@ -887,14 +1099,16 @@ def render_game_interface():
 
     # Display album artwork with progressive reveal
     if song["image_url"]:
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col2:
-            blurred_image = blur_image(song["image_url"], int(current_blur))
-            if blurred_image:
-                st.markdown(
-                    f'<div style="text-align: center;"><img src="{blurred_image}" width="300" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>',
-                    unsafe_allow_html=True,
-                )
+        blurred_image = blur_image(song["image_url"], int(current_blur))
+        if blurred_image:
+            st.markdown(
+                f'''
+                <div class="album-container">
+                    <img src="{blurred_image}" width="320" class="album-art">
+                </div>
+                ''',
+                unsafe_allow_html=True,
+            )
 
     st.write("")
 
@@ -902,25 +1116,21 @@ def render_game_interface():
     if song["preview_url"]:
         if not st.session_state.game_over:
             # During gameplay - autoplay with playback detection
-            # Use a unique key per song to detect when audio starts
             audio_html = f'''
-            <html>
-            <body style="margin:0; padding:0; background: transparent;">
-            <audio id="gameAudio" controls autoplay style="width: 100%; border-radius: 10px;">
-                <source src="{song["preview_url"]}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
+            <div class="audio-container">
+                <audio id="gameAudio" controls autoplay style="width: 100%; border-radius: 10px;">
+                    <source src="{song["preview_url"]}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
             <script>
                 (function() {{
                     var audio = document.getElementById('gameAudio');
                     audio.volume = 1.0;
                     
-                    // Signal when audio starts playing
                     audio.addEventListener('playing', function() {{
-                        // Store playback start time in localStorage for Streamlit to detect
                         if (!localStorage.getItem('audioStarted_{song["id"]}')) {{
                             localStorage.setItem('audioStarted_{song["id"]}', Date.now().toString());
-                            // Trigger Streamlit refresh to update timer
                             window.parent.postMessage({{type: 'streamlit:setComponentValue', value: Date.now()}}, '*');
                         }}
                     }});
@@ -930,15 +1140,16 @@ def render_game_interface():
                     }});
                 }})();
             </script>
-            </body>
-            </html>
             '''
-            components.html(audio_html, height=60)
-            
+            components.html(audio_html, height=80)
+
             # Check if we should start the timer (either already started or auto-start after brief delay)
             if not st.session_state.audio_started:
                 # Auto-start timer after 1 second delay to allow audio to load
-                if st.session_state.song_loaded_time and (time.time() - st.session_state.song_loaded_time) > 1.0:
+                if (
+                    st.session_state.song_loaded_time
+                    and (time.time() - st.session_state.song_loaded_time) > 1.0
+                ):
                     st.session_state.audio_started = True
                     st.session_state.start_time = time.time()
                     st.session_state.status_message = "🎵 Listening... make your guess!"
@@ -946,16 +1157,14 @@ def render_game_interface():
         else:
             # After guess - styled player without autoplay
             audio_html = f'''
-            <html>
-            <body style="margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
-            <audio id="gameAudio" controls style="width: 100%; border-radius: 8px;">
-                <source src="{song["preview_url"]}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-            </body>
-            </html>
+            <div class="audio-container" style="background: linear-gradient(135deg, #e94560 0%, #f39c12 100%);">
+                <audio id="gameAudio" controls style="width: 100%; border-radius: 8px;">
+                    <source src="{song["preview_url"]}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
             '''
-            components.html(audio_html, height=70)
+            components.html(audio_html, height=80)
     else:
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
@@ -1010,17 +1219,23 @@ def render_game_interface():
 
     # Year guessing interface with slider
     if not st.session_state.game_over:
-        st.markdown("### 📅 What year was this song released?")
-
-        guess_year = st.slider(
-            "Year",
-            min_value=st.session_state.start_year,
-            max_value=st.session_state.end_year,
-            value=st.session_state.start_year,
-            step=1,
-            key="guess_slider",
-            label_visibility="collapsed",
+        st.markdown(
+            '<div class="year-question">📅 What year was this song released?</div>',
+            unsafe_allow_html=True,
         )
+        
+        # Center the slider
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            guess_year = st.slider(
+                "Year",
+                min_value=st.session_state.start_year,
+                max_value=st.session_state.end_year,
+                value=(st.session_state.start_year + st.session_state.end_year) // 2,
+                step=1,
+                key="guess_slider",
+                label_visibility="collapsed",
+            )
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -1037,8 +1252,9 @@ def render_game_interface():
         st.markdown('<div class="game-over">', unsafe_allow_html=True)
 
         if st.session_state.timed_out:
-            st.markdown("# ⏰ TIME'S UP!")
-            st.markdown("## You ran out of time!")
+            st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">⏰</span></div>', unsafe_allow_html=True)
+            st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #ff4444;">TIME\'S UP!</div>', unsafe_allow_html=True)
+            st.markdown('<div style="text-align: center; color: #a0a0a0;">You ran out of time!</div>', unsafe_allow_html=True)
         else:
             guess_val = last_score["guess"]
             if isinstance(guess_val, int):
@@ -1046,89 +1262,114 @@ def render_game_interface():
 
                 if year_diff == 0:
                     st.balloons()
-                    st.markdown("# 🎉 PERFECT!")
-                    st.markdown("## You got it exactly right!")
+                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎉</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00ff88;">PERFECT!</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="text-align: center; color: #a0a0a0;">You got it exactly right!</div>', unsafe_allow_html=True)
                 elif year_diff <= 2:
-                    st.markdown("# 🎵 Excellent!")
-                    st.markdown(f"## Off by only {year_diff} year{'s' if year_diff > 1 else ''}!")
+                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎵</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00d9ff;">Excellent!</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="text-align: center; color: #a0a0a0;">Off by only {year_diff} year{"s" if year_diff > 1 else ""}!</div>', unsafe_allow_html=True)
                 elif year_diff <= 5:
-                    st.markdown("# 🎶 Good job!")
-                    st.markdown(f"## Close! Off by {year_diff} years.")
+                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎶</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #f39c12;">Good job!</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="text-align: center; color: #a0a0a0;">Close! Off by {year_diff} years.</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown("# 🎸 Nice try!")
-                    st.markdown(f"## Off by {year_diff} years.")
+                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎸</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #e94560;">Nice try!</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="text-align: center; color: #a0a0a0;">Off by {year_diff} years.</div>', unsafe_allow_html=True)
 
-        st.markdown(f"### The correct answer: **{song['year']}**")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f'<div class="correct-answer">The answer was {song["year"]}</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # Score display
         st.markdown(
-            f'<div class="score-card">Score: {last_score["score"]} points</div>',
+            f'<div class="score-card">🎯 {last_score["score"]} points</div>',
             unsafe_allow_html=True,
         )
 
-        # Reveal all info
-        st.markdown("---")
-        st.markdown("### Song Details")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**Song:** {song['name']}")
-            st.markdown(f"**Artist:** {song['artist']}")
-        with col2:
-            st.markdown(f"**Album:** {song['album']}")
-            st.markdown(f"**Year:** {song['year']}")
+        # Reveal all info in styled card
+        st.markdown(
+            f'''
+            <div class="song-details">
+                <div style="text-align: center; margin-bottom: 1em; font-size: 1.2em; font-weight: 600; color: #e94560;">Song Details</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em;">
+                    <div><strong style="color: #00d9ff;">🎵 Song:</strong> {song["name"]}</div>
+                    <div><strong style="color: #00d9ff;">💿 Album:</strong> {song["album"]}</div>
+                    <div><strong style="color: #00d9ff;">🎤 Artist:</strong> {song["artist"]}</div>
+                    <div><strong style="color: #00d9ff;">📅 Year:</strong> {song["year"]}</div>
+                </div>
+                <div style="text-align: center; margin-top: 1em;">
+                    <a href="{song["deezer_url"]}" target="_blank" style="color: #00d9ff;">🎧 Listen on Spotify</a>
+                </div>
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
 
-        st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
-
-        st.markdown("---")
+        st.write("")
 
         # Next song and end game buttons
-        col1, col2 = st.columns(2)
-        with col1:
-            # Show how many songs are available
-            played_count = len(st.session_state.get("played_song_ids", set()))
-            if st.button(
-                f"▶️ Next Song ({played_count} played)",
-                type="primary",
-                use_container_width=True,
-                key="next_song",
-            ):
-                start_new_game(st.session_state.start_year, st.session_state.end_year)
-                st.rerun()
+        col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🏁 End Game", use_container_width=True, key="end_game"):
-                st.session_state.game_active = False
-                st.session_state.game_over = False
-                st.session_state.current_round = 0
-                st.session_state.played_song_ids = set()  # Reset played songs for new session
-                st.session_state.played_song_keys = set()  # Reset played song keys
-                st.session_state.next_song_cache = None
-                st.rerun()
+            col_a, col_b = st.columns(2)
+            with col_a:
+                played_count = len(st.session_state.get("played_song_ids", set()))
+                if st.button(
+                    f"▶️ Next Song",
+                    type="primary",
+                    use_container_width=True,
+                    key="next_song",
+                ):
+                    start_new_game(st.session_state.start_year, st.session_state.end_year)
+                    st.rerun()
+            with col_b:
+                if st.button("🏁 End Game", use_container_width=True, key="end_game"):
+                    st.session_state.game_active = False
+                    st.session_state.game_over = False
+                    st.session_state.current_round = 0
+                    st.session_state.played_song_ids = set()
+                    st.session_state.played_song_keys = set()
+                    st.session_state.next_song_cache = None
+                    st.rerun()
 
 
 def render_leaderboard():
     """Display the leaderboard"""
     if not st.session_state.player_scores:
-        st.info("No scores yet! Play a game to see your scores here.")
+        st.markdown(
+            '<div style="text-align: center; color: #a0a0a0; padding: 2em;">🎮 No scores yet! Play a game to see your scores here.</div>',
+            unsafe_allow_html=True,
+        )
         return
 
-    st.markdown("### 🏆 Leaderboard")
+    st.markdown(
+        '<div style="text-align: center; font-size: 1.5em; font-weight: 700; color: #f39c12; margin-bottom: 1em;">🏆 Leaderboard</div>',
+        unsafe_allow_html=True,
+    )
 
     # Sort by score
     sorted_scores = sorted(st.session_state.player_scores, key=lambda x: x["score"], reverse=True)
 
     for idx, score in enumerate(sorted_scores[:10], 1):
         guess_display = score["guess"] if isinstance(score["guess"], int) else "TIMEOUT"
-        with st.container():
-            st.markdown(
-                f"""
-                <div class="leaderboard" style="margin: 0.5em 0;">
-                    <strong>#{idx} {score["player"]}</strong> - {score["score"]} points<br>
-                    <small>{score["song"]} | Guessed: {guess_display} | Actual: {score["actual"]} | Time: {score["time"]}s</small>
+        medal = "🥇" if idx == 1 else "🥈" if idx == 2 else "🥉" if idx == 3 else f"#{idx}"
+        st.markdown(
+            f'''
+            <div class="leaderboard" style="margin: 0.5em auto; max-width: 600px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 1.3em;">{medal}</span>
+                        <strong style="color: #e94560;">{score["player"]}</strong>
+                    </div>
+                    <div style="font-size: 1.2em; font-weight: 700; color: #00d9ff;">{score["score"]} pts</div>
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                <div style="font-size: 0.85em; color: #a0a0a0; margin-top: 0.3em;">
+                    {score["song"]} • Guessed: {guess_display} • Actual: {score["actual"]} • {score["time"]}s
+                </div>
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
 
 
 def main():
@@ -1195,17 +1436,25 @@ def main():
 
     # Main content
     if not st.session_state.game_active:
-        st.markdown("""
-        ### 🎮 How to Play
+        st.markdown(
+            '''
+            <div class="how-to-play">
+                <h3 style="text-align: center;">🎮 How to Play</h3>
+                <ol>
+                    <li><strong>🎧 Listen</strong> to a 30-second song preview</li>
+                    <li><strong>🖼️ Watch</strong> the album artwork gradually reveal</li>
+                    <li><strong>🤔 Guess</strong> the year the song was released</li>
+                    <li><strong>🏆 Score</strong> points based on accuracy and speed!</li>
+                </ol>
+                <div style="text-align: center; margin-top: 1em; padding: 0.8em; background: rgba(233, 69, 96, 0.2); border-radius: 10px;">
+                    💡 Use hints to reveal the album, artist, and song title (but you\'ll lose points!)
+                </div>
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
 
-        1. **Listen** to a 30-second song preview
-        2. **Watch** the album artwork gradually reveal
-        3. **Guess** the year the song was released
-        4. **Score** points based on accuracy and speed!
-
-        💡 Use hints to reveal the album, artist, and song title (but you'll lose points!)
-        """)
-
+        st.write("")
         st.write("")
 
         col1, col2, col3 = st.columns([1, 2, 1])
@@ -1213,14 +1462,14 @@ def main():
             if st.button(
                 "🎵 Start New Game", type="primary", use_container_width=True, key="start_game"
             ):
-                st.session_state.current_round = 0  # Reset for new game
-                st.session_state.played_song_ids = set()  # Clear played songs for fresh session
-                st.session_state.played_song_keys = set()  # Clear played song keys
-                st.session_state.next_song_cache = None  # Clear prefetch cache
+                st.session_state.current_round = 0
+                st.session_state.played_song_ids = set()
+                st.session_state.played_song_keys = set()
+                st.session_state.next_song_cache = None
                 start_new_game(start_year, end_year)
                 st.rerun()
 
-        st.markdown("---")
+        st.write("")
 
         # Show leaderboard
         render_leaderboard()
