@@ -118,7 +118,7 @@ COMPILATION_KEYWORDS = [
 ]
 
 # Minimum Spotify popularity to be considered (0-100 scale)
-MIN_SPOTIFY_POPULARITY = 50
+MIN_SPOTIFY_POPULARITY = 70
 
 
 def is_compilation_or_remaster(text: str) -> bool:
@@ -567,30 +567,28 @@ def render_game_interface():
     if not song:
         return
 
-    # Auto-refresh every second to update timer (only when game is active)
+    # Auto-refresh every 100ms to update timer with milliseconds (only when game is active)
     if not st.session_state.game_over:
-        st_autorefresh(interval=1000, key="game_timer")
+        st_autorefresh(interval=100, key="game_timer")
 
-    # Timer starts after a short delay to allow audio to load and start playing
-    # We use song_loaded_time + 2 seconds as a reasonable estimate for audio start
-    if (
-        st.session_state.start_time is None
-        and st.session_state.song_loaded_time is not None
-        and time.time() - st.session_state.song_loaded_time >= 2
-    ):
-        st.session_state.start_time = time.time()
+    # Timer starts immediately when song loads
+    if st.session_state.start_time is None and st.session_state.song_loaded_time is not None:
+        st.session_state.start_time = st.session_state.song_loaded_time
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
-    # Calculate elapsed time and display timer
+    # Calculate elapsed time with milliseconds
     if st.session_state.start_time is not None:
-        elapsed = int(time.time() - st.session_state.start_time)
+        elapsed_float = time.time() - st.session_state.start_time
+        elapsed = int(elapsed_float)
+        milliseconds = int((elapsed_float - elapsed) * 10)  # Single digit for cleaner display
     else:
-        elapsed = 0  # Show 0 during the 2-second delay
+        elapsed = 0
+        milliseconds = 0
 
-    # Display timer
-    st.markdown(f'<div class="timer">⏱️ {elapsed}s</div>', unsafe_allow_html=True)
+    # Display timer with milliseconds
+    st.markdown(f'<div class="timer">⏱️ {elapsed}.{milliseconds}s</div>', unsafe_allow_html=True)
 
     # Calculate progressive blur based on time (starts at 25, decreases to 0 over 30 seconds)
     if not st.session_state.game_over:
