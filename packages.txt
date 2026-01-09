@@ -1,4 +1,2 @@
-# System packages for Streamlit Cloud deployment
-# Required for Pillow image processing
 zlib1g-dev
 libjpeg-dev
