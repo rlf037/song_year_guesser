@@ -691,22 +691,24 @@ def render_game_interface():
     if not song:
         return
 
-    # Auto-refresh every 1 second to update timer (100ms causes UI blocking)
+    # Auto-refresh every 1 second for timeout check (timer display uses JS for smooth updates)
     if not st.session_state.game_over and st.session_state.audio_started:
         st_autorefresh(interval=1000, key="game_timer")
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
-    # Calculate elapsed time
+    # Calculate elapsed time for server-side checks
     if st.session_state.start_time is not None:
         elapsed_float = time.time() - st.session_state.start_time
         elapsed_seconds = int(elapsed_float)
         elapsed = elapsed_seconds  # For blur calculation
+        start_timestamp = st.session_state.start_time * 1000  # Convert to JS timestamp (ms)
     else:
         elapsed_float = 0
         elapsed_seconds = 0
         elapsed = 0
+        start_timestamp = 0
 
     # Check for timeout (60 seconds max)
     if (
@@ -717,24 +719,49 @@ def render_game_interface():
         make_guess(0, timed_out=True)
         st.rerun()
 
-    # Display timer counting UP
+    # Display timer using JavaScript for smooth millisecond updates without blocking UI
     if st.session_state.audio_started and not st.session_state.game_over:
-        if elapsed_seconds >= 50:
-            timer_class = "timer countdown-urgent"
-            timer_color = "#ff4444"
-        elif elapsed_seconds >= 40:
-            timer_color = "#ff8844"
-            timer_class = "timer"
-        else:
-            timer_color = "#667eea"
-            timer_class = "timer"
-        st.markdown(
-            f'<div class="{timer_class}" style="color: {timer_color};">⏱️ {elapsed_seconds}s</div>',
-            unsafe_allow_html=True,
-        )
+        timer_html = f"""
+        <div id="js-timer" class="timer" style="font-size: 2em; font-weight: bold; text-align: center; color: #667eea; margin: 0.5em 0;">
+            ⏱️ <span id="timer-value">0.0</span>s
+        </div>
+        <script>
+            (function() {{
+                var startTime = {start_timestamp};
+                var maxTime = {MAX_GUESS_TIME};
+                var timerEl = document.getElementById('timer-value');
+                var containerEl = document.getElementById('js-timer');
+                
+                function updateTimer() {{
+                    var now = Date.now();
+                    var elapsed = (now - startTime) / 1000;
+                    if (elapsed < 0) elapsed = 0;
+                    if (elapsed > maxTime) elapsed = maxTime;
+                    
+                    var secs = Math.floor(elapsed);
+                    var tenths = Math.floor((elapsed - secs) * 10);
+                    
+                    timerEl.textContent = secs + '.' + tenths;
+                    
+                    // Update color based on time
+                    if (secs >= 50) {{
+                        containerEl.style.color = '#ff4444';
+                    }} else if (secs >= 40) {{
+                        containerEl.style.color = '#ff8844';
+                    }} else {{
+                        containerEl.style.color = '#667eea';
+                    }}
+                }}
+                
+                updateTimer();
+                setInterval(updateTimer, 100);
+            }})();
+        </script>
+        """
+        components.html(timer_html, height=60)
     elif not st.session_state.game_over:
         st.markdown(
-            '<div class="timer" style="color: #667eea;">⏱️ 0s</div>',
+            '<div class="timer" style="color: #667eea;">⏱️ 0.0s</div>',
             unsafe_allow_html=True,
         )
 
