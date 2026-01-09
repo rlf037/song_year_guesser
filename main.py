@@ -374,9 +374,12 @@ def get_songs_from_spotify(year: int) -> list[dict]:
                     images = album.get("images", [])
                     image_url = images[0]["url"] if images else None
 
-                    # Get release year from album
+                    # Get release year from album - use actual album year, not playlist year
                     release_date = album.get("release_date", "")
                     album_year = int(release_date[:4]) if len(release_date) >= 4 else year
+
+                    # Create a unique key for deduplication (artist + song name)
+                    song_key = f"{artist_name.lower()}|{track_name.lower()}"
 
                     tracks.append(
                         {
@@ -384,10 +387,11 @@ def get_songs_from_spotify(year: int) -> list[dict]:
                             "name": track_name,
                             "artist": artist_name,
                             "album": album_name,
-                            "year": year,  # Use the chart year, not album year
+                            "year": album_year,  # Use actual album release year
                             "image_url": image_url,
                             "popularity": popularity,
                             "spotify_id": track["id"],
+                            "song_key": song_key,  # For deduplication across playlists
                         }
                     )
         except Exception:
@@ -433,20 +437,33 @@ def get_songs_from_spotify(year: int) -> list[dict]:
                     images = album.get("images", [])
                     image_url = images[0]["url"] if images else None
 
+                    # Create a unique key for deduplication (artist + song name)
+                    song_key = f"{artist_name.lower()}|{track_name.lower()}"
+
                     tracks.append(
                         {
                             "id": item["id"],
                             "name": track_name,
                             "artist": artist_name,
                             "album": album_name,
-                            "year": year,
+                            "year": album_year,  # Use actual album year (already verified above)
                             "image_url": image_url,
                             "popularity": popularity,
                             "spotify_id": item["id"],
+                            "song_key": song_key,  # For deduplication across playlists
                         }
                     )
         except Exception:
             pass
+
+    # Deduplicate by song_key (same song can appear in multiple playlists)
+    seen_keys = set()
+    unique_tracks = []
+    for track in tracks:
+        if track.get("song_key") not in seen_keys:
+            seen_keys.add(track.get("song_key"))
+            unique_tracks.append(track)
+    tracks = unique_tracks
 
     # Sort by popularity
     tracks.sort(key=lambda x: x.get("popularity", 0), reverse=True)
@@ -462,12 +479,16 @@ def _fetch_deezer_preview(track: dict) -> tuple[dict, str | None]:
     return (track, preview_url)
 
 
-def get_random_song(start_year: int, end_year: int, played_ids: set | None = None) -> dict | None:
+def get_random_song(
+    start_year: int, end_year: int, played_ids: set | None = None, played_keys: set | None = None
+) -> dict | None:
     """Get a random popular song from the specified year range using Spotify + Deezer.
-    Excludes songs with IDs in played_ids to prevent repeats within a session.
+    Excludes songs with IDs in played_ids or keys in played_keys to prevent repeats within a session.
     """
     if played_ids is None:
         played_ids = set()
+    if played_keys is None:
+        played_keys = set()
 
     years_to_try = list(range(start_year, end_year + 1))
     random.shuffle(years_to_try)
@@ -478,8 +499,11 @@ def get_random_song(start_year: int, end_year: int, played_ids: set | None = Non
         if not tracks:
             continue
 
-        # Filter out already played songs
-        available_tracks = [t for t in tracks if t["id"] not in played_ids]
+        # Filter out already played songs by ID and by artist+name key
+        available_tracks = [
+            t for t in tracks
+            if t["id"] not in played_ids and t.get("song_key") not in played_keys
+        ]
 
         if not available_tracks:
             continue
@@ -508,6 +532,7 @@ def get_random_song(start_year: int, end_year: int, played_ids: set | None = Non
                             "preview_url": preview_url,
                             "image_url": track["image_url"],
                             "deezer_url": f"https://open.spotify.com/track/{track['spotify_id']}",
+                            "song_key": track.get("song_key", f"{track['artist'].lower()}|{track['name'].lower()}"),
                         }
                 except Exception:
                     continue
@@ -622,8 +647,12 @@ def initialize_game_state():
         st.session_state.current_round = 0
     if "played_song_ids" not in st.session_state:
         st.session_state.played_song_ids = set()  # Track played songs to prevent repeats
+    if "played_song_keys" not in st.session_state:
+        st.session_state.played_song_keys = set()  # Track by artist+name to catch duplicates across playlists
     if "next_song_cache" not in st.session_state:
         st.session_state.next_song_cache = None  # Pre-fetched next song for instant loading
+    if "audio_play_time" not in st.session_state:
+        st.session_state.audio_play_time = None  # When audio actually started playing
     if "session_scores" not in st.session_state:
         st.session_state.session_scores = []
     if "audio_started" not in st.session_state:
@@ -639,7 +668,8 @@ def initialize_game_state():
 def prefetch_next_song(start_year: int, end_year: int):
     """Prefetch the next song in background for instant loading"""
     played_ids = st.session_state.get("played_song_ids", set())
-    next_song = get_random_song(start_year, end_year, played_ids)
+    played_keys = st.session_state.get("played_song_keys", set())
+    next_song = get_random_song(start_year, end_year, played_ids, played_keys)
     if next_song:
         # Pre-cache images
         if next_song.get("image_url"):
@@ -654,14 +684,15 @@ def start_new_game(start_year: int, end_year: int):
     song = st.session_state.get("next_song_cache")
 
     # Verify prefetched song hasn't been played (edge case protection)
-    if song and song["id"] in st.session_state.get("played_song_ids", set()):
+    played_ids = st.session_state.get("played_song_ids", set())
+    played_keys = st.session_state.get("played_song_keys", set())
+    if song and (song["id"] in played_ids or song.get("song_key") in played_keys):
         song = None
 
     if song is None:
         # Show loading state only if we need to fetch
         st.session_state.status_message = "🔍 Searching for a song..."
-        played_ids = st.session_state.get("played_song_ids", set())
-        song = get_random_song(start_year, end_year, played_ids)
+        song = get_random_song(start_year, end_year, played_ids, played_keys)
 
     # Clear the prefetch cache
     st.session_state.next_song_cache = None
@@ -678,8 +709,10 @@ def start_new_game(start_year: int, end_year: int):
         st.session_state.status_message = ""
         return
 
-    # Track this song as played
+    # Track this song as played (both by ID and by artist+name key)
     st.session_state.played_song_ids.add(song["id"])
+    if song.get("song_key"):
+        st.session_state.played_song_keys.add(song["song_key"])
 
     # Preload and cache the album image at max blur (if not already cached)
     if song.get("image_url"):
@@ -692,15 +725,16 @@ def start_new_game(start_year: int, end_year: int):
 
     st.session_state.current_song = song
     st.session_state.game_active = True
-    st.session_state.start_time = time.time()  # Timer starts immediately
+    st.session_state.start_time = None  # Timer will start when audio plays
+    st.session_state.audio_play_time = None  # Reset audio play time
     st.session_state.hints_revealed = 0
     st.session_state.game_over = False
     st.session_state.timed_out = False
     st.session_state.blur_level = 25
     st.session_state.year_options = generate_year_options(song["year"])
-    st.session_state.audio_started = True  # Audio auto-plays
+    st.session_state.audio_started = False  # Will be set true when audio starts
     st.session_state.song_loaded_time = time.time()
-    st.session_state.status_message = "🎵 Listening... make your guess!"
+    st.session_state.status_message = "🎵 Press play to start!"
 
     # Start prefetching the next song in background
     prefetch_next_song(start_year, end_year)
@@ -754,9 +788,14 @@ def render_game_interface():
     if not song:
         return
 
-    # Auto-refresh every 1 second for timeout check (timer display uses JS for smooth updates)
-    if not st.session_state.game_over and st.session_state.audio_started:
-        st_autorefresh(interval=1000, key="game_timer")
+    # Auto-refresh for game state updates
+    if not st.session_state.game_over:
+        if st.session_state.audio_started:
+            # Refresh every 1 second for timeout check
+            st_autorefresh(interval=1000, key="game_timer")
+        else:
+            # Refresh more frequently to detect when audio starts
+            st_autorefresh(interval=500, key="audio_start_check")
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
@@ -859,10 +898,11 @@ def render_game_interface():
 
     st.write("")
 
-    # Audio player with autoplay
+    # Audio player with autoplay and playback detection
     if song["preview_url"]:
         if not st.session_state.game_over:
-            # During gameplay - autoplay
+            # During gameplay - autoplay with playback detection
+            # Use a unique key per song to detect when audio starts
             audio_html = f'''
             <html>
             <body style="margin:0; padding:0; background: transparent;">
@@ -871,16 +911,38 @@ def render_game_interface():
                 Your browser does not support the audio element.
             </audio>
             <script>
-                var audio = document.getElementById('gameAudio');
-                audio.volume = 1.0;
-                audio.play().catch(function(e) {{
-                    console.log('Autoplay prevented:', e);
-                }});
+                (function() {{
+                    var audio = document.getElementById('gameAudio');
+                    audio.volume = 1.0;
+                    
+                    // Signal when audio starts playing
+                    audio.addEventListener('playing', function() {{
+                        // Store playback start time in localStorage for Streamlit to detect
+                        if (!localStorage.getItem('audioStarted_{song["id"]}')) {{
+                            localStorage.setItem('audioStarted_{song["id"]}', Date.now().toString());
+                            // Trigger Streamlit refresh to update timer
+                            window.parent.postMessage({{type: 'streamlit:setComponentValue', value: Date.now()}}, '*');
+                        }}
+                    }});
+                    
+                    audio.play().catch(function(e) {{
+                        console.log('Autoplay prevented:', e);
+                    }});
+                }})();
             </script>
             </body>
             </html>
             '''
             components.html(audio_html, height=60)
+            
+            # Check if we should start the timer (either already started or auto-start after brief delay)
+            if not st.session_state.audio_started:
+                # Auto-start timer after 1 second delay to allow audio to load
+                if st.session_state.song_loaded_time and (time.time() - st.session_state.song_loaded_time) > 1.0:
+                    st.session_state.audio_started = True
+                    st.session_state.start_time = time.time()
+                    st.session_state.status_message = "🎵 Listening... make your guess!"
+                    st.rerun()
         else:
             # After guess - styled player without autoplay
             audio_html = f'''
@@ -923,17 +985,18 @@ def render_game_interface():
                 )
 
     # Hint button (show during active gameplay)
-    if not st.session_state.game_over:
+    if not st.session_state.game_over and st.session_state.audio_started:
         st.write("")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.session_state.hints_revealed < 3:
                 hint_labels = ["Album", "Artist", "Song Title"]
                 next_hint = hint_labels[st.session_state.hints_revealed]
+                # Use stable key based on round number, not hint count
                 if st.button(
                     f"💡 Reveal {next_hint} ({st.session_state.hints_revealed}/3 hints used)",
                     use_container_width=True,
-                    key=f"hint_btn_{st.session_state.hints_revealed}",
+                    key=f"hint_btn_round_{st.session_state.current_round}",
                 ):
                     reveal_hint()
                     st.session_state.status_message = f"💡 {next_hint} revealed! (-100 points)"
@@ -1038,6 +1101,7 @@ def render_game_interface():
                 st.session_state.game_over = False
                 st.session_state.current_round = 0
                 st.session_state.played_song_ids = set()  # Reset played songs for new session
+                st.session_state.played_song_keys = set()  # Reset played song keys
                 st.session_state.next_song_cache = None
                 st.rerun()
 
@@ -1151,6 +1215,7 @@ def main():
             ):
                 st.session_state.current_round = 0  # Reset for new game
                 st.session_state.played_song_ids = set()  # Clear played songs for fresh session
+                st.session_state.played_song_keys = set()  # Clear played song keys
                 st.session_state.next_song_cache = None  # Clear prefetch cache
                 start_new_game(start_year, end_year)
                 st.rerun()
