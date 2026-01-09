@@ -3,8 +3,9 @@ import io
 import random
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import requests
 import streamlit as st
@@ -66,7 +67,7 @@ st.markdown("""
         text-align: center;
         font-size: 1.5em;
         padding: 2em;
-        background: #f0f2f6;
+        background: transparent;
         border-radius: 15px;
         margin: 1em 0;
     }
@@ -84,21 +85,8 @@ COMPILATION_KEYWORDS = [
     're-issue', 'reissue', 're-release', 'mono', 'stereo', 'digitally'
 ]
 
-# Minimum Deezer rank to be considered a "popular" song
-# Deezer rank is based on total plays - higher = more popular
-# 200,000+ filters out very obscure songs while allowing popular tracks
-MIN_POPULARITY_RANK = 200000
-
-# Classic rock/legacy artists who often have re-releases that confuse year detection
-# Songs from these artists before 2000 should be treated with extra caution
-LEGACY_ARTISTS = {
-    'the rolling stones', 'the beatles', 'led zeppelin', 'pink floyd', 
-    'queen', 'the who', 'the doors', 'jimi hendrix', 'bob dylan',
-    'david bowie', 'the beach boys', 'cream', 'deep purple', 'black sabbath',
-    'aerosmith', 'fleetwood mac', 'eagles', 'elton john', 'eric clapton',
-    'bruce springsteen', 'u2', 'ac/dc', 'van halen', 'def leppard',
-    'guns n\' roses', 'bon jovi', 'metallica', 'nirvana', 'pearl jam'
-}
+# Minimum Spotify popularity to be considered (0-100 scale)
+MIN_SPOTIFY_POPULARITY = 50
 
 
 def is_compilation_or_remaster(text: str) -> bool:
@@ -112,107 +100,279 @@ def strip_numbers_from_title(title: str) -> str:
     return re.sub(r'\d+', '', title)
 
 
-def get_popular_songs_by_year(year: int) -> List[Dict]:
-    """
-    Get popular songs from a specific year using Deezer API.
-    Optimized to minimize API calls while still finding quality tracks.
-    """
-    all_tracks = {}  # Use dict to dedupe by track ID
-    
-    # Single optimized search - just search by year with high limit
-    # This is much faster than multiple genre searches
+def get_spotify_token() -> Optional[str]:
+    """Get Spotify access token using client credentials flow"""
     try:
-        search_url = f"https://api.deezer.com/search?q=year:{year}&limit=100"
-        response = requests.get(search_url, timeout=10)
+        client_id = st.secrets["spotify"]["client_id"]
+        client_secret = st.secrets["spotify"]["client_secret"]
+    except Exception:
+        return None
+    
+    # Check if we have a cached valid token
+    if 'spotify_token' in st.session_state and 'spotify_token_expires' in st.session_state:
+        if time.time() < st.session_state.spotify_token_expires:
+            return st.session_state.spotify_token
+    
+    # Get new token
+    try:
+        auth_str = f"{client_id}:{client_secret}"
+        auth_b64 = base64.b64encode(auth_str.encode()).decode()
+        
+        response = requests.post(
+            "https://accounts.spotify.com/api/token",
+            headers={"Authorization": f"Basic {auth_b64}"},
+            data={"grant_type": "client_credentials"},
+            timeout=10
+        )
+        
         if response.status_code == 200:
             data = response.json()
-            for track in data.get('data', []):
-                if track['id'] not in all_tracks:
-                    all_tracks[track['id']] = track
+            st.session_state.spotify_token = data['access_token']
+            st.session_state.spotify_token_expires = time.time() + data['expires_in'] - 60
+            return data['access_token']
     except Exception:
         pass
     
-    # If we don't have enough tracks, do ONE additional genre search
-    if len(all_tracks) < 20:
+    return None
+
+
+def get_deezer_preview(artist: str, track: str) -> Optional[str]:
+    """Find a Deezer preview URL for a song"""
+    try:
+        query = f"{artist} {track}"
+        search_url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=5"
+        response = requests.get(search_url, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            for result in data.get('data', []):
+                if result.get('preview'):
+                    return result['preview']
+    except Exception:
+        pass
+    
+    return None
+
+
+# Cache for playlist IDs (year -> playlist_id)
+_playlist_cache: Dict[int, Optional[str]] = {}
+# Cache for tracks by year
+_tracks_cache: Dict[int, List[Dict]] = {}
+
+
+def search_top_hits_playlist(year: int, token: str) -> Optional[str]:
+    """
+    Search for Spotify's official "Top Hits of [Year]" playlist.
+    Returns the playlist ID if found. Uses cache to avoid repeated API calls.
+    """
+    # Check cache first
+    if year in _playlist_cache:
+        return _playlist_cache[year]
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Single optimized search query
+    try:
+        query = f"Top Hits {year}"
+        search_url = f"https://api.spotify.com/v1/search?q={requests.utils.quote(query)}&type=playlist&limit=20"
+        response = requests.get(search_url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            playlists = data.get('playlists', {}).get('items', [])
+            
+            # First pass: look for Spotify official playlists
+            for playlist in playlists:
+                if not playlist:
+                    continue
+                name = playlist.get('name', '').lower()
+                owner = playlist.get('owner', {}).get('display_name', '').lower()
+                
+                if 'spotify' in owner and str(year) in name:
+                    _playlist_cache[year] = playlist['id']
+                    return playlist['id']
+            
+            # Second pass: accept good community playlists
+            for playlist in playlists:
+                if not playlist:
+                    continue
+                name = playlist.get('name', '').lower()
+                if 'top' in name and str(year) in name and ('hit' in name or '100' in name):
+                    _playlist_cache[year] = playlist['id']
+                    return playlist['id']
+    except Exception:
+        pass
+    
+    _playlist_cache[year] = None
+    return None
+
+
+def get_songs_from_spotify(year: int) -> List[Dict]:
+    """
+    Get top 100 chart songs from a specific year using Spotify's Top Hits playlists.
+    Returns songs that actually charted that year. Uses cache.
+    """
+    # Check cache first
+    if year in _tracks_cache:
+        return _tracks_cache[year]
+    
+    token = get_spotify_token()
+    if not token:
+        return []
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    tracks = []
+    
+    # First try to find the Top Hits playlist for this year
+    playlist_id = search_top_hits_playlist(year, token)
+    
+    if playlist_id:
+        # Get tracks from the playlist
         try:
-            search_url = f"https://api.deezer.com/search?q=pop rock {year}&limit=100"
-            response = requests.get(search_url, timeout=10)
+            playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100"
+            response = requests.get(playlist_url, headers=headers, timeout=10)
+            
             if response.status_code == 200:
                 data = response.json()
-                for track in data.get('data', []):
-                    if track['id'] not in all_tracks:
-                        all_tracks[track['id']] = track
+                for item in data.get('items', []):
+                    track = item.get('track')
+                    if not track:
+                        continue
+                    
+                    album = track.get('album', {})
+                    track_name = track.get('name', '')
+                    album_name = album.get('name', '')
+                    
+                    # Skip compilations and remasters
+                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(track_name):
+                        continue
+                    
+                    # Get artist name
+                    artists = track.get('artists', [])
+                    artist_name = artists[0]['name'] if artists else 'Unknown'
+                    
+                    # Get album artwork
+                    images = album.get('images', [])
+                    image_url = images[0]['url'] if images else None
+                    
+                    # Get release year from album
+                    release_date = album.get('release_date', '')
+                    if len(release_date) >= 4:
+                        album_year = int(release_date[:4])
+                    else:
+                        album_year = year
+                    
+                    tracks.append({
+                        'id': track['id'],
+                        'name': track_name,
+                        'artist': artist_name,
+                        'album': album_name,
+                        'year': year,  # Use the chart year, not album year
+                        'image_url': image_url,
+                        'popularity': track.get('popularity', 50),
+                        'spotify_id': track['id']
+                    })
         except Exception:
             pass
     
-    # Filter tracks: must have preview, high popularity rank, not a compilation
-    # Sort by rank first so we only verify albums for top candidates
-    candidates = []
-    for track in all_tracks.values():
-        album_title = track['album']['title']
-        song_title = track['title']
-        artist_name = track['artist']['name'].lower()
-        rank = track.get('rank', 0)
-        
-        # Skip legacy artists for years after their prime (likely re-releases)
-        # e.g., Rolling Stones album from 2006 is probably a re-release of 60s music
-        is_legacy = artist_name in LEGACY_ARTISTS
-        if is_legacy and year > 1999:
-            continue  # Skip legacy artists in modern years (likely re-releases)
-        
-        if (track.get('preview') and 
-            rank >= MIN_POPULARITY_RANK and
-            not is_compilation_or_remaster(album_title) and 
-            not is_compilation_or_remaster(song_title)):
-            candidates.append(track)
+    # Fallback: search for popular tracks from that year
+    if not tracks:
+        try:
+            search_url = f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50"
+            response = requests.get(search_url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                for item in data.get('tracks', {}).get('items', []):
+                    album = item['album']
+                    release_date = album.get('release_date', '')
+                    
+                    if len(release_date) >= 4:
+                        album_year = int(release_date[:4])
+                        if album_year != year:
+                            continue
+                    
+                    album_name = album.get('name', '')
+                    track_name = item.get('name', '')
+                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(track_name):
+                        continue
+                    
+                    popularity = item.get('popularity', 0)
+                    if popularity < MIN_SPOTIFY_POPULARITY:
+                        continue
+                    
+                    artists = item.get('artists', [])
+                    artist_name = artists[0]['name'] if artists else 'Unknown'
+                    images = album.get('images', [])
+                    image_url = images[0]['url'] if images else None
+                    
+                    tracks.append({
+                        'id': item['id'],
+                        'name': track_name,
+                        'artist': artist_name,
+                        'album': album_name,
+                        'year': year,
+                        'image_url': image_url,
+                        'popularity': popularity,
+                        'spotify_id': item['id']
+                    })
+        except Exception:
+            pass
     
-    # Sort by popularity and only verify album dates for top 15 candidates
-    candidates.sort(key=lambda x: x.get('rank', 0), reverse=True)
+    # Sort by popularity
+    tracks.sort(key=lambda x: x.get('popularity', 0), reverse=True)
     
-    valid_tracks = []
-    albums_checked = {}  # Cache album lookups
+    result = tracks[:50]  # Return top 50 for variety
+    _tracks_cache[year] = result
+    return result
+
+
+def _fetch_deezer_preview(track: Dict) -> Tuple[Dict, Optional[str]]:
+    """Helper to fetch Deezer preview for a track (used in parallel)"""
+    preview_url = get_deezer_preview(track['artist'], track['name'])
+    return (track, preview_url)
+
+
+def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
+    """Get a random popular song from the specified year range using Spotify + Deezer"""
+    years_to_try = list(range(start_year, end_year + 1))
+    random.shuffle(years_to_try)
     
-    for track in candidates[:15]:  # Only check top 15 to limit API calls
-        album_id = track['album']['id']
+    for year in years_to_try[:3]:  # Try up to 3 years (reduced for speed)
+        tracks = get_songs_from_spotify(year)
         
-        # Check cache first
-        if album_id in albums_checked:
-            album_year = albums_checked[album_id]
-        else:
-            # Fetch album details
-            album_year = None
-            try:
-                album_url = f"https://api.deezer.com/album/{album_id}"
-                album_response = requests.get(album_url, timeout=5)
-                if album_response.status_code == 200:
-                    album_data = album_response.json()
-                    release_date = album_data.get('release_date', '')
-                    if '-' in str(release_date):
-                        album_year = int(str(release_date).split('-')[0])
-                    elif str(release_date).isdigit():
-                        album_year = int(release_date)
-            except Exception:
-                pass
-            albums_checked[album_id] = album_year
+        if not tracks:
+            continue
         
-        # Only include if album year matches requested year
-        if album_year == year:
-            valid_tracks.append({
-                'id': track['id'],
-                'name': strip_numbers_from_title(track['title']),
-                'artist': track['artist']['name'],
-                'album': track['album']['title'],
-                'preview_url': track['preview'],
-                'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
-                'release_date': str(year),
-                'rank': track.get('rank', 0)
-            })
+        # Shuffle and pick candidates
+        random.shuffle(tracks)
+        candidates = tracks[:8]  # Check 8 tracks in parallel
         
-        # Stop once we have enough verified tracks
-        if len(valid_tracks) >= 10:
-            break
+        # Fetch Deezer previews in parallel for speed
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(_fetch_deezer_preview, t): t for t in candidates}
+            
+            for future in as_completed(futures):
+                try:
+                    track, preview_url = future.result()
+                    if preview_url:
+                        # Cancel remaining futures
+                        for f in futures:
+                            f.cancel()
+                        return {
+                            'id': track['id'],
+                            'name': strip_numbers_from_title(track['name']),
+                            'artist': track['artist'],
+                            'album': track['album'],
+                            'year': track['year'],
+                            'preview_url': preview_url,
+                            'image_url': track['image_url'],
+                            'deezer_url': f"https://open.spotify.com/track/{track['spotify_id']}"
+                        }
+                except Exception:
+                    continue
     
-    return valid_tracks
+    return None
 
 
 def blur_image(image_url: str, blur_amount: int) -> str:
@@ -231,107 +391,6 @@ def blur_image(image_url: str, blur_amount: int) -> str:
     except Exception as e:
         st.error(f"Error loading image: {e}")
         return ""
-
-
-def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
-    """Get a random popular song from the specified year range using Deezer"""
-    # Shuffle all years in range to try them randomly
-    years_to_try = list(range(start_year, end_year + 1))
-    random.shuffle(years_to_try)
-    
-    # Try each year until we find songs
-    for year in years_to_try[:10]:  # Limit to 10 attempts for performance
-        # Get popular songs from Deezer
-        tracks = get_popular_songs_by_year(year)
-
-        if not tracks:
-            continue
-
-        # Sort by rank (popularity) and pick from top 30 most popular for variety
-        tracks_sorted = sorted(tracks, key=lambda x: x.get('rank', 0), reverse=True)
-        top_tracks = tracks_sorted[:30]
-
-        if not top_tracks:
-            continue
-
-        track = random.choice(top_tracks)
-
-        # Parse year from release date
-        release_date = track['release_date']
-        try:
-            if '-' in release_date:
-                actual_year = int(release_date.split('-')[0])
-            else:
-                actual_year = int(release_date) if release_date.isdigit() else year
-        except:  # noqa: E722
-            actual_year = year
-
-        return {
-            'id': track['id'],
-            'name': track['name'],
-            'artist': track['artist'],
-            'album': track['album'],
-            'year': actual_year,
-            'preview_url': track['preview_url'],
-            'image_url': track['image_url'],
-            'deezer_url': f"https://www.deezer.com/track/{track['id']}"
-        }
-    
-    # Fallback: if no popular songs found, try a simpler search with fewer API calls
-    for year in years_to_try[:3]:  # Reduced from 5 to 3
-        try:
-            search_url = f"https://api.deezer.com/search?q=year:{year}&limit=30"
-            response = requests.get(search_url, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                # Filter: must have preview and not be a compilation/remaster
-                # Also skip legacy artists in modern years
-                tracks = []
-                for t in data.get('data', []):
-                    artist_name = t['artist']['name'].lower()
-                    is_legacy = artist_name in LEGACY_ARTISTS
-                    if is_legacy and year > 1999:
-                        continue
-                    if (t.get('preview') 
-                        and not is_compilation_or_remaster(t['album']['title'])
-                        and not is_compilation_or_remaster(t['title'])):
-                        tracks.append(t)
-                
-                if tracks:
-                    # Sort by rank and pick from top
-                    tracks_sorted = sorted(tracks, key=lambda x: x.get('rank', 0), reverse=True)
-                    
-                    # Only check top 3 tracks to minimize API calls
-                    for track in tracks_sorted[:3]:
-                        album_id = track['album']['id']
-                        try:
-                            album_url = f"https://api.deezer.com/album/{album_id}"
-                            album_response = requests.get(album_url, timeout=5)
-                            if album_response.status_code == 200:
-                                album_data = album_response.json()
-                                album_release_date = album_data.get('release_date', '')
-                                if '-' in str(album_release_date):
-                                    album_year = int(str(album_release_date).split('-')[0])
-                                else:
-                                    album_year = int(album_release_date) if str(album_release_date).isdigit() else None
-                                
-                                if album_year == year:
-                                    return {
-                                        'id': track['id'],
-                                        'name': strip_numbers_from_title(track['title']),
-                                        'artist': track['artist']['name'],
-                                        'album': track['album']['title'],
-                                        'year': year,
-                                        'preview_url': track['preview'],
-                                        'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
-                                        'deezer_url': f"https://www.deezer.com/track/{track['id']}"
-                                    }
-                        except Exception:
-                            pass
-        except Exception:
-            pass
-    
-    return None
 
 
 def calculate_score(guess: int, actual: int, time_taken: int, hints_used: int) -> int:
@@ -475,9 +534,12 @@ def render_game_interface():
     if not st.session_state.game_over:
         st_autorefresh(interval=1000, key="game_timer")
 
-    # Initialize timer immediately when song loads
+    # Timer starts after a short delay to allow audio to load and start playing
+    # We use song_loaded_time + 2 seconds as a reasonable estimate for audio start
     if st.session_state.start_time is None and st.session_state.song_loaded_time is not None:
-        st.session_state.start_time = time.time()
+        # Give 2 seconds for audio to buffer and start
+        if time.time() - st.session_state.song_loaded_time >= 2:
+            st.session_state.start_time = time.time()
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
@@ -515,7 +577,7 @@ def render_game_interface():
     # Audio player
     if song['preview_url']:
         if not st.session_state.game_over:
-            # During gameplay - autoplay with JavaScript
+            # During gameplay - autoplay with JavaScript that notifies when playback starts
             audio_html = f'''
             <html>
             <body style="margin:0; padding:0; background: transparent;">
@@ -526,7 +588,20 @@ def render_game_interface():
             <script>
                 var audio = document.getElementById('gameAudio');
                 audio.volume = 1.0;
-                audio.play();
+                
+                // Notify Streamlit when audio actually starts playing
+                audio.addEventListener('playing', function() {{
+                    // Store the play start time in sessionStorage
+                    if (!sessionStorage.getItem('audioStarted_{song["id"]}')) {{
+                        sessionStorage.setItem('audioStarted_{song["id"]}', Date.now());
+                        // Force a Streamlit rerun to start the timer
+                        window.parent.postMessage({{type: 'streamlit:rerun'}}, '*');
+                    }}
+                }});
+                
+                audio.play().catch(function(e) {{
+                    console.log('Autoplay prevented:', e);
+                }});
             </script>
             </body>
             </html>
