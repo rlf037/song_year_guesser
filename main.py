@@ -71,6 +71,28 @@ st.markdown(
         border-radius: 15px;
         margin: 1em 0;
     }
+    .status-line {
+        text-align: center;
+        padding: 0.5em 1em;
+        background: linear-gradient(90deg, #667eea20 0%, #764ba220 100%);
+        border-radius: 8px;
+        margin: 0.5em 0;
+        font-size: 0.9em;
+        color: #667eea;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    .countdown-urgent {
+        animation: shake 0.5s infinite;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px); }
+        75% { transform: translateX(2px); }
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -118,10 +140,13 @@ COMPILATION_KEYWORDS = [
 ]
 
 # Minimum Spotify popularity to be considered (0-100 scale)
-MIN_SPOTIFY_POPULARITY = 80
+MIN_SPOTIFY_POPULARITY = 85
 
 # Maximum time allowed for guessing (seconds)
 MAX_GUESS_TIME = 60
+
+# List of major English-speaking music markets
+ENGLISH_MARKETS = ["US", "GB", "AU", "CA"]
 
 
 def is_compilation_or_remaster(text: str) -> bool:
@@ -250,14 +275,29 @@ def search_top_hits_playlist(year: int, token: str) -> str | None:
 def is_likely_english(track_name: str, artist_name: str) -> bool:
     """Check if track is likely English based on character analysis"""
     text = f"{track_name} {artist_name}"
-    # Check for non-Latin characters (CJK, Cyrillic, Arabic, etc.)
-    non_latin_pattern = re.compile(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\u0400-\u04ff\u0600-\u06ff\u0e00-\u0e7f\uac00-\ud7af]')
+    # Check for non-Latin characters (CJK, Cyrillic, Arabic, Hebrew, Thai, Korean, etc.)
+    non_latin_pattern = re.compile(
+        r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\u0400-\u04ff\u0600-\u06ff\u0e00-\u0e7f\uac00-\ud7af\u0590-\u05ff]"
+    )
     if non_latin_pattern.search(text):
         return False
-    # Check for excessive accented characters (might be Spanish, Portuguese, etc.)
-    accented_count = len(re.findall(r'[àáâãäåèéêëìíîïòóôõöùúûüñç]', text.lower()))
-    if accented_count > len(text) * 0.15:  # More than 15% accented chars
+    # Check for excessive accented characters (might be Spanish, Portuguese, French, etc.)
+    accented_count = len(re.findall(r"[àáâãäåèéêëìíîïòóôõöùúûüñçøæœßðþ]", text.lower()))
+    if len(text) > 0 and accented_count > len(text) * 0.1:  # More than 10% accented chars
         return False
+    # Check for common non-English title patterns
+    non_english_patterns = [
+        r"\b(el|la|los|las|del|de la)\b",  # Spanish
+        r"\b(le|la|les|du|de la|des)\b",  # French
+        r"\b(der|die|das|ein|eine)\b",  # German
+        r"\b(il|lo|la|gli|le|del|della)\b",  # Italian
+        r"\b(o|a|os|as|do|da|dos|das)\b",  # Portuguese
+    ]
+    text_lower = text.lower()
+    for pattern in non_english_patterns:
+        # Only flag if it looks like a title with multiple matches
+        if re.search(pattern, text_lower) and len(re.findall(pattern, text_lower)) > 1:
+            return False
     return True
 
 
@@ -283,7 +323,9 @@ def get_songs_from_spotify(year: int) -> list[dict]:
     if playlist_id:
         # Get tracks from the playlist
         try:
-            playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100&market=US"
+            playlist_url = (
+                f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100&market=US"
+            )
             response = requests.get(playlist_url, headers=headers, timeout=10)
 
             if response.status_code == 200:
@@ -342,7 +384,9 @@ def get_songs_from_spotify(year: int) -> list[dict]:
     # Fallback: search for popular tracks from that year
     if not tracks:
         try:
-            search_url = f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
+            search_url = (
+                f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
+            )
             response = requests.get(search_url, headers=headers, timeout=10)
 
             if response.status_code == 200:
@@ -567,7 +611,9 @@ def initialize_game_state():
 
 def start_new_game(start_year: int, end_year: int):
     """Start a new game round"""
-    st.session_state.status_message = "Loading song..."
+    # Show loading state
+    st.session_state.status_message = "🔍 Searching for a song..."
+
     song = get_random_song(start_year, end_year)
 
     if song is None:
@@ -575,12 +621,18 @@ def start_new_game(start_year: int, end_year: int):
         st.session_state.status_message = ""
         return
 
+    # Preload and cache the album image at max blur
+    if song.get("image_url"):
+        st.session_state.status_message = "🎨 Loading album artwork..."
+        blur_image(song["image_url"], 25)  # Pre-cache blurred version
+        blur_image(song["image_url"], 0)  # Pre-cache clear version
+
     # Increment round counter
     st.session_state.current_round += 1
 
     st.session_state.current_song = song
     st.session_state.game_active = True
-    st.session_state.start_time = None  # Timer starts when audio plays
+    st.session_state.start_time = None  # Timer starts when user clicks "Start Timer"
     st.session_state.hints_revealed = 0
     st.session_state.game_over = False
     st.session_state.timed_out = False
@@ -588,7 +640,9 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.year_options = generate_year_options(song["year"])
     st.session_state.audio_started = False
     st.session_state.song_loaded_time = None
-    st.session_state.status_message = "Press play to start!"
+    st.session_state.status_message = (
+        "🎵 Click play on the audio player, then click 'I'm Ready!' to start the timer"
+    )
 
 
 def reveal_hint():
@@ -611,7 +665,9 @@ def make_guess(guess_year: int, timed_out: bool = False):
         score = 0
         st.session_state.timed_out = True
     else:
-        score = calculate_score(guess_year, song["year"], time_taken, st.session_state.hints_revealed)
+        score = calculate_score(
+            guess_year, song["year"], time_taken, st.session_state.hints_revealed
+        )
 
     # Add to player scores
     st.session_state.player_scores.append(
@@ -637,12 +693,12 @@ def render_game_interface():
     if not song:
         return
 
-    # Auto-refresh every 500ms to update timer (only when game is active and timer started)
+    # Auto-refresh every 1 second to update timer (only when timer is running)
     if not st.session_state.game_over and st.session_state.audio_started:
-        st_autorefresh(interval=500, key="game_timer")
+        st_autorefresh(interval=1000, key="game_timer")
 
     # Display round counter
-    st.markdown(f"### Round {st.session_state.current_round}")
+    st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
     # Calculate elapsed time
     if st.session_state.start_time is not None:
@@ -660,14 +716,31 @@ def render_game_interface():
 
     # Display timer with remaining time (countdown style when active)
     if st.session_state.audio_started and not st.session_state.game_over:
-        timer_color = "#667eea" if remaining > 10 else "#ff4444"
-        st.markdown(f'<div class="timer" style="color: {timer_color};">⏱️ {remaining}s remaining</div>', unsafe_allow_html=True)
+        if remaining <= 10:
+            timer_class = "timer countdown-urgent"
+            timer_color = "#ff4444"
+        elif remaining <= 20:
+            timer_color = "#ff8844"
+            timer_class = "timer"
+        else:
+            timer_color = "#667eea"
+            timer_class = "timer"
+        st.markdown(
+            f'<div class="{timer_class}" style="color: {timer_color};">⏱️ {remaining}s remaining</div>',
+            unsafe_allow_html=True,
+        )
     elif not st.session_state.game_over:
-        st.markdown('<div class="timer" style="color: #888;">⏱️ Waiting for audio...</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="timer" style="color: #888;">⏱️ Ready when you are!</div>',
+            unsafe_allow_html=True,
+        )
 
-    # Status line
+    # Status line with styled message
     if st.session_state.status_message and not st.session_state.game_over:
-        st.info(st.session_state.status_message)
+        st.markdown(
+            f'<div class="status-line">{st.session_state.status_message}</div>',
+            unsafe_allow_html=True,
+        )
 
     # Calculate progressive blur based on time (starts at 25, decreases to 0 over 30 seconds)
     if not st.session_state.game_over:
@@ -693,70 +766,62 @@ def render_game_interface():
 
     st.write("")
 
-    # Audio player with play detection
+    # Audio player
     if song["preview_url"]:
-        if not st.session_state.game_over:
-            # Use query params to detect when user clicks play
-            # The audio will start timer when user interacts
-            audio_html = f'''
-            <html>
-            <body style="margin:0; padding:0; background: transparent;">
-            <audio id="gameAudio" controls style="width: 100%; border-radius: 10px;">
-                <source src="{song["preview_url"]}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-            <script>
-                var audio = document.getElementById('gameAudio');
-                audio.volume = 1.0;
+        # Audio player HTML - works during game and after
+        audio_style = (
+            "margin:0; padding:0; background: transparent;"
+            if not st.session_state.game_over
+            else "margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;"
+        )
+        audio_html = f'''
+        <html>
+        <body style="{audio_style}">
+        <audio id="gameAudio" controls style="width: 100%; border-radius: 10px;">
+            <source src="{song["preview_url"]}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        <script>
+            var audio = document.getElementById('gameAudio');
+            audio.volume = 1.0;
+        </script>
+        </body>
+        </html>
+        '''
+        components.html(audio_html, height=60 if not st.session_state.game_over else 70)
 
-                audio.addEventListener('play', function() {{
-                    // Signal to Streamlit that audio started by updating URL
-                    var currentUrl = new URL(window.parent.location.href);
-                    if (!currentUrl.searchParams.has('audio_started')) {{
-                        currentUrl.searchParams.set('audio_started', 'true');
-                        window.parent.history.replaceState(null, '', currentUrl.toString());
-                        // Trigger rerun
-                        window.parent.postMessage({{type: 'streamlit:setComponentValue', value: true}}, '*');
-                        setTimeout(function() {{
-                            window.parent.location.reload();
-                        }}, 100);
-                    }}
-                }});
-            </script>
-            </body>
-            </html>
-            '''
-            components.html(audio_html, height=60)
-
-            # Check if audio started via query param
-            query_params = st.query_params
-            if query_params.get("audio_started") == "true" and not st.session_state.audio_started:
-                st.session_state.audio_started = True
-                st.session_state.start_time = time.time()
-                st.session_state.status_message = "Listening... make your guess!"
-                # Clear the query param
-                st.query_params.clear()
-                st.rerun()
-        else:
-            # After guess - styled player without autoplay
-            audio_html = f'''
-            <html>
-            <body style="margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
-            <audio id="gameAudio" controls style="width: 100%; border-radius: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
-                <source src="{song["preview_url"]}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-            </body>
-            </html>
-            '''
-            components.html(audio_html, height=70)
+        # "I'm Ready" button to start the timer (only show before timer starts)
+        if not st.session_state.game_over and not st.session_state.audio_started:
+            st.write("")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "🎧 I'm Ready - Start Timer!",
+                    type="primary",
+                    use_container_width=True,
+                    key="start_timer",
+                ):
+                    st.session_state.audio_started = True
+                    st.session_state.start_time = time.time()
+                    st.session_state.status_message = "⏱️ Timer started! Make your guess!"
+                    st.rerun()
     else:
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
-        # Start timer immediately if no preview
-        if not st.session_state.audio_started:
-            st.session_state.audio_started = True
-            st.session_state.start_time = time.time()
+        # Show ready button even without preview
+        if not st.session_state.audio_started and not st.session_state.game_over:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "🎧 I'm Ready - Start Timer!",
+                    type="primary",
+                    use_container_width=True,
+                    key="start_timer_no_audio",
+                ):
+                    st.session_state.audio_started = True
+                    st.session_state.start_time = time.time()
+                    st.session_state.status_message = "⏱️ Timer started! Make your guess!"
+                    st.rerun()
 
     st.write("")
 
@@ -782,27 +847,32 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
 
-    # Hint button (only show during active gameplay)
-    if not st.session_state.game_over:
+    # Hint button (only show during active gameplay when timer is running)
+    if not st.session_state.game_over and st.session_state.audio_started:
         st.write("")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.session_state.hints_revealed < 3:
+                hint_labels = ["Album", "Artist", "Song Title"]
+                next_hint = hint_labels[st.session_state.hints_revealed]
                 if st.button(
-                    f"💡 Reveal Hint ({st.session_state.hints_revealed}/3)",
+                    f"💡 Reveal {next_hint} ({st.session_state.hints_revealed}/3 hints used)",
                     use_container_width=True,
+                    key=f"hint_btn_{st.session_state.hints_revealed}",
                 ):
                     reveal_hint()
-                    st.session_state.status_message = f"Hint {st.session_state.hints_revealed} revealed! (-100 points)"
+                    st.session_state.status_message = f"💡 {next_hint} revealed! (-100 points)"
                     st.rerun()
             else:
-                st.info("All hints revealed!")
+                st.markdown(
+                    '<div class="status-line">All hints revealed!</div>', unsafe_allow_html=True
+                )
 
     st.write("")
 
-    # Year guessing interface with slider (constrained to sidebar year range)
-    if not st.session_state.game_over:
-        st.markdown("### What year was this song released?")
+    # Year guessing interface with slider (only show when timer is running)
+    if not st.session_state.game_over and st.session_state.audio_started:
+        st.markdown("### 📅 What year was this song released?")
 
         guess_year = st.slider(
             "Year",
@@ -817,7 +887,7 @@ def render_game_interface():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button(
-                "Submit Guess", type="primary", use_container_width=True, key="submit_guess"
+                "🎯 Submit Guess", type="primary", use_container_width=True, key="submit_guess"
             ):
                 make_guess(guess_year)
                 st.rerun()
@@ -838,16 +908,16 @@ def render_game_interface():
 
                 if year_diff == 0:
                     st.balloons()
-                    st.markdown("# PERFECT!")
+                    st.markdown("# 🎉 PERFECT!")
                     st.markdown("## You got it exactly right!")
                 elif year_diff <= 2:
-                    st.markdown("# Excellent!")
+                    st.markdown("# 🎵 Excellent!")
                     st.markdown(f"## Off by only {year_diff} year{'s' if year_diff > 1 else ''}!")
                 elif year_diff <= 5:
-                    st.markdown("# Good job!")
+                    st.markdown("# 🎶 Good job!")
                     st.markdown(f"## Close! Off by {year_diff} years.")
                 else:
-                    st.markdown("# Nice try!")
+                    st.markdown("# 🎸 Nice try!")
                     st.markdown(f"## Off by {year_diff} years.")
 
         st.markdown(f"### The correct answer: **{song['year']}**")
@@ -877,14 +947,11 @@ def render_game_interface():
         # Next song and end game buttons
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Next Song", type="primary", use_container_width=True, key="next_song"):
-                # Clear query params and load new song
-                st.query_params.clear()
+            if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
                 start_new_game(st.session_state.start_year, st.session_state.end_year)
                 st.rerun()
         with col2:
-            if st.button("End Game", use_container_width=True, key="end_game"):
-                st.query_params.clear()
+            if st.button("🏁 End Game", use_container_width=True, key="end_game"):
                 st.session_state.game_active = False
                 st.session_state.game_over = False
                 st.session_state.current_round = 0
