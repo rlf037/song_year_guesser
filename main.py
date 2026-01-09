@@ -632,17 +632,15 @@ def start_new_game(start_year: int, end_year: int):
 
     st.session_state.current_song = song
     st.session_state.game_active = True
-    st.session_state.start_time = None  # Timer starts when user clicks "Start Timer"
+    st.session_state.start_time = time.time()  # Timer starts immediately
     st.session_state.hints_revealed = 0
     st.session_state.game_over = False
     st.session_state.timed_out = False
     st.session_state.blur_level = 25
     st.session_state.year_options = generate_year_options(song["year"])
-    st.session_state.audio_started = False
-    st.session_state.song_loaded_time = None
-    st.session_state.status_message = (
-        "🎵 Click play on the audio player, then click 'I'm Ready!' to start the timer"
-    )
+    st.session_state.audio_started = True  # Audio auto-plays
+    st.session_state.song_loaded_time = time.time()
+    st.session_state.status_message = "🎵 Listening... make your guess!"
 
 
 def reveal_hint():
@@ -693,45 +691,52 @@ def render_game_interface():
     if not song:
         return
 
-    # Auto-refresh every 1 second to update timer (only when timer is running)
+    # Auto-refresh every 100ms to update timer with milliseconds
     if not st.session_state.game_over and st.session_state.audio_started:
-        st_autorefresh(interval=1000, key="game_timer")
+        st_autorefresh(interval=100, key="game_timer")
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
-    # Calculate elapsed time
+    # Calculate elapsed time with milliseconds
     if st.session_state.start_time is not None:
         elapsed_float = time.time() - st.session_state.start_time
-        elapsed = int(elapsed_float)
-        remaining = max(0, MAX_GUESS_TIME - elapsed)
+        elapsed_seconds = int(elapsed_float)
+        elapsed_ms = int((elapsed_float - elapsed_seconds) * 10)  # Single digit for cleaner display
+        elapsed = elapsed_seconds  # For blur calculation
     else:
+        elapsed_float = 0
+        elapsed_seconds = 0
+        elapsed_ms = 0
         elapsed = 0
-        remaining = MAX_GUESS_TIME
 
-    # Check for timeout
-    if not st.session_state.game_over and st.session_state.audio_started and remaining <= 0:
+    # Check for timeout (60 seconds max)
+    if (
+        not st.session_state.game_over
+        and st.session_state.audio_started
+        and elapsed_seconds >= MAX_GUESS_TIME
+    ):
         make_guess(0, timed_out=True)
         st.rerun()
 
-    # Display timer with remaining time (countdown style when active)
+    # Display timer counting UP with milliseconds
     if st.session_state.audio_started and not st.session_state.game_over:
-        if remaining <= 10:
+        if elapsed_seconds >= 50:
             timer_class = "timer countdown-urgent"
             timer_color = "#ff4444"
-        elif remaining <= 20:
+        elif elapsed_seconds >= 40:
             timer_color = "#ff8844"
             timer_class = "timer"
         else:
             timer_color = "#667eea"
             timer_class = "timer"
         st.markdown(
-            f'<div class="{timer_class}" style="color: {timer_color};">⏱️ {remaining}s remaining</div>',
+            f'<div class="{timer_class}" style="color: {timer_color};">⏱️ {elapsed_seconds}.{elapsed_ms}s</div>',
             unsafe_allow_html=True,
         )
     elif not st.session_state.game_over:
         st.markdown(
-            '<div class="timer" style="color: #888;">⏱️ Ready when you are!</div>',
+            '<div class="timer" style="color: #667eea;">⏱️ 0.0s</div>',
             unsafe_allow_html=True,
         )
 
@@ -766,62 +771,44 @@ def render_game_interface():
 
     st.write("")
 
-    # Audio player
+    # Audio player with autoplay
     if song["preview_url"]:
-        # Audio player HTML - works during game and after
-        audio_style = (
-            "margin:0; padding:0; background: transparent;"
-            if not st.session_state.game_over
-            else "margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;"
-        )
-        audio_html = f'''
-        <html>
-        <body style="{audio_style}">
-        <audio id="gameAudio" controls style="width: 100%; border-radius: 10px;">
-            <source src="{song["preview_url"]}" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-        <script>
-            var audio = document.getElementById('gameAudio');
-            audio.volume = 1.0;
-        </script>
-        </body>
-        </html>
-        '''
-        components.html(audio_html, height=60 if not st.session_state.game_over else 70)
-
-        # "I'm Ready" button to start the timer (only show before timer starts)
-        if not st.session_state.game_over and not st.session_state.audio_started:
-            st.write("")
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button(
-                    "🎧 I'm Ready - Start Timer!",
-                    type="primary",
-                    use_container_width=True,
-                    key="start_timer",
-                ):
-                    st.session_state.audio_started = True
-                    st.session_state.start_time = time.time()
-                    st.session_state.status_message = "⏱️ Timer started! Make your guess!"
-                    st.rerun()
+        if not st.session_state.game_over:
+            # During gameplay - autoplay
+            audio_html = f'''
+            <html>
+            <body style="margin:0; padding:0; background: transparent;">
+            <audio id="gameAudio" controls autoplay style="width: 100%; border-radius: 10px;">
+                <source src="{song["preview_url"]}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            <script>
+                var audio = document.getElementById('gameAudio');
+                audio.volume = 1.0;
+                audio.play().catch(function(e) {{
+                    console.log('Autoplay prevented:', e);
+                }});
+            </script>
+            </body>
+            </html>
+            '''
+            components.html(audio_html, height=60)
+        else:
+            # After guess - styled player without autoplay
+            audio_html = f'''
+            <html>
+            <body style="margin:0; padding:10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+            <audio id="gameAudio" controls style="width: 100%; border-radius: 8px;">
+                <source src="{song["preview_url"]}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            </body>
+            </html>
+            '''
+            components.html(audio_html, height=70)
     else:
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
-        # Show ready button even without preview
-        if not st.session_state.audio_started and not st.session_state.game_over:
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button(
-                    "🎧 I'm Ready - Start Timer!",
-                    type="primary",
-                    use_container_width=True,
-                    key="start_timer_no_audio",
-                ):
-                    st.session_state.audio_started = True
-                    st.session_state.start_time = time.time()
-                    st.session_state.status_message = "⏱️ Timer started! Make your guess!"
-                    st.rerun()
 
     st.write("")
 
@@ -847,8 +834,8 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
 
-    # Hint button (only show during active gameplay when timer is running)
-    if not st.session_state.game_over and st.session_state.audio_started:
+    # Hint button (show during active gameplay)
+    if not st.session_state.game_over:
         st.write("")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -870,8 +857,8 @@ def render_game_interface():
 
     st.write("")
 
-    # Year guessing interface with slider (only show when timer is running)
-    if not st.session_state.game_over and st.session_state.audio_started:
+    # Year guessing interface with slider
+    if not st.session_state.game_over:
         st.markdown("### 📅 What year was this song released?")
 
         guess_year = st.slider(
