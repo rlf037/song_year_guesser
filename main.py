@@ -185,7 +185,7 @@ def get_spotify_token() -> str | None:
             "https://accounts.spotify.com/api/token",
             headers={"Authorization": f"Basic {auth_b64}"},
             data={"grant_type": "client_credentials"},
-            timeout=10,
+            timeout=5,
         )
 
         if response.status_code == 200:
@@ -199,21 +199,33 @@ def get_spotify_token() -> str | None:
     return None
 
 
+# Cache for Deezer preview URLs to avoid repeated API calls
+_deezer_preview_cache: dict[str, str | None] = {}
+
+
 def get_deezer_preview(artist: str, track: str) -> str | None:
-    """Find a Deezer preview URL for a song"""
+    """Find a Deezer preview URL for a song. Uses cache for performance."""
+    cache_key = f"{artist}|{track}".lower()
+
+    # Check cache first
+    if cache_key in _deezer_preview_cache:
+        return _deezer_preview_cache[cache_key]
+
     try:
         query = f"{artist} {track}"
         search_url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=5"
-        response = requests.get(search_url, timeout=5)
+        response = requests.get(search_url, timeout=3)  # Reduced timeout for faster response
 
         if response.status_code == 200:
             data = response.json()
             for result in data.get("data", []):
                 if result.get("preview"):
+                    _deezer_preview_cache[cache_key] = result["preview"]
                     return result["preview"]
     except Exception:
         pass
 
+    _deezer_preview_cache[cache_key] = None
     return None
 
 
@@ -240,7 +252,7 @@ def search_top_hits_playlist(year: int, token: str) -> str | None:
     try:
         query = f"Top Hits {year}"
         search_url = f"https://api.spotify.com/v1/search?q={requests.utils.quote(query)}&type=playlist&limit=20"
-        response = requests.get(search_url, headers=headers, timeout=10)
+        response = requests.get(search_url, headers=headers, timeout=5)
 
         if response.status_code == 200:
             data = response.json()
@@ -326,7 +338,7 @@ def get_songs_from_spotify(year: int) -> list[dict]:
             playlist_url = (
                 f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100&market=US"
             )
-            response = requests.get(playlist_url, headers=headers, timeout=10)
+            response = requests.get(playlist_url, headers=headers, timeout=5)
 
             if response.status_code == 200:
                 data = response.json()
@@ -387,7 +399,7 @@ def get_songs_from_spotify(year: int) -> list[dict]:
             search_url = (
                 f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
             )
-            response = requests.get(search_url, headers=headers, timeout=10)
+            response = requests.get(search_url, headers=headers, timeout=5)
 
             if response.status_code == 200:
                 data = response.json()
@@ -450,23 +462,34 @@ def _fetch_deezer_preview(track: dict) -> tuple[dict, str | None]:
     return (track, preview_url)
 
 
-def get_random_song(start_year: int, end_year: int) -> dict | None:
-    """Get a random popular song from the specified year range using Spotify + Deezer"""
+def get_random_song(start_year: int, end_year: int, played_ids: set | None = None) -> dict | None:
+    """Get a random popular song from the specified year range using Spotify + Deezer.
+    Excludes songs with IDs in played_ids to prevent repeats within a session.
+    """
+    if played_ids is None:
+        played_ids = set()
+
     years_to_try = list(range(start_year, end_year + 1))
     random.shuffle(years_to_try)
 
-    for year in years_to_try[:3]:  # Try up to 3 years (reduced for speed)
+    for year in years_to_try:  # Try all years if needed
         tracks = get_songs_from_spotify(year)
 
         if not tracks:
             continue
 
+        # Filter out already played songs
+        available_tracks = [t for t in tracks if t["id"] not in played_ids]
+
+        if not available_tracks:
+            continue
+
         # Shuffle and pick candidates
-        random.shuffle(tracks)
-        candidates = tracks[:8]  # Check 8 tracks in parallel
+        random.shuffle(available_tracks)
+        candidates = available_tracks[:10]  # Check 10 tracks in parallel for better success rate
 
         # Fetch Deezer previews in parallel for speed
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=6) as executor:
             futures = {executor.submit(_fetch_deezer_preview, t): t for t in candidates}
 
             for future in as_completed(futures):
@@ -507,7 +530,7 @@ def blur_image(image_url: str, blur_amount: int) -> str:
             img_data = base64.b64decode(_image_cache[original_key])
             img = Image.open(io.BytesIO(img_data))
         else:
-            response = requests.get(image_url, timeout=5)
+            response = requests.get(image_url, timeout=3)
             img = Image.open(io.BytesIO(response.content))
             # Cache original
             buffered = io.BytesIO()
@@ -597,6 +620,10 @@ def initialize_game_state():
         st.session_state.end_year = 2010
     if "current_round" not in st.session_state:
         st.session_state.current_round = 0
+    if "played_song_ids" not in st.session_state:
+        st.session_state.played_song_ids = set()  # Track played songs to prevent repeats
+    if "next_song_cache" not in st.session_state:
+        st.session_state.next_song_cache = None  # Pre-fetched next song for instant loading
     if "session_scores" not in st.session_state:
         st.session_state.session_scores = []
     if "audio_started" not in st.session_state:
@@ -609,19 +636,52 @@ def initialize_game_state():
         st.session_state.status_message = ""
 
 
+def prefetch_next_song(start_year: int, end_year: int):
+    """Prefetch the next song in background for instant loading"""
+    played_ids = st.session_state.get("played_song_ids", set())
+    next_song = get_random_song(start_year, end_year, played_ids)
+    if next_song:
+        # Pre-cache images
+        if next_song.get("image_url"):
+            blur_image(next_song["image_url"], 25)
+            blur_image(next_song["image_url"], 0)
+        st.session_state.next_song_cache = next_song
+
+
 def start_new_game(start_year: int, end_year: int):
     """Start a new game round"""
-    # Show loading state
-    st.session_state.status_message = "🔍 Searching for a song..."
+    # Check if we have a prefetched song ready
+    song = st.session_state.get("next_song_cache")
 
-    song = get_random_song(start_year, end_year)
+    # Verify prefetched song hasn't been played (edge case protection)
+    if song and song["id"] in st.session_state.get("played_song_ids", set()):
+        song = None
 
     if song is None:
-        st.error("Could not find a song in that year range. Try a different range!")
+        # Show loading state only if we need to fetch
+        st.session_state.status_message = "🔍 Searching for a song..."
+        played_ids = st.session_state.get("played_song_ids", set())
+        song = get_random_song(start_year, end_year, played_ids)
+
+    # Clear the prefetch cache
+    st.session_state.next_song_cache = None
+
+    if song is None:
+        # Check if we've exhausted all songs
+        played_count = len(st.session_state.get("played_song_ids", set()))
+        if played_count > 0:
+            st.warning(
+                f"You've played {played_count} songs! No more unique songs available in this range. Try expanding the year range or start a new session."
+            )
+        else:
+            st.error("Could not find a song in that year range. Try a different range!")
         st.session_state.status_message = ""
         return
 
-    # Preload and cache the album image at max blur
+    # Track this song as played
+    st.session_state.played_song_ids.add(song["id"])
+
+    # Preload and cache the album image at max blur (if not already cached)
     if song.get("image_url"):
         st.session_state.status_message = "🎨 Loading album artwork..."
         blur_image(song["image_url"], 25)  # Pre-cache blurred version
@@ -641,6 +701,9 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.audio_started = True  # Audio auto-plays
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Listening... make your guess!"
+
+    # Start prefetching the next song in background
+    prefetch_next_song(start_year, end_year)
 
 
 def reveal_hint():
@@ -959,7 +1022,14 @@ def render_game_interface():
         # Next song and end game buttons
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
+            # Show how many songs are available
+            played_count = len(st.session_state.get("played_song_ids", set()))
+            if st.button(
+                f"▶️ Next Song ({played_count} played)",
+                type="primary",
+                use_container_width=True,
+                key="next_song",
+            ):
                 start_new_game(st.session_state.start_year, st.session_state.end_year)
                 st.rerun()
         with col2:
@@ -967,6 +1037,8 @@ def render_game_interface():
                 st.session_state.game_active = False
                 st.session_state.game_over = False
                 st.session_state.current_round = 0
+                st.session_state.played_song_ids = set()  # Reset played songs for new session
+                st.session_state.next_song_cache = None
                 st.rerun()
 
 
@@ -1036,6 +1108,12 @@ def main():
         st.markdown("---")
         st.markdown("### 📊 Stats")
 
+        # Session stats
+        played_count = len(st.session_state.get("played_song_ids", set()))
+        year_range = end_year - start_year + 1
+        estimated_pool = year_range * 50  # ~50 songs per year
+        st.metric("Songs Played (Session)", f"{played_count} / ~{estimated_pool}")
+
         if st.session_state.player_scores:
             player_games = [s for s in st.session_state.player_scores if s["player"] == player_name]
             if player_games:
@@ -1072,6 +1150,8 @@ def main():
                 "🎵 Start New Game", type="primary", use_container_width=True, key="start_game"
             ):
                 st.session_state.current_round = 0  # Reset for new game
+                st.session_state.played_song_ids = set()  # Clear played songs for fresh session
+                st.session_state.next_song_cache = None  # Clear prefetch cache
                 start_new_game(start_year, end_year)
                 st.rerun()
 
