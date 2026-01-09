@@ -55,17 +55,6 @@ st.markdown("""
         color: #667eea;
         margin: 0.5em 0;
     }
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        font-size: 1.1em;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-    .year-button {
-        margin: 0.3em;
-    }
     .leaderboard {
         background: white;
         padding: 1em;
@@ -80,16 +69,6 @@ st.markdown("""
         background: #f0f2f6;
         border-radius: 15px;
         margin: 1em 0;
-    }
-    .stSlider {
-        padding-top: 0;
-        margin-top: 0;
-    }
-    .stSlider > div {
-        background: transparent !important;
-    }
-    .stSlider > div > div {
-        background: transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -274,7 +253,7 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
             'year': actual_year,
             'preview_url': track['preview_url'],
             'image_url': track['image_url'],
-            'spotify_url': f"https://www.deezer.com/track/{track['id']}"
+            'deezer_url': f"https://www.deezer.com/track/{track['id']}"
         }
     
     # Fallback: if no popular songs found, try a simpler search with fewer API calls
@@ -316,7 +295,7 @@ def get_random_song(start_year: int, end_year: int) -> Optional[Dict]:
                                         'year': year,
                                         'preview_url': track['preview'],
                                         'image_url': track['album'].get('cover_xl') or track['album'].get('cover_big'),
-                                        'spotify_url': f"https://www.deezer.com/track/{track['id']}"
+                                        'deezer_url': f"https://www.deezer.com/track/{track['id']}"
                                     }
                         except Exception:
                             pass
@@ -539,7 +518,7 @@ def render_game_interface():
             components.html(audio_html, height=70)
     else:
         st.warning("No audio preview available for this song")
-        st.markdown(f"[Listen on Deezer]({song['spotify_url']})")
+        st.markdown(f"[Listen on Deezer]({song['deezer_url']})")
 
     st.write("")
 
@@ -631,7 +610,7 @@ def render_game_interface():
             st.markdown(f"**Album:** {song['album']}")
             st.markdown(f"**Year:** {song['year']}")
 
-        st.markdown(f"[🎧 Listen on Deezer]({song['spotify_url']})")
+        st.markdown(f"[🎧 Listen on Deezer]({song['deezer_url']})")
 
         st.markdown("---")
 
