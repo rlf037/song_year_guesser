@@ -6,11 +6,26 @@ __pycache__/
 # C extensions
 *.so
 
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
+# Virtual environment
 .venv/
+
+# Streamlit secrets
 .streamlit/secrets.toml
+
+# IDE/Editor
 .vscode/
+.idea/
+
+# GitHub Copilot instructions (local development only)
 .github/
+
+# Spotify/API cache (contains tokens - sensitive!)
+.cache
 
 # Distribution / packaging
 .Python

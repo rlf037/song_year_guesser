@@ -2,11 +2,13 @@
 
 A fun and interactive web game built with Streamlit where players guess the release year of popular songs!
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://songyearguesser.streamlit.app)
+
 ## 🎮 Features
 
 ### Core Gameplay
-- **Random Song Selection**: Songs are randomly selected from popular tracks within your chosen year range
-- **Audio Playback**: Listen to 30-second Spotify preview clips
+- **Random Song Selection**: Songs randomly selected from popular tracks within your chosen year range
+- **Audio Playback**: Listen to 30-second preview clips with autoplay
 - **Progressive Artwork Reveal**: Album artwork starts blurred and gradually becomes clearer
 - **Multiple Choice & Custom Input**: Choose from 4 suggested years or enter your own guess
 - **Countdown Timer**: Track how long it takes you to make your guess
@@ -29,17 +31,16 @@ A fun and interactive web game built with Streamlit where players guess the rele
 - **Visual Feedback**: Balloons for perfect guesses, styled score cards
 - **Sidebar Settings**: Easy configuration for year range and player name
 
-## 🚀 Setup
+## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.8+
-- Spotify Developer Account
+### Play Online
+Visit the deployed app: **[songyearguesser.streamlit.app](https://songyearguesser.streamlit.app)**
 
-### Installation
+### Run Locally
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/rlf037/song_year_guesser.git
    cd song_year_guesser
    ```
 
@@ -48,23 +49,12 @@ A fun and interactive web game built with Streamlit where players guess the rele
    pip install -r requirements.txt
    ```
 
-3. **Set up Spotify API credentials**
-
-   a. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-
-   b. Create a new app to get your Client ID and Client Secret
-
-   c. Create a `.streamlit/secrets.toml` file in the project root:
-   ```toml
-   [spotify]
-   client_id = "your_spotify_client_id_here"
-   client_secret = "your_spotify_client_secret_here"
-   ```
-
-4. **Run the app**
+3. **Run the app**
    ```bash
    streamlit run main.py
    ```
+
+No API keys required! The app uses the free Deezer API for song data.
 
 ## 🎯 How to Play
 
@@ -72,7 +62,7 @@ A fun and interactive web game built with Streamlit where players guess the rele
 2. **Choose Year Range**: Select the start and end years for song selection
 3. **Start Game**: Click "Start New Game" button
 4. **Listen & Watch**:
-   - Listen to the 30-second preview
+   - Audio automatically plays when the song loads
    - Watch the album artwork gradually reveal
    - Timer starts counting!
 5. **Get Hints** (optional): Reveal album, artist, or song title (costs 100 points each)
@@ -85,85 +75,90 @@ A fun and interactive web game built with Streamlit where players guess the rele
 ## 🏆 Scoring System
 
 ### Accuracy Points (max 1000)
-- **Exact match**: 1000 points
-- **Off by 1 year**: 800 points
-- **Off by 2 years**: 600 points
-- **Off by 3 years**: 400 points
-- **Off by 4-5 years**: 200 points
-- **Off by 6+ years**: Decreasing points
+| Accuracy | Points |
+|----------|--------|
+| Exact match | 1000 |
+| Off by 1 year | 800 |
+| Off by 2 years | 600 |
+| Off by 3 years | 400 |
+| Off by 4-5 years | 200 |
+| Off by 6+ years | Decreasing |
 
 ### Speed Bonus (max 300)
 - Faster guesses earn more bonus points
-- Bonus = max(0, 300 - (time_in_seconds * 10))
+- Formula: `max(0, 300 - (seconds × 10))`
 
 ### Hint Penalty
-- Each hint used: -100 points
-- 3 hints available total
-
-## 📊 Features Breakdown
-
-### Progressive Reveal System
-- **Initial State**: Album artwork heavily blurred (blur radius: 25)
-- **Each Hint**: Blur reduces by 8 units
-- **Final State**: Fully clear artwork after all hints or game end
-
-### Song Selection Algorithm
-1. Random year selected from your specified range
-2. Searches Spotify for tracks from that year
-3. Sorts by popularity and selects from top 20 tracks
-4. Ensures you get well-known, popular songs
-
-### Multi-User System
-- Each player tracked independently
-- Leaderboard shows best performances across all players
-- Player stats in sidebar show personal performance
-- Session persists across multiple games
+- Each hint used: **-100 points**
+- 3 hints available: Album, Artist, Song Title
 
 ## 🛠️ Technical Stack
 
-- **Framework**: Streamlit
-- **Music API**: Spotify Web API (via Spotipy)
-- **Image Processing**: Pillow (PIL)
-- **State Management**: Streamlit Session State
+| Component | Technology |
+|-----------|------------|
+| Framework | Streamlit 1.41.1 |
+| Music API | Deezer (free, no auth required) |
+| Image Processing | Pillow (PIL) |
+| State Management | Streamlit Session State |
+| Deployment | Streamlit Cloud |
 
-## 📝 Configuration Options
+## 📁 Project Structure
 
-### Sidebar Settings
-- **Player Name**: Custom name for the current player (max 20 chars)
-- **Year Range**: Select from 1950 to current year
-- **Clear Leaderboard**: Reset all scores
+```
+song_year_guesser/
+├── main.py              # Main application code
+├── requirements.txt     # Python dependencies
+├── pyproject.toml       # Project configuration
+├── packages.txt         # System dependencies for Streamlit Cloud
+├── .python-version      # Python version for deployment
+├── .streamlit/          # Streamlit configuration (local)
+│   └── secrets.toml     # Local secrets (gitignored)
+├── LICENSE              # Apache 2.0 License
+└── README.md            # This file
+```
 
-### Default Settings
-- Start Year: 1980
-- End Year: 2020
-- Initial Player: "Player 1"
+## 🔧 Configuration
 
-## 🎨 Customization
+### Environment
+- **Python Version**: 3.11+ (specified in `.python-version`)
+- **Dependencies**: See `requirements.txt`
 
-The app uses custom CSS for styling. You can modify the colors and styles in the CSS section at the top of `main.py`:
-
-- Gradient colors: `#667eea` and `#764ba2`
-- Border radius, padding, shadows, etc.
+### Customization
+The app uses custom CSS for styling. Modify the colors in `main.py`:
+- Primary gradient: `#667eea` → `#764ba2`
+- Adjust blur levels, timing, and other UI elements
 
 ## 🐛 Troubleshooting
 
-### No audio preview available
-Some songs on Spotify don't have preview URLs. The app will show a link to listen on Spotify instead.
+### No audio playing
+- Some browsers block autoplay - click the play button manually
+- Ensure your volume is turned up
 
-### Error connecting to Spotify
-Verify your credentials in `.streamlit/secrets.toml` are correct.
+### No songs found for year range
+- Try expanding the year range
+- Some years have more songs available than others
 
-### No tracks found for year range
-Try expanding the year range or selecting a more recent time period.
+### Deployment issues
+- Ensure `.python-version` is set to `3.11`
+- Check that all dependencies are in `requirements.txt`
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to submit issues or pull requests.
+Contributions are welcome! Feel free to:
+- Open issues for bugs or feature requests
+- Submit pull requests with improvements
+- Share the game with friends!
 
-## 🎵 Have Fun!
+## 🙏 Acknowledgments
 
-Enjoy testing your music knowledge and competing with friends!
+- **Deezer API** for providing free access to song previews and metadata
+- **Streamlit** for the amazing web framework
+- All the music lovers who play and enjoy the game!
+
+---
+
+**🎵 Have fun testing your music knowledge!**
