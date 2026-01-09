@@ -2,7 +2,7 @@
 
 A fun and interactive web game built with Streamlit where players guess the release year of popular songs!
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://songyearguesser.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://song-year-game.streamlit.app)
 
 ## 🎮 Features
 
@@ -34,7 +34,7 @@ A fun and interactive web game built with Streamlit where players guess the rele
 ## 🚀 Quick Start
 
 ### Play Online
-Visit the deployed app: **[songyearguesser.streamlit.app](https://song-year-game.streamlit.app)**
+Visit the deployed app: **[song-year-game.streamlit.app](https://song-year-game.streamlit.app)**
 
 ### Run Locally
 
