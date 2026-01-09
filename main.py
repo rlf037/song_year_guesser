@@ -691,23 +691,21 @@ def render_game_interface():
     if not song:
         return
 
-    # Auto-refresh every 100ms to update timer with milliseconds
+    # Auto-refresh every 1 second to update timer (100ms causes UI blocking)
     if not st.session_state.game_over and st.session_state.audio_started:
-        st_autorefresh(interval=100, key="game_timer")
+        st_autorefresh(interval=1000, key="game_timer")
 
     # Display round counter
     st.markdown(f"### 🎮 Round {st.session_state.current_round}")
 
-    # Calculate elapsed time with milliseconds
+    # Calculate elapsed time
     if st.session_state.start_time is not None:
         elapsed_float = time.time() - st.session_state.start_time
         elapsed_seconds = int(elapsed_float)
-        elapsed_ms = int((elapsed_float - elapsed_seconds) * 10)  # Single digit for cleaner display
         elapsed = elapsed_seconds  # For blur calculation
     else:
         elapsed_float = 0
         elapsed_seconds = 0
-        elapsed_ms = 0
         elapsed = 0
 
     # Check for timeout (60 seconds max)
@@ -719,7 +717,7 @@ def render_game_interface():
         make_guess(0, timed_out=True)
         st.rerun()
 
-    # Display timer counting UP with milliseconds
+    # Display timer counting UP
     if st.session_state.audio_started and not st.session_state.game_over:
         if elapsed_seconds >= 50:
             timer_class = "timer countdown-urgent"
@@ -731,12 +729,12 @@ def render_game_interface():
             timer_color = "#667eea"
             timer_class = "timer"
         st.markdown(
-            f'<div class="{timer_class}" style="color: {timer_color};">⏱️ {elapsed_seconds}.{elapsed_ms}s</div>',
+            f'<div class="{timer_class}" style="color: {timer_color};">⏱️ {elapsed_seconds}s</div>',
             unsafe_allow_html=True,
         )
     elif not st.session_state.game_over:
         st.markdown(
-            '<div class="timer" style="color: #667eea;">⏱️ 0.0s</div>',
+            '<div class="timer" style="color: #667eea;">⏱️ 0s</div>',
             unsafe_allow_html=True,
         )
 
@@ -865,7 +863,7 @@ def render_game_interface():
             "Year",
             min_value=st.session_state.start_year,
             max_value=st.session_state.end_year,
-            value=(st.session_state.start_year + st.session_state.end_year) // 2,
+            value=st.session_state.start_year,
             step=1,
             key="guess_slider",
             label_visibility="collapsed",
