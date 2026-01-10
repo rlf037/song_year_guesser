@@ -775,17 +775,22 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
 
-            # Submit button - disabled UNTIL time is up
-            submit_disabled = not is_locked
+            # Submit button - always enabled, faster = more points
             if st.button(
-                "Submit Guess" if not is_locked else "✓ Submit Now!",
+                "✓ Submit Now!" if is_locked else "🎯 Submit Guess",
                 type="primary",
                 use_container_width=True,
                 key="submit_guess",
-                disabled=submit_disabled,
             ):
                 make_guess(st.session_state.current_guess, timed_out=is_locked)
                 st.rerun()
+
+            # Show time bonus hint when not locked
+            if not is_locked:
+                st.markdown(
+                    '<div style="text-align: center; color: #22d3ee; font-size: 0.75em; margin-top: 0.3em;">⚡ Submit early for time bonus!</div>',
+                    unsafe_allow_html=True,
+                )
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)

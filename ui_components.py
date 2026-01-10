@@ -1503,15 +1503,14 @@ def how_to_play() -> str:
         <ol>
             <li><strong>&#x1F3A7; Listen</strong> to a 30-second song preview</li>
             <li><strong>&#x1F5BC;&#xFE0F; Watch</strong> the album artwork and song info gradually reveal</li>
-            <li><strong>&#x1F3AF; Scroll</strong> to select your guess for the release year</li>
-            <li><strong>&#x1F512; Wait</strong> for the 30-second timer to end (year gets locked!)</li>
-            <li><strong>&#x2705; Submit</strong> your locked-in guess to see your score</li>
+            <li><strong>&#x1F3AF; Select</strong> your guess for the release year</li>
+            <li><strong>&#x26A1; Submit</strong> anytime - the faster you guess, the more bonus points!</li>
         </ol>
-        <div style="text-align: center; margin-top: 1em; padding: 0.8em; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; color: #f59e0b;">
-            &#x23F1; After 30 seconds, your year selection locks and you must submit!
+        <div style="text-align: center; margin-top: 1em; padding: 0.8em; background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 10px; color: #22d3ee;">
+            &#x26A1; <strong>Time Bonus:</strong> Submit early for up to 300 extra points!
         </div>
-        <div style="text-align: center; margin-top: 0.5em; padding: 0.8em; background: rgba(139, 92, 246, 0.2); border-radius: 10px;">
-            &#x1F4A1; The more accurate you are, the more points you score!
+        <div style="text-align: center; margin-top: 0.5em; padding: 0.8em; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; color: #f59e0b;">
+            &#x1F512; After 30 seconds, your selection locks - submit before time runs out!
         </div>
     </div>
     """
