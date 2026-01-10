@@ -1000,15 +1000,18 @@ def render_game_interface():
                 # Save to persistent leaderboard
                 total_score = get_total_score()
                 songs_played = len(
-                    [s for s in st.session_state.player_scores
-                     if s["player"] == st.session_state.current_player]
+                    [
+                        s
+                        for s in st.session_state.player_scores
+                        if s["player"] == st.session_state.current_player
+                    ]
                 )
                 if songs_played > 0:
                     add_to_leaderboard(
                         st.session_state.current_player,
                         total_score,
                         songs_played,
-                        st.session_state.selected_genre
+                        st.session_state.selected_genre,
                     )
                 # Reset game state
                 st.session_state.game_active = False
@@ -1024,7 +1027,7 @@ def render_game_interface():
 def render_leaderboard():
     """Display the persistent leaderboard (round-based)"""
     leaderboard = load_leaderboard()
-    
+
     if not leaderboard:
         st.markdown(empty_leaderboard(), unsafe_allow_html=True)
         return

@@ -1384,11 +1384,13 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
             var circumference = 2 * Math.PI * 90;
             
             // Timer state
+            var audioDetectedTime = null;  // When we first detected audio playing
             var timerStarted = false;
             var actualStartTime = null;
             var totalPausedTime = 0;
             var pauseStartTime = null;
             var wasPlaying = false;
+            var startDelay = 1000;  // 1 second delay before timer starts
             
             // Find audio element in parent document
             function findAudio() {{
@@ -1407,13 +1409,28 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
             function updateTimer() {{
                 var audio = findAudio();
                 var isPlaying = audio && !audio.paused && audio.currentTime > 0;
+                var audioEnded = audio && audio.ended;
                 
-                // Start timer on first play
-                if (!timerStarted && isPlaying) {{
-                    timerStarted = true;
-                    actualStartTime = Date.now();
-                    ring.classList.remove('waiting');
-                    statusEl.style.display = 'none';
+                // Detect first playback
+                if (!audioDetectedTime && isPlaying) {{
+                    audioDetectedTime = Date.now();
+                }}
+                
+                // Start timer after delay
+                if (!timerStarted && audioDetectedTime) {{
+                    var timeSinceDetected = Date.now() - audioDetectedTime;
+                    if (timeSinceDetected >= startDelay) {{
+                        timerStarted = true;
+                        actualStartTime = Date.now();
+                        ring.classList.remove('waiting');
+                        statusEl.style.display = 'none';
+                    }} else {{
+                        // Show countdown to start
+                        secondsEl.textContent = maxTime;
+                        statusEl.textContent = 'STARTING...';
+                        statusEl.style.display = 'block';
+                        return;
+                    }}
                 }}
                 
                 // Still waiting for playback
@@ -1424,8 +1441,9 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                     return;
                 }}
                 
-                // Handle pause/resume
-                if (wasPlaying && !isPlaying) {{
+                // Handle pause/resume - but NOT when audio has ended
+                // Only pause for manual pause, not when audio naturally finishes
+                if (wasPlaying && !isPlaying && !audioEnded) {{
                     pauseStartTime = Date.now();
                     ring.classList.add('paused');
                     statusEl.textContent = '⏸ PAUSED';
@@ -1438,7 +1456,18 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                     ring.classList.remove('paused');
                     statusEl.style.display = 'none';
                 }}
-                wasPlaying = isPlaying;
+                // Update wasPlaying only if audio hasn't ended
+                if (!audioEnded) {{
+                    wasPlaying = isPlaying;
+                }}
+                
+                // If audio ended, make sure we're not paused
+                if (audioEnded && pauseStartTime) {{
+                    totalPausedTime += Date.now() - pauseStartTime;
+                    pauseStartTime = null;
+                    ring.classList.remove('paused');
+                    statusEl.style.display = 'none';
+                }}
                 
                 // Calculate elapsed (excluding pause time)
                 var now = Date.now();
@@ -1456,7 +1485,8 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                 
                 // Update colors
                 ring.classList.remove('warning', 'danger');
-                if (!isPlaying && timerStarted) {{
+                var isPaused = pauseStartTime !== null;
+                if (isPaused) {{
                     ring.classList.add('paused');
                 }} else if (remaining <= 5) {{
                     circle.style.stroke = '#ef4444';
@@ -1606,7 +1636,7 @@ def leaderboard_entry(idx: int, entry: dict) -> str:
     avg = entry.get("avg_score", 0)
     genre = entry.get("genre", "All Genres")
     date = entry.get("date", "")
-    
+
     return f"""
     <div class="leaderboard">
         <div style="display: flex; justify-content: space-between; align-items: center;">
