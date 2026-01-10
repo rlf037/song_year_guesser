@@ -1459,6 +1459,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     circle.style.stroke = '#22d3ee';
                     secondsEl.style.color = '#22d3ee';
                     ring.classList.remove('danger');
+                    labelEl.textContent = 'sec';
+                    labelEl.classList.remove('paused');
                     return;
                 }}
 
@@ -1481,6 +1483,15 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     ring.classList.add('danger');
                 }} else {{
                     ring.classList.remove('danger');
+                }}
+
+                // Show TIME'S UP when expired (not paused label)
+                if (remaining <= 0 && !isPaused) {{
+                    labelEl.textContent = "TIME'S UP";
+                    labelEl.classList.add('paused');
+                }} else if (!isPaused) {{
+                    labelEl.textContent = 'sec';
+                    labelEl.classList.remove('paused');
                 }}
 
                 // Send elapsed time to parent for blur calculation

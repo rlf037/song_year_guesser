@@ -890,9 +890,14 @@ def render_game_interface():
                 height=190,
             )
 
-            # Update current_guess if wheel returned a value
-            if selected_year is not None and not is_locked:
-                st.session_state.current_guess = int(selected_year)
+            # Update current_guess if wheel returned a valid year value
+            if selected_year is not None and selected_year != 0 and not is_locked:
+                try:
+                    year_value = int(selected_year)
+                    if start_year <= year_value <= end_year:
+                        st.session_state.current_guess = year_value
+                except (ValueError, TypeError):
+                    pass
 
             if is_locked:
                 st.markdown(
