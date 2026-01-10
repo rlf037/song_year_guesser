@@ -783,9 +783,7 @@ def render_game_interface():
 
     # Add elapsed time receiver component (hidden) - consolidated
     if st.session_state.audio_started and not st.session_state.game_over:
-        elapsed_from_timer = components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
-        if elapsed_from_timer is not None and elapsed_from_timer > 0:
-            st.session_state.elapsed_playing_time = elapsed_from_timer
+        components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
 
     # Calculate elapsed time
     if st.session_state.start_time is not None:
