@@ -909,7 +909,7 @@ def render_game_interface():
             end_year = st.session_state.end_year
             is_locked = st.session_state.time_locked
 
-            # Read year from query params (set by scroll wheel JS)
+            # Read year from query params FIRST (set by scroll wheel JS)
             year_from_url = st.query_params.get("yr")
             if year_from_url:
                 try:
@@ -927,49 +927,51 @@ def render_game_interface():
                 except (ValueError, TypeError):
                     pass
 
-            # Scroll wheel year picker
-            components.html(
-                scroll_wheel_year_picker(
-                    st.session_state.current_guess, start_year, end_year, is_locked
-                ),
-                height=280,
-            )
-
-            if is_locked:
+            # Check if we're in the process of submitting
+            if st.session_state.get("submitting_guess", False):
+                # Show submitting state
                 st.markdown(
-                    """<div style="
+                    f"""<div style="
                         text-align: center;
-                        margin-top: 0.5em;
-                        padding: 0.8em 1em;
-                        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
-                        border: 1px solid rgba(239, 68, 68, 0.3);
-                        border-radius: 8px;
+                        padding: 2em;
+                        color: #8b949e;
                     ">
-                        <div style="font-size: 0.75em; text-transform: uppercase; letter-spacing: 1.5px; color: #ef4444; font-weight: 600;">
-                            ⏰ Time's Up
-                        </div>
+                        <div style="font-size: 2em; font-weight: 600; color: #58a6ff; margin-bottom: 0.3em;">{st.session_state.current_guess}</div>
+                        <div style="font-size: 0.9em;">Submitting your guess...</div>
                     </div>""",
                     unsafe_allow_html=True,
                 )
-
-            # Submit button with selected year - always enabled, faster = more points
-            submit_label = f"✓ Submit {st.session_state.current_guess}" if is_locked else f"🎯 Submit {st.session_state.current_guess}"
-            if st.button(
-                submit_label,
-                type="primary",
-                use_container_width=True,
-                key="submit_guess",
-            ):
-                st.session_state.submitting_guess = True
-                st.session_state.guess_timed_out = is_locked
-                st.rerun()
-
-            # Show time bonus hint when not locked
-            if not is_locked:
-                st.markdown(
-                    '<div style="text-align: center; color: #22d3ee; font-size: 0.75em; margin-top: 0.3em;">⚡ Submit early for time bonus!</div>',
-                    unsafe_allow_html=True,
+            else:
+                # Scroll wheel year picker
+                components.html(
+                    scroll_wheel_year_picker(
+                        st.session_state.current_guess, start_year, end_year, is_locked
+                    ),
+                    height=250,
                 )
+
+                # Submit button with selected year
+                if st.button(
+                    f"Submit {st.session_state.current_guess}",
+                    type="primary",
+                    use_container_width=True,
+                    key="submit_guess",
+                ):
+                    st.session_state.submitting_guess = True
+                    st.session_state.guess_timed_out = is_locked
+                    st.rerun()
+
+                # Show time bonus hint when not locked
+                if not is_locked:
+                    st.markdown(
+                        '<div style="text-align: center; color: #6e7681; font-size: 0.75em; margin-top: 0.3em;">Submit early for time bonus</div>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        '<div style="text-align: center; color: #d29922; font-size: 0.75em; margin-top: 0.3em;">Time\'s up - submit now</div>',
+                        unsafe_allow_html=True,
+                    )
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)

@@ -16,17 +16,17 @@ MAIN_CSS = """
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
-    /* Dark game theme - deep purple/blue */
+
+    /* Dark professional theme - slate/charcoal */
     .stApp {
-        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #0f0f23 100%);
+        background: linear-gradient(160deg, #0f1318 0%, #161b22 50%, #0d1117 100%);
     }
-    
+
     /* ===== HEADER SECTION ===== */
     .game-header {
-        background: rgba(13, 13, 26, 0.95);
+        background: rgba(13, 17, 23, 0.95);
         backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        border-bottom: 1px solid rgba(48, 54, 61, 0.8);
         padding: 0.8em 1.5em;
         margin: -1em -1em 1.5em -1em;
         display: flex;
@@ -35,97 +35,88 @@ MAIN_CSS = """
         flex-wrap: wrap;
         gap: 2em;
     }
-    
+
     .header-title {
         font-size: 1.8em;
-        font-weight: 800;
-        background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        font-weight: 700;
+        background: linear-gradient(135deg, #58a6ff 0%, #79c0ff 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 40px rgba(139, 92, 246, 0.5);
         display: flex;
         align-items: center;
         gap: 0.3em;
     }
-    
+
     .header-controls {
         display: flex;
         align-items: center;
         gap: 1.5em;
         flex-wrap: wrap;
     }
-    
+
     .header-item {
         display: flex;
         align-items: center;
         gap: 0.5em;
-        color: #a0a0a0;
+        color: #8b949e;
         font-size: 0.9em;
     }
-    
+
     .header-item-label {
-        color: #666;
+        color: #6e7681;
         font-size: 0.75em;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
+
     .header-item-value {
-        color: #22d3ee;
+        color: #58a6ff;
         font-weight: 600;
     }
-    
+
     .round-indicator {
-        background: rgba(139, 92, 246, 0.2);
-        border: 1px solid rgba(139, 92, 246, 0.4);
+        background: rgba(56, 139, 253, 0.15);
+        border: 1px solid rgba(56, 139, 253, 0.4);
         padding: 0.3em 0.8em;
         border-radius: 15px;
-        color: #a78bfa;
+        color: #58a6ff;
         font-weight: 600;
         font-size: 0.85em;
     }
-    
+
     /* ===== MAIN TITLE (Welcome Screen) ===== */
     .main-title {
         text-align: center;
         margin: 2em 0 1em 0;
     }
-    
+
     .main-title h1 {
         font-size: 4em;
-        font-weight: 900;
+        font-weight: 800;
         margin: 0;
         padding: 0;
         line-height: 1.1;
     }
-    
+
     .main-title .gradient-text {
-        background: linear-gradient(135deg, #6366f1 0%, #a855f7 30%, #ec4899 60%, #f43f5e 100%);
-        background-size: 300% 300%;
+        background: linear-gradient(135deg, #58a6ff 0%, #79c0ff 50%, #a5d6ff 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: gradient-shift 8s ease infinite;
     }
-    
-    @keyframes gradient-shift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    
+
     .main-title .subtitle {
         font-size: 1.2em;
-        color: #666;
+        color: #6e7681;
         margin-top: 0.5em;
         font-weight: 400;
         letter-spacing: 2px;
         text-transform: uppercase;
     }
-    
+
     .main-title .music-icons {
         font-size: 0.6em;
         margin: 0 0.2em;
-        opacity: 0.8;
+        opacity: 0.7;
     }
     
     /* ===== GAME LAYOUT - CENTERED STACK ===== */
@@ -156,8 +147,8 @@ MAIN_CSS = """
     
     /* ===== SONG INFO CARD ===== */
     .song-info-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(22, 27, 34, 0.8);
+        border: 1px solid rgba(48, 54, 61, 0.8);
         border-radius: 12px;
         padding: 0.8em 1em;
         max-width: 450px;
@@ -165,35 +156,35 @@ MAIN_CSS = """
         margin-top: 0.5em;
         box-sizing: border-box;
     }
-    
+
     .song-info-item {
         display: flex;
         align-items: center;
         padding: 0.4em 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(48, 54, 61, 0.6);
     }
-    
+
     .song-info-item:last-child {
         border-bottom: none;
     }
-    
+
     .song-info-icon {
         font-size: 1em;
         margin-right: 0.6em;
         width: 1.2em;
         text-align: center;
     }
-    
+
     .song-info-label {
-        color: #888;
+        color: #6e7681;
         font-size: 0.75em;
         text-transform: uppercase;
         letter-spacing: 1px;
         width: 50px;
     }
-    
+
     .song-info-value {
-        color: #fff;
+        color: #c9d1d9;
         font-weight: 500;
         font-size: 0.9em;
         flex: 1;
@@ -203,105 +194,103 @@ MAIN_CSS = """
         text-overflow: ellipsis;
         transition: filter 0.3s ease;
     }
-    
+
     /* ===== ALBUM ART ===== */
     .album-container {
         display: flex;
         flex-direction: column;
         align-items: center;
     }
-    
+
     .album-art {
-        border-radius: 16px;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 60px rgba(139, 92, 246, 0.2);
-        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        border: 2px solid rgba(48, 54, 61, 0.8);
         transition: filter 0.3s ease;
         display: block;
         max-width: 100%;
         height: auto;
     }
-    
+
     /* ===== AUDIO VISUALIZER ===== */
     .audio-viz-container {
         display: flex;
         justify-content: center;
         align-items: flex-end;
-        gap: 4px;
-        height: 40px;
-        margin: 1em 0 0.5em 0;
+        gap: 3px;
+        height: 35px;
+        margin: 0.8em 0 0.5em 0;
         max-width: 450px;
         width: 100%;
     }
-    
+
     .audio-viz-bar {
-        width: 6px;
-        background: linear-gradient(to top, #6366f1, #22d3ee);
-        border-radius: 3px;
+        width: 5px;
+        background: linear-gradient(to top, #388bfd, #58a6ff);
+        border-radius: 2px;
         animation: audioViz 0.5s ease-in-out infinite alternate;
     }
-    
-    .audio-viz-bar:nth-child(1) { animation-delay: 0s; height: 12px; }
-    .audio-viz-bar:nth-child(2) { animation-delay: 0.1s; height: 20px; }
-    .audio-viz-bar:nth-child(3) { animation-delay: 0.15s; height: 14px; }
-    .audio-viz-bar:nth-child(4) { animation-delay: 0.2s; height: 28px; }
-    .audio-viz-bar:nth-child(5) { animation-delay: 0.05s; height: 16px; }
-    .audio-viz-bar:nth-child(6) { animation-delay: 0.25s; height: 24px; }
-    .audio-viz-bar:nth-child(7) { animation-delay: 0.1s; height: 12px; }
-    .audio-viz-bar:nth-child(8) { animation-delay: 0.3s; height: 30px; }
-    .audio-viz-bar:nth-child(9) { animation-delay: 0.15s; height: 18px; }
-    .audio-viz-bar:nth-child(10) { animation-delay: 0.2s; height: 14px; }
-    .audio-viz-bar:nth-child(11) { animation-delay: 0.25s; height: 22px; }
-    .audio-viz-bar:nth-child(12) { animation-delay: 0.05s; height: 16px; }
-    .audio-viz-bar:nth-child(13) { animation-delay: 0.3s; height: 26px; }
-    .audio-viz-bar:nth-child(14) { animation-delay: 0.1s; height: 12px; }
-    .audio-viz-bar:nth-child(15) { animation-delay: 0.2s; height: 18px; }
-    .audio-viz-bar:nth-child(16) { animation-delay: 0.15s; height: 24px; }
-    .audio-viz-bar:nth-child(17) { animation-delay: 0.25s; height: 14px; }
-    .audio-viz-bar:nth-child(18) { animation-delay: 0.1s; height: 20px; }
-    .audio-viz-bar:nth-child(19) { animation-delay: 0.2s; height: 16px; }
-    .audio-viz-bar:nth-child(20) { animation-delay: 0.05s; height: 22px; }
-    
+
+    .audio-viz-bar:nth-child(1) { animation-delay: 0s; height: 10px; }
+    .audio-viz-bar:nth-child(2) { animation-delay: 0.1s; height: 18px; }
+    .audio-viz-bar:nth-child(3) { animation-delay: 0.15s; height: 12px; }
+    .audio-viz-bar:nth-child(4) { animation-delay: 0.2s; height: 24px; }
+    .audio-viz-bar:nth-child(5) { animation-delay: 0.05s; height: 14px; }
+    .audio-viz-bar:nth-child(6) { animation-delay: 0.25s; height: 20px; }
+    .audio-viz-bar:nth-child(7) { animation-delay: 0.1s; height: 10px; }
+    .audio-viz-bar:nth-child(8) { animation-delay: 0.3s; height: 26px; }
+    .audio-viz-bar:nth-child(9) { animation-delay: 0.15s; height: 16px; }
+    .audio-viz-bar:nth-child(10) { animation-delay: 0.2s; height: 12px; }
+    .audio-viz-bar:nth-child(11) { animation-delay: 0.25s; height: 20px; }
+    .audio-viz-bar:nth-child(12) { animation-delay: 0.05s; height: 14px; }
+    .audio-viz-bar:nth-child(13) { animation-delay: 0.3s; height: 22px; }
+    .audio-viz-bar:nth-child(14) { animation-delay: 0.1s; height: 10px; }
+    .audio-viz-bar:nth-child(15) { animation-delay: 0.2s; height: 16px; }
+    .audio-viz-bar:nth-child(16) { animation-delay: 0.15s; height: 20px; }
+    .audio-viz-bar:nth-child(17) { animation-delay: 0.25s; height: 12px; }
+    .audio-viz-bar:nth-child(18) { animation-delay: 0.1s; height: 18px; }
+    .audio-viz-bar:nth-child(19) { animation-delay: 0.2s; height: 14px; }
+    .audio-viz-bar:nth-child(20) { animation-delay: 0.05s; height: 20px; }
+
     @keyframes audioViz {
-        0% { transform: scaleY(0.3); opacity: 0.5; }
+        0% { transform: scaleY(0.3); opacity: 0.4; }
         100% { transform: scaleY(1); opacity: 1; }
     }
-    
+
     .audio-viz-static .audio-viz-bar {
         animation: none;
-        opacity: 0.3;
+        opacity: 0.2;
         transform: scaleY(0.3);
     }
-    
+
     /* ===== YEAR PICKER ===== */
     .year-picker-label {
         font-size: 0.9em;
-        color: #888;
+        color: #6e7681;
         text-transform: uppercase;
         letter-spacing: 2px;
         text-align: center;
         margin-bottom: 0.5em;
     }
-    
+
     .year-display {
         font-size: 4em;
-        font-weight: 800;
-        color: #22d3ee;
+        font-weight: 700;
+        color: #58a6ff;
         text-align: center;
-        text-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
         font-family: 'SF Mono', Monaco, Consolas, monospace;
         margin: 0.2em 0 0.5em 0;
     }
-    
+
     .year-display.locked {
-        color: #f59e0b;
-        text-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+        color: #d29922;
     }
-    
+
     /* ===== YEAR WHEEL (legacy) ===== */
     .year-wheel-container {
-        background: rgba(255, 255, 255, 0.02);
-        border: 2px solid rgba(139, 92, 246, 0.3);
-        border-radius: 20px;
+        background: rgba(22, 27, 34, 0.6);
+        border: 1px solid rgba(48, 54, 61, 0.8);
+        border-radius: 16px;
         padding: 1em 1.5em;
         text-align: center;
         width: 100%;
@@ -430,180 +419,175 @@ MAIN_CSS = """
     .stButton > button {
         min-height: 3em;
         font-weight: 600;
-        border-radius: 12px;
+        border-radius: 8px;
         transition: all 0.15s ease;
     }
-    
+
     .stButton > button:disabled {
         opacity: 0.4;
         cursor: not-allowed;
     }
-    
+
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: #238636;
         color: white;
-        border: none;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        border: 1px solid rgba(35, 134, 54, 0.6);
     }
-    
+
     .stButton > button[kind="primary"]:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+        background: #2ea043;
+        border-color: rgba(46, 160, 67, 0.8);
     }
-    
+
     .submit-btn {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-        font-size: 1.2em !important;
+        background: #238636 !important;
+        font-size: 1.1em !important;
         padding: 0.8em 2em !important;
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
     }
-    
+
     .submit-btn:hover:not(:disabled) {
-        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5) !important;
+        background: #2ea043 !important;
     }
-    
+
     /* ===== SCORE CARD ===== */
     .score-card {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: rgba(35, 134, 54, 0.15);
+        border: 1px solid rgba(35, 134, 54, 0.4);
         padding: 1.2em 2.5em;
-        border-radius: 16px;
+        border-radius: 12px;
         text-align: center;
-        color: white;
+        color: #3fb950;
         font-size: 1.5em;
         font-weight: 700;
         margin: 1em auto;
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
         max-width: 350px;
     }
-    
+
     /* ===== CORRECT ANSWER ===== */
     .correct-answer {
         font-size: 1.8em;
         font-weight: 700;
-        color: #22d3ee;
+        color: #58a6ff;
         text-align: center;
         margin: 0.5em 0;
-        text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
     }
-    
+
     /* ===== ANSWER COMPARISON ===== */
     .answer-comparison {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        background: rgba(22, 27, 34, 0.8);
+        border: 1px solid rgba(48, 54, 61, 0.8);
+        border-radius: 12px;
         padding: 1.2em;
         margin: 0.5em 0;
     }
-    
+
     .answer-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 0.6em 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(48, 54, 61, 0.6);
     }
-    
+
     .answer-row:last-of-type {
         border-bottom: none;
     }
-    
+
     .answer-label {
-        color: #888;
+        color: #6e7681;
         font-size: 0.85em;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
+
     .answer-value {
         font-size: 2em;
-        font-weight: 800;
+        font-weight: 700;
         font-family: 'SF Mono', Monaco, monospace;
     }
-    
+
     .answer-value.correct {
-        color: #00ff88;
-        text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        color: #3fb950;
     }
-    
+
     .answer-value.guess {
-        color: #22d3ee;
-        text-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
+        color: #58a6ff;
     }
-    
+
     .answer-diff {
         text-align: center;
         margin-top: 0.8em;
         padding-top: 0.8em;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(48, 54, 61, 0.6);
         font-size: 1em;
         font-weight: 600;
     }
-    
+
     /* ===== RESULT MESSAGE ===== */
     .result-container {
         text-align: center;
         padding: 1em;
         margin: 1em 0;
     }
-    
+
     .result-emoji {
-        font-size: 3.5em;
+        font-size: 3em;
         margin-bottom: 0.2em;
     }
-    
+
     .result-message {
-        font-size: 2em;
+        font-size: 1.8em;
         font-weight: 700;
     }
-    
+
     .result-subtitle {
-        color: #a0a0a0;
+        color: #8b949e;
         margin-top: 0.3em;
     }
-    
+
     /* ===== AUDIO PLAYER ===== */
     .audio-container {
         margin: 0.5em auto;
         width: 450px;
         max-width: 100%;
         padding: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(22, 27, 34, 0.8);
+        border-radius: 8px;
+        border: 1px solid rgba(48, 54, 61, 0.8);
     }
-    
+
     /* ===== SONG HISTORY ===== */
     .history-container {
         margin: 2em auto;
         max-width: 600px;
         padding: 1em;
     }
-    
+
     .history-header {
         font-size: 0.85em;
-        color: #666;
+        color: #6e7681;
         text-transform: uppercase;
         letter-spacing: 2px;
         margin-bottom: 0.8em;
         text-align: center;
     }
-    
+
     .history-item {
         display: flex;
         align-items: center;
         gap: 0.8em;
         padding: 0.6em 1em;
         margin: 0.3em 0;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 8px;
-        border-left: 3px solid #444;
+        background: rgba(22, 27, 34, 0.6);
+        border-radius: 6px;
+        border-left: 3px solid #30363d;
         font-size: 0.85em;
     }
-    
-    .history-item.perfect { border-left-color: #22c55e; }
-    .history-item.close { border-left-color: #22d3ee; }
-    .history-item.ok { border-left-color: #a78bfa; }
-    .history-item.far { border-left-color: #666; }
+
+    .history-item.perfect { border-left-color: #3fb950; }
+    .history-item.close { border-left-color: #58a6ff; }
+    .history-item.ok { border-left-color: #8b949e; }
+    .history-item.far { border-left-color: #484f58; }
     
     .history-accuracy {
         width: 20px;
@@ -1089,9 +1073,9 @@ def scroll_wheel_year_picker(
     """Generate the JavaScript scroll wheel year picker that syncs via URL query params.
     Works with mouse wheel, trackpad, drag, click, keyboard."""
     locked_style = "opacity: 0.6; pointer-events: none;" if locked else ""
-    locked_border = "rgba(239, 68, 68, 0.5)" if locked else "rgba(139, 92, 246, 0.4)"
+    locked_border = "rgba(248, 81, 73, 0.4)" if locked else "rgba(48, 54, 61, 0.8)"
     locked_indicator = (
-        '<div style="color: #f59e0b; font-size: 0.8em; margin-top: 0.5em;">&#x1F512; TIME\'S UP - Submit now!</div>'
+        '<div style="color: #d29922; font-size: 0.75em; margin-top: 0.5em; font-weight: 500;">Submit your guess now</div>'
         if locked
         else ""
     )
@@ -1105,25 +1089,25 @@ def scroll_wheel_year_picker(
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         {locked_style}
     ">
-        <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 0.7em; margin-bottom: 0.8em;">
-            &#x1F3AF; Scroll to select year
+        <div style="color: #6e7681; text-transform: uppercase; letter-spacing: 2px; font-size: 0.65em; margin-bottom: 0.6em; font-weight: 500;">
+            Select release year
         </div>
 
         <div id="scroll-container" style="
             position: relative;
-            height: 200px;
-            width: 280px;
+            height: 180px;
+            width: 260px;
             overflow: hidden;
             cursor: ns-resize;
             background: linear-gradient(180deg,
-                rgba(10,10,20,1) 0%,
-                rgba(10,10,20,0.8) 15%,
+                rgba(13,17,23,1) 0%,
+                rgba(13,17,23,0.9) 15%,
                 transparent 35%,
                 transparent 65%,
-                rgba(10,10,20,0.8) 85%,
-                rgba(10,10,20,1) 100%);
-            border-radius: 16px;
-            border: 2px solid {locked_border};
+                rgba(13,17,23,0.9) 85%,
+                rgba(13,17,23,1) 100%);
+            border-radius: 12px;
+            border: 1px solid {locked_border};
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
@@ -1140,17 +1124,17 @@ def scroll_wheel_year_picker(
                 top: 50%;
                 left: 10px;
                 right: 10px;
-                height: 56px;
+                height: 50px;
                 transform: translateY(-50%);
-                border: 2px solid {"rgba(245, 158, 11, 0.6)" if locked else "rgba(34, 211, 238, 0.6)"};
-                border-radius: 10px;
+                border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"};
+                border-radius: 8px;
                 pointer-events: none;
-                box-shadow: 0 0 20px {"rgba(245, 158, 11, 0.2)" if locked else "rgba(34, 211, 238, 0.2)"};
+                background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};
             "></div>
         </div>
 
-        <div style="color: #666; font-size: 0.75em; margin-top: 0.6em; letter-spacing: 1px;">
-            {start_year} &#x2014; {end_year}
+        <div style="color: #484f58; font-size: 0.7em; margin-top: 0.5em; letter-spacing: 1px;">
+            {start_year} — {end_year}
         </div>
         {locked_indicator}
     </div>
@@ -1168,7 +1152,7 @@ def scroll_wheel_year_picker(
 
         const container = document.getElementById('scroll-container');
         const track = document.getElementById('year-track');
-        const itemHeight = 52;
+        const itemHeight = 46;
 
         if (isLocked) {{
             container.style.cursor = 'not-allowed';
@@ -1183,11 +1167,11 @@ def scroll_wheel_year_picker(
                 div.style.cssText = `
                     height: ${{itemHeight}}px;
                     line-height: ${{itemHeight}}px;
-                    font-size: 2.2em;
-                    font-weight: 700;
+                    font-size: 2em;
+                    font-weight: 600;
                     font-family: 'SF Mono', Monaco, Consolas, monospace;
-                    color: #444;
-                    transition: color 0.1s, transform 0.1s, text-shadow 0.1s;
+                    color: #30363d;
+                    transition: color 0.1s, transform 0.1s;
                 `;
                 div.textContent = year;
                 track.appendChild(div);
@@ -1197,7 +1181,7 @@ def scroll_wheel_year_picker(
 
         function updatePosition(animate = true) {{
             const offset = (currentYear - minYear) * itemHeight;
-            const containerHeight = 200;
+            const containerHeight = 180;
             const centerOffset = (containerHeight / 2) - (itemHeight / 2);
             track.style.transform = `translateY(${{centerOffset - offset}}px)`;
             if (!animate) track.style.transition = 'none';
@@ -1207,17 +1191,14 @@ def scroll_wheel_year_picker(
                 const year = parseInt(item.dataset.year);
                 const distance = Math.abs(year - currentYear);
                 if (distance === 0) {{
-                    item.style.color = isLocked ? '#f59e0b' : '#22d3ee';
-                    item.style.transform = 'scale(1.15)';
-                    item.style.textShadow = isLocked ? '0 0 30px rgba(245, 158, 11, 0.6)' : '0 0 30px rgba(34, 211, 238, 0.6)';
+                    item.style.color = isLocked ? '#d29922' : '#58a6ff';
+                    item.style.transform = 'scale(1.1)';
                 }} else if (distance === 1) {{
-                    item.style.color = '#666';
+                    item.style.color = '#6e7681';
                     item.style.transform = 'scale(0.9)';
-                    item.style.textShadow = 'none';
                 }} else {{
-                    item.style.color = '#444';
+                    item.style.color = '#30363d';
                     item.style.transform = 'scale(0.8)';
-                    item.style.textShadow = 'none';
                 }}
             }});
         }}
@@ -1349,31 +1330,40 @@ def scroll_wheel_year_picker(
 
 
 def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) -> str:
-    """Generate the countdown timer with smooth danger color progression - no glow effects"""
+    """Generate the countdown timer with dynamic animations that intensify as time runs out"""
     return f"""
     <style>
         body {{ margin: 0; padding: 0; background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
         .timer-container {{ display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }}
-        .timer-ring {{ position: relative; width: 200px; height: 200px; transition: opacity 0.3s ease; }}
-        .timer-ring.paused {{ opacity: 0.6; }}
-        .timer-ring.danger {{ animation: pulse 0.5s ease-in-out infinite; }}
+        .timer-ring {{ position: relative; width: 180px; height: 180px; transition: opacity 0.3s ease; }}
+        .timer-ring.paused {{ opacity: 0.5; }}
+        .timer-ring.warning {{ animation: warningPulse 1s ease-in-out infinite; }}
+        .timer-ring.danger {{ animation: dangerPulse 0.5s ease-in-out infinite; }}
+        .timer-ring.critical {{ animation: criticalShake 0.15s ease-in-out infinite; }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
-        .timer-seconds {{ font-size: 4em; font-weight: 800; line-height: 1; transition: color 0.15s ease; }}
-        .timer-label {{ font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; transition: color 0.2s ease; }}
-        .timer-label.paused {{ color: #f97316; font-weight: 600; }}
-        @keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.03); }} }}
+        .timer-seconds {{ font-size: 3.5em; font-weight: 700; line-height: 1; transition: color 0.15s ease, transform 0.1s ease; font-family: 'SF Mono', Monaco, Consolas, monospace; }}
+        .timer-seconds.pulse {{ animation: numberPulse 0.5s ease-in-out; }}
+        .timer-label {{ font-size: 0.85em; color: #6e7681; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; transition: color 0.2s ease; }}
+        .timer-label.paused {{ color: #d29922; font-weight: 600; }}
+        .timer-label.urgent {{ color: #f85149; }}
+        @keyframes warningPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.02); }} }}
+        @keyframes dangerPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.04); }} }}
+        @keyframes criticalShake {{ 0%, 100% {{ transform: translateX(0) scale(1.05); }} 25% {{ transform: translateX(-2px) scale(1.05); }} 75% {{ transform: translateX(2px) scale(1.05); }} }}
+        @keyframes numberPulse {{ 0% {{ transform: scale(1); }} 50% {{ transform: scale(1.1); }} 100% {{ transform: scale(1); }} }}
+        .glow-effect {{ filter: drop-shadow(0 0 8px currentColor); }}
     </style>
     <div class="timer-container">
         <div class="timer-ring" id="timer-ring">
-            <svg width="200" height="200" viewBox="0 0 200 200" style="transform: rotate(-90deg);">
-                <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
-                <circle id="timer-circle" cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10"
-                    stroke-linecap="round" stroke-dasharray="565" stroke-dashoffset="0"
+            <svg width="180" height="180" viewBox="0 0 180 180" style="transform: rotate(-90deg);">
+                <circle cx="90" cy="90" r="80" fill="none" stroke="#21262d" stroke-width="8"/>
+                <circle id="timer-bg" cx="90" cy="90" r="80" fill="none" stroke="#30363d" stroke-width="8" opacity="0.3"/>
+                <circle id="timer-circle" cx="90" cy="90" r="80" fill="none" stroke="#58a6ff" stroke-width="8"
+                    stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="0"
                     style="transition: stroke-dashoffset 0.1s linear, stroke 0.15s ease;"/>
             </svg>
             <div class="timer-text">
-                <div id="timer-seconds" class="timer-seconds" style="color: #22d3ee;">{max_time}</div>
-                <div id="timer-label" class="timer-label">sec</div>
+                <div id="timer-seconds" class="timer-seconds" style="color: #58a6ff;">{max_time}</div>
+                <div id="timer-label" class="timer-label">seconds</div>
             </div>
         </div>
     </div>
@@ -1386,7 +1376,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
             var labelEl = document.getElementById('timer-label');
-            var circumference = 2 * Math.PI * 90;
+            var circumference = 2 * Math.PI * 80;
+            var lastSecond = maxTime;
 
             // Pause tracking
             var isPaused = false;
@@ -1398,7 +1389,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     isPaused = true;
                     pausedAt = Date.now();
                     ring.classList.add('paused');
-                    labelEl.textContent = '⏸ paused';
+                    ring.classList.remove('warning', 'danger', 'critical');
+                    labelEl.textContent = 'paused';
                     labelEl.classList.add('paused');
                 }}
             }}
@@ -1409,7 +1401,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     isPaused = false;
                     pausedAt = null;
                     ring.classList.remove('paused');
-                    labelEl.textContent = 'sec';
+                    labelEl.textContent = 'seconds';
                     labelEl.classList.remove('paused');
                 }}
             }}
@@ -1420,12 +1412,10 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                 if (isPaused && pausedAt !== null) {{
                     totalPausedTime += (now - pausedAt);
                 }}
-                // Subtract delay from elapsed time
                 var elapsed = ((now - startTime) - totalPausedTime) / 1000 - delaySeconds;
                 return elapsed;
             }}
 
-            // Interpolate between two colors based on t (0-1)
             function lerpColor(color1, color2, t) {{
                 var r1 = parseInt(color1.slice(1,3), 16);
                 var g1 = parseInt(color1.slice(3,5), 16);
@@ -1439,33 +1429,29 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                 return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
             }}
 
-            // Get color based on progress (0 = start, 1 = end)
             function getProgressColor(progress) {{
-                // Cyan (#22d3ee) -> Yellow (#eab308) -> Orange (#f97316) -> Red (#ef4444)
+                // Blue (#58a6ff) -> Yellow (#d29922) -> Orange (#db6d28) -> Red (#f85149)
                 if (progress < 0.5) {{
-                    // Cyan to Yellow (0% - 50%)
-                    return lerpColor('#22d3ee', '#eab308', progress * 2);
+                    return lerpColor('#58a6ff', '#d29922', progress * 2);
                 }} else if (progress < 0.75) {{
-                    // Yellow to Orange (50% - 75%)
-                    return lerpColor('#eab308', '#f97316', (progress - 0.5) * 4);
+                    return lerpColor('#d29922', '#db6d28', (progress - 0.5) * 4);
                 }} else {{
-                    // Orange to Red (75% - 100%)
-                    return lerpColor('#f97316', '#ef4444', (progress - 0.75) * 4);
+                    return lerpColor('#db6d28', '#f85149', (progress - 0.75) * 4);
                 }}
             }}
 
             function updateTimer() {{
                 var elapsed = getElapsedTime();
 
-                // During delay period, show full time and don't count down
                 if (elapsed < 0) {{
                     secondsEl.textContent = maxTime;
                     circle.style.strokeDashoffset = 0;
-                    circle.style.stroke = '#22d3ee';
-                    secondsEl.style.color = '#22d3ee';
-                    ring.classList.remove('danger');
-                    labelEl.textContent = 'sec';
-                    labelEl.classList.remove('paused');
+                    circle.style.stroke = '#58a6ff';
+                    secondsEl.style.color = '#58a6ff';
+                    ring.classList.remove('warning', 'danger', 'critical');
+                    secondsEl.classList.remove('glow-effect');
+                    labelEl.textContent = 'seconds';
+                    labelEl.classList.remove('paused', 'urgent');
                     return;
                 }}
 
@@ -1476,30 +1462,46 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                 var offset = circumference * progress;
 
                 circle.style.strokeDashoffset = offset;
+
+                // Pulse animation on second change
+                if (remaining !== lastSecond && remaining > 0) {{
+                    secondsEl.classList.remove('pulse');
+                    void secondsEl.offsetWidth; // Trigger reflow
+                    secondsEl.classList.add('pulse');
+                    lastSecond = remaining;
+                }}
+
                 secondsEl.textContent = remaining;
 
-                // Get smooth gradient color based on progress
                 var color = getProgressColor(progress);
                 circle.style.stroke = color;
                 secondsEl.style.color = color;
 
-                // Add danger pulse animation in final 5 seconds
-                if (remaining <= 5) {{
+                // Progressive animation states
+                ring.classList.remove('warning', 'danger', 'critical');
+                secondsEl.classList.remove('glow-effect');
+                labelEl.classList.remove('urgent');
+
+                if (remaining <= 3 && remaining > 0) {{
+                    ring.classList.add('critical');
+                    secondsEl.classList.add('glow-effect');
+                    labelEl.classList.add('urgent');
+                }} else if (remaining <= 5) {{
                     ring.classList.add('danger');
-                }} else {{
-                    ring.classList.remove('danger');
+                    secondsEl.classList.add('glow-effect');
+                }} else if (remaining <= 10) {{
+                    ring.classList.add('warning');
                 }}
 
-                // Show TIME'S UP when expired (not paused label)
                 if (remaining <= 0 && !isPaused) {{
                     labelEl.textContent = "TIME'S UP";
-                    labelEl.classList.add('paused');
+                    labelEl.classList.add('urgent');
+                    ring.classList.remove('warning', 'danger', 'critical');
+                    ring.classList.add('critical');
                 }} else if (!isPaused) {{
-                    labelEl.textContent = 'sec';
-                    labelEl.classList.remove('paused');
+                    labelEl.textContent = remaining <= 5 ? 'hurry!' : 'seconds';
                 }}
 
-                // Sync elapsed time to URL query params so Streamlit can read it
                 try {{
                     var url = new URL(window.parent.location.href);
                     url.searchParams.set('et', elapsed.toFixed(1));
@@ -1507,7 +1509,6 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                 }} catch(e) {{}}
             }}
 
-            // Expose pause/resume to parent window
             window.timerControl = {{
                 pause: pause,
                 resume: resume,
