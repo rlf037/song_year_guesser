@@ -811,7 +811,9 @@ def render_game_interface():
 
     # Calculate blur amount
     if not st.session_state.game_over:
-        if st.session_state.audio_started and (st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0):
+        if st.session_state.audio_started and (
+            st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0
+        ):
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
         else:
@@ -820,7 +822,10 @@ def render_game_interface():
         current_blur = 0
 
     hint_blur = (
-        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started and (st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0) else 8
+        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME))
+        if st.session_state.audio_started
+        and (st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0)
+        else 8
     )
 
     # === MAIN GAME LAYOUT - CENTERED ===
@@ -840,9 +845,9 @@ def render_game_interface():
             is_playing = st.session_state.audio_started and not st.session_state.time_locked
             st.markdown(audio_visualizer(is_playing=is_playing), unsafe_allow_html=True)
 
-            # Check autoplay status (consolidated components)
+            # Check autoplay status (using song-specific key)
             components.html(autoplay_status_receiver(), height=0)
-            autoplay_blocked = components.html(check_autoplay_blocked(), height=0)
+            autoplay_blocked = components.html(check_autoplay_blocked(song["id"]), height=0)
 
             if autoplay_blocked:
                 st.markdown(autoplay_warning(), unsafe_allow_html=True)
@@ -914,7 +919,18 @@ def render_game_interface():
 
             if is_locked:
                 st.markdown(
-                    '<div style="text-align: center; color: #f59e0b; font-size: 0.85em; margin-top: 0.5em;">TIME\'S UP - Submit now!</div>',
+                    """<div style="
+                        text-align: center;
+                        margin-top: 1.5em;
+                        padding: 0.8em 1em;
+                        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+                        border: 1px solid rgba(239, 68, 68, 0.3);
+                        border-radius: 8px;
+                    ">
+                        <div style="font-size: 0.75em; text-transform: uppercase; letter-spacing: 1.5px; color: #ef4444; font-weight: 600;">
+                            ⏰ Time's Up
+                        </div>
+                    </div>""",
                     unsafe_allow_html=True,
                 )
 

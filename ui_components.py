@@ -1332,20 +1332,19 @@ def scroll_wheel_year_picker(
     """
 
 
-def timer_html(start_timestamp: float, max_time: int) -> str:
-    """Generate the countdown timer with animation - includes inline styles for iframe"""
+def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) -> str:
+    """Generate the countdown timer with smooth danger color progression - no glow effects"""
     return f"""
     <style>
         body {{ margin: 0; padding: 0; background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
         .timer-container {{ display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }}
-        .timer-ring {{ position: relative; width: 200px; height: 200px; filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.4)); transition: filter 0.3s ease; }}
-        .timer-ring.warning {{ filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.5)); }}
-        .timer-ring.danger {{ filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.6)); animation: pulse 0.5s ease-in-out infinite; }}
+        .timer-ring {{ position: relative; width: 200px; height: 200px; transition: opacity 0.3s ease; }}
         .timer-ring.paused {{ opacity: 0.6; }}
+        .timer-ring.danger {{ animation: pulse 0.5s ease-in-out infinite; }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
-        .timer-seconds {{ font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1; text-shadow: 0 0 30px currentColor; transition: color 0.3s ease, text-shadow 0.3s ease; }}
+        .timer-seconds {{ font-size: 4em; font-weight: 800; line-height: 1; transition: color 0.15s ease; }}
         .timer-label {{ font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; }}
-        @keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.05); }} }}
+        @keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.03); }} }}
     </style>
     <div class="timer-container">
         <div class="timer-ring" id="timer-ring">
@@ -1353,10 +1352,10 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                 <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
                 <circle id="timer-circle" cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10"
                     stroke-linecap="round" stroke-dasharray="565" stroke-dashoffset="0"
-                    style="transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; filter: drop-shadow(0 0 8px currentColor);"/>
+                    style="transition: stroke-dashoffset 0.1s linear, stroke 0.15s ease;"/>
             </svg>
             <div class="timer-text">
-                <div id="timer-seconds" class="timer-seconds">30</div>
+                <div id="timer-seconds" class="timer-seconds" style="color: #22d3ee;">{max_time}</div>
                 <div class="timer-label">sec</div>
             </div>
         </div>
@@ -1365,6 +1364,7 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
         (function() {{
             var startTime = {start_timestamp};
             var maxTime = {max_time};
+            var delaySeconds = {delay_seconds};
             var circle = document.getElementById('timer-circle');
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
@@ -1398,13 +1398,53 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                 if (isPaused && pausedAt !== null) {{
                     totalPausedTime += (now - pausedAt);
                 }}
-                var elapsed = ((now - startTime) - totalPausedTime) / 1000;
+                // Subtract delay from elapsed time
+                var elapsed = ((now - startTime) - totalPausedTime) / 1000 - delaySeconds;
                 return elapsed;
+            }}
+
+            // Interpolate between two colors based on t (0-1)
+            function lerpColor(color1, color2, t) {{
+                var r1 = parseInt(color1.slice(1,3), 16);
+                var g1 = parseInt(color1.slice(3,5), 16);
+                var b1 = parseInt(color1.slice(5,7), 16);
+                var r2 = parseInt(color2.slice(1,3), 16);
+                var g2 = parseInt(color2.slice(3,5), 16);
+                var b2 = parseInt(color2.slice(5,7), 16);
+                var r = Math.round(r1 + (r2 - r1) * t);
+                var g = Math.round(g1 + (g2 - g1) * t);
+                var b = Math.round(b1 + (b2 - b1) * t);
+                return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            }}
+
+            // Get color based on progress (0 = start, 1 = end)
+            function getProgressColor(progress) {{
+                // Cyan (#22d3ee) -> Yellow (#eab308) -> Orange (#f97316) -> Red (#ef4444)
+                if (progress < 0.5) {{
+                    // Cyan to Yellow (0% - 50%)
+                    return lerpColor('#22d3ee', '#eab308', progress * 2);
+                }} else if (progress < 0.75) {{
+                    // Yellow to Orange (50% - 75%)
+                    return lerpColor('#eab308', '#f97316', (progress - 0.5) * 4);
+                }} else {{
+                    // Orange to Red (75% - 100%)
+                    return lerpColor('#f97316', '#ef4444', (progress - 0.75) * 4);
+                }}
             }}
 
             function updateTimer() {{
                 var elapsed = getElapsedTime();
-                if (elapsed < 0) elapsed = 0;
+
+                // During delay period, show full time and don't count down
+                if (elapsed < 0) {{
+                    secondsEl.textContent = maxTime;
+                    circle.style.strokeDashoffset = 0;
+                    circle.style.stroke = '#22d3ee';
+                    secondsEl.style.color = '#22d3ee';
+                    ring.classList.remove('danger');
+                    return;
+                }}
+
                 if (elapsed > maxTime) elapsed = maxTime;
 
                 var remaining = Math.ceil(maxTime - elapsed);
@@ -1414,21 +1454,16 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                 circle.style.strokeDashoffset = offset;
                 secondsEl.textContent = remaining;
 
-                ring.classList.remove('warning', 'danger');
+                // Get smooth gradient color based on progress
+                var color = getProgressColor(progress);
+                circle.style.stroke = color;
+                secondsEl.style.color = color;
+
+                // Add danger pulse animation in final 5 seconds
                 if (remaining <= 5) {{
-                    circle.style.stroke = '#ef4444';
-                    secondsEl.style.color = '#ef4444';
-                    secondsEl.style.textShadow = '0 0 40px #ef4444';
                     ring.classList.add('danger');
-                }} else if (remaining <= 10) {{
-                    circle.style.stroke = '#f59e0b';
-                    secondsEl.style.color = '#f59e0b';
-                    secondsEl.style.textShadow = '0 0 35px #f59e0b';
-                    ring.classList.add('warning');
                 }} else {{
-                    circle.style.stroke = '#22d3ee';
-                    secondsEl.style.color = '#22d3ee';
-                    secondsEl.style.textShadow = '0 0 30px #22d3ee';
+                    ring.classList.remove('danger');
                 }}
 
                 // Send elapsed time to parent for blur calculation
@@ -1455,17 +1490,17 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
 
 
 def static_timer(seconds: int = 30) -> str:
-    """Generate a static timer display"""
+    """Generate a static timer display - no glow effects"""
     return f"""
-    <div class="timer-container">
-        <div class="timer-ring">
+    <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 200px;">
+        <div style="position: relative; width: 200px; height: 200px;">
             <svg width="200" height="200" viewBox="0 0 200 200" style="transform: rotate(-90deg);">
                 <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
-                <circle cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10" stroke-dasharray="565"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
             </svg>
-            <div class="timer-text">
-                <div class="timer-seconds">{seconds}</div>
-                <div class="timer-label">sec</div>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                <div style="font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1;">{seconds}</div>
+                <div style="font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em;">sec</div>
             </div>
         </div>
     </div>
@@ -1635,12 +1670,10 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
 
             function notifyAutoplayStatus(blocked) {{
                 try {{
-                    window.parent.postMessage({{
-                        type: 'audio:autoplay',
-                        blocked: blocked
-                    }}, '*');
+                    // Directly set localStorage with song-specific key
+                    localStorage.setItem('autoplayBlocked_{song_id}', blocked ? 'true' : 'false');
                 }} catch(e) {{
-                    console.log('Could not notify autoplay status:', e);
+                    console.log('Could not set autoplay status:', e);
                 }}
             }}
 
@@ -1784,13 +1817,13 @@ def get_elapsed_time_js() -> str:
 
 
 def autoplay_status_receiver() -> str:
-    """Component that receives autoplay status from audio player"""
-    return """<script>(function(){try{localStorage.removeItem('autoplayBlocked');}catch(e){}window.addEventListener('message',function(e){if(e.data&&e.data.type==='audio:autoplay'){try{localStorage.setItem('autoplayBlocked',e.data.blocked?'true':'false')}catch(err){}}})})();</script>"""
+    """Component that clears old autoplay status keys on load"""
+    return """<script>(function(){try{Object.keys(localStorage).filter(function(k){return k.startsWith('autoplayBlocked_');}).forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();</script>"""
 
 
-def check_autoplay_blocked() -> str:
-    """Check if autoplay is blocked in localStorage"""
-    return """<script>(function(){try{var b=localStorage.getItem('autoplayBlocked');window.parent.postMessage({type:'streamlit:setComponentValue',value:b==='true'},'*')}catch(e){window.parent.postMessage({type:'streamlit:setComponentValue',value:false},'*')}})();</script>"""
+def check_autoplay_blocked(song_id: str) -> str:
+    """Check if autoplay is blocked for the current song"""
+    return f"""<script>(function(){{try{{var b=localStorage.getItem('autoplayBlocked_{song_id}');window.parent.postMessage({{type:'streamlit:setComponentValue',value:b==='true'}},'*')}}catch(e){{window.parent.postMessage({{type:'streamlit:setComponentValue',value:false}},'*')}}}})();</script>"""
 
 
 def autoplay_warning() -> str:
