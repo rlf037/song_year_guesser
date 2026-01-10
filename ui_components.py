@@ -1785,7 +1785,7 @@ def get_elapsed_time_js() -> str:
 
 def autoplay_status_receiver() -> str:
     """Component that receives autoplay status from audio player"""
-    return """<script>(function(){window.addEventListener('message',function(e){if(e.data&&e.data.type==='audio:autoplay'){try{localStorage.setItem('autoplayBlocked',e.data.blocked?'true':'false')}catch(err){}}})})();</script>"""
+    return """<script>(function(){try{localStorage.removeItem('autoplayBlocked');}catch(e){}window.addEventListener('message',function(e){if(e.data&&e.data.type==='audio:autoplay'){try{localStorage.setItem('autoplayBlocked',e.data.blocked?'true':'false')}catch(err){}}})})();</script>"""
 
 
 def check_autoplay_blocked() -> str:
