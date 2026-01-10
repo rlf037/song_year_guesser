@@ -19,8 +19,10 @@ from ui_components import (
     audio_player,
     audio_visualizer,
     correct_answer_with_diff,
+    elapsed_time_receiver,
     empty_leaderboard,
     game_header,
+    get_elapsed_time_js,
     how_to_play,
     leaderboard_entry,
     leaderboard_header,
@@ -523,6 +525,7 @@ def initialize_game_state():
         "status_message": "",
         "current_guess": 2000,
         "time_locked": False,  # New: tracks if timer expired
+        "elapsed_playing_time": 0,  # Tracks actual playing time (excludes paused time)
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -586,6 +589,7 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Press play to start!"
     st.session_state.current_guess = (start_year + end_year) // 2  # Start in middle
+    st.session_state.elapsed_playing_time = 0  # Reset playing time tracker
 
     prefetch_next_song(start_year, end_year)
 
@@ -594,7 +598,10 @@ def make_guess(guess_year: int, timed_out: bool = False):
     """Process the player's guess"""
     song = st.session_state.current_song
 
-    if st.session_state.start_time:
+    # Use actual playing time (excludes paused time) if available
+    if st.session_state.elapsed_playing_time > 0:
+        time_taken = int(st.session_state.elapsed_playing_time)
+    elif st.session_state.start_time:
         time_taken = int(time.time() - st.session_state.start_time)
     else:
         time_taken = 0
@@ -653,9 +660,21 @@ def render_game_interface():
         else:
             st_autorefresh(interval=500, key="audio_start_check")
 
+    # Add elapsed time receiver component (hidden)
+    if st.session_state.audio_started and not st.session_state.game_over:
+        components.html(elapsed_time_receiver(), height=0)
+        # Get current elapsed playing time from timer
+        elapsed_from_timer = components.html(get_elapsed_time_js(), height=0)
+        if elapsed_from_timer is not None and elapsed_from_timer > 0:
+            st.session_state.elapsed_playing_time = elapsed_from_timer
+
     # Calculate elapsed time
     if st.session_state.start_time is not None:
-        elapsed_float = time.time() - st.session_state.start_time
+        # Use actual playing time (excludes paused time) if available
+        if st.session_state.audio_started and st.session_state.elapsed_playing_time > 0:
+            elapsed_float = st.session_state.elapsed_playing_time
+        else:
+            elapsed_float = time.time() - st.session_state.start_time
         elapsed_seconds = int(elapsed_float)
         start_timestamp = st.session_state.start_time * 1000
     else:

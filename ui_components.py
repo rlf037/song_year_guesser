@@ -1341,6 +1341,7 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
         .timer-ring {{ position: relative; width: 200px; height: 200px; filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.4)); transition: filter 0.3s ease; }}
         .timer-ring.warning {{ filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.5)); }}
         .timer-ring.danger {{ filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.6)); animation: pulse 0.5s ease-in-out infinite; }}
+        .timer-ring.paused {{ opacity: 0.6; }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
         .timer-seconds {{ font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1; text-shadow: 0 0 30px currentColor; transition: color 0.3s ease, text-shadow 0.3s ease; }}
         .timer-label {{ font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; }}
@@ -1368,20 +1369,51 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
             var circumference = 2 * Math.PI * 90;
-            
-            function updateTimer() {{
+
+            // Pause tracking
+            var isPaused = false;
+            var pausedAt = null;
+            var accumulatedPausedTime = 0;
+
+            function pause() {{
+                if (!isPaused) {{
+                    isPaused = true;
+                    pausedAt = Date.now();
+                    ring.classList.add('paused');
+                }}
+            }}
+
+            function resume() {{
+                if (isPaused && pausedAt !== null) {{
+                    accumulatedPausedTime += (Date.now() - pausedAt);
+                    isPaused = false;
+                    pausedAt = null;
+                    ring.classList.remove('paused');
+                }}
+            }}
+
+            function getElapsedTime() {{
                 var now = Date.now();
-                var elapsed = (now - startTime) / 1000;
+                var totalPausedTime = accumulatedPausedTime;
+                if (isPaused && pausedAt !== null) {{
+                    totalPausedTime += (now - pausedAt);
+                }}
+                var elapsed = ((now - startTime) - totalPausedTime) / 1000;
+                return elapsed;
+            }}
+
+            function updateTimer() {{
+                var elapsed = getElapsedTime();
                 if (elapsed < 0) elapsed = 0;
                 if (elapsed > maxTime) elapsed = maxTime;
-                
+
                 var remaining = Math.ceil(maxTime - elapsed);
                 var progress = elapsed / maxTime;
                 var offset = circumference * progress;
-                
+
                 circle.style.strokeDashoffset = offset;
                 secondsEl.textContent = remaining;
-                
+
                 ring.classList.remove('warning', 'danger');
                 if (remaining <= 5) {{
                     circle.style.stroke = '#ef4444';
@@ -1398,8 +1430,23 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                     secondsEl.style.color = '#22d3ee';
                     secondsEl.style.textShadow = '0 0 30px #22d3ee';
                 }}
+
+                // Send elapsed time to parent for blur calculation
+                try {{
+                    window.parent.postMessage({{
+                        type: 'timer:elapsed',
+                        elapsed: elapsed
+                    }}, '*');
+                }} catch(e) {{}}
             }}
-            
+
+            // Expose pause/resume to parent window
+            window.timerControl = {{
+                pause: pause,
+                resume: resume,
+                getElapsedTime: getElapsedTime
+            }};
+
             updateTimer();
             setInterval(updateTimer, 100);
         }})();
@@ -1545,7 +1592,7 @@ def leaderboard_entry(idx: int, score: dict) -> str:
 
 
 def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
-    """Generate an audio player with visualizer sync"""
+    """Generate an audio player with visualizer and timer sync"""
     autoplay_attr = "autoplay" if autoplay else ""
     return f"""
     <div class="audio-container">
@@ -1558,7 +1605,7 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
         (function() {{
             var audio = document.getElementById('gameAudio');
             if (!audio) return;
-            
+
             // Find visualizer in parent document
             function getVizContainer() {{
                 try {{
@@ -1567,7 +1614,22 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                     return null;
                 }}
             }}
-            
+
+            // Find timer iframe and access its control functions
+            function getTimerControl() {{
+                try {{
+                    var iframes = window.parent.document.querySelectorAll('iframe');
+                    for (var i = 0; i < iframes.length; i++) {{
+                        if (iframes[i].contentWindow && iframes[i].contentWindow.timerControl) {{
+                            return iframes[i].contentWindow.timerControl;
+                        }}
+                    }}
+                }} catch(e) {{
+                    return null;
+                }}
+                return null;
+            }}
+
             function updateViz(playing) {{
                 var viz = getVizContainer();
                 if (viz) {{
@@ -1578,11 +1640,31 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                     }}
                 }}
             }}
-            
-            audio.addEventListener('play', function() {{ updateViz(true); }});
-            audio.addEventListener('pause', function() {{ updateViz(false); }});
-            audio.addEventListener('ended', function() {{ updateViz(false); }});
-            
+
+            function updateTimer(playing) {{
+                var timerControl = getTimerControl();
+                if (timerControl) {{
+                    if (playing) {{
+                        timerControl.resume();
+                    }} else {{
+                        timerControl.pause();
+                    }}
+                }}
+            }}
+
+            audio.addEventListener('play', function() {{
+                updateViz(true);
+                updateTimer(true);
+            }});
+            audio.addEventListener('pause', function() {{
+                updateViz(false);
+                updateTimer(false);
+            }});
+            audio.addEventListener('ended', function() {{
+                updateViz(false);
+                updateTimer(false);
+            }});
+
             {'audio.volume = 1.0; audio.play().catch(function(e) { console.log("Autoplay prevented:", e); });' if autoplay else ""}
         }})();
     </script>
@@ -1597,6 +1679,93 @@ def leaderboard_header() -> str:
 def empty_leaderboard() -> str:
     """Generate empty leaderboard message"""
     return '<div style="text-align: center; color: #666; padding: 1.5em; font-size: 0.9em;">&#x1F3AE; No scores yet! Play a game to see your scores here.</div>'
+
+
+def elapsed_time_receiver() -> str:
+    """Component that receives elapsed time from timer and stores in localStorage"""
+    return """
+    <script>
+        (function() {
+            var lastElapsed = 0;
+
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'timer:elapsed') {
+                    lastElapsed = event.data.elapsed;
+                    try {
+                        localStorage.setItem('gameTimerElapsed', lastElapsed.toString());
+                    } catch(e) {}
+                }
+            });
+
+            // Also check timer iframes directly
+            function updateFromTimer() {
+                try {
+                    var iframes = window.parent.document.querySelectorAll('iframe');
+                    for (var i = 0; i < iframes.length; i++) {
+                        if (iframes[i].contentWindow && iframes[i].contentWindow.timerControl) {
+                            var elapsed = iframes[i].contentWindow.timerControl.getElapsedTime();
+                            if (elapsed !== undefined && elapsed !== null) {
+                                lastElapsed = elapsed;
+                                localStorage.setItem('gameTimerElapsed', elapsed.toString());
+                            }
+                            break;
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            setInterval(updateFromTimer, 200);
+        })();
+    </script>
+    """
+
+
+def get_elapsed_time_js() -> str:
+    """Component that gets elapsed time from timer or localStorage"""
+    return """
+    <script>
+        (function() {
+            function getElapsedTime() {
+                // First try to get directly from timer iframe
+                try {
+                    var iframes = window.parent.document.querySelectorAll('iframe');
+                    for (var i = 0; i < iframes.length; i++) {
+                        if (iframes[i].contentWindow && iframes[i].contentWindow.timerControl) {
+                            var elapsed = iframes[i].contentWindow.timerControl.getElapsedTime();
+                            if (elapsed !== undefined && elapsed !== null) {
+                                window.parent.postMessage({
+                                    type: 'streamlit:setComponentValue',
+                                    value: elapsed
+                                }, '*');
+                                return;
+                            }
+                        }
+                    }
+                } catch(e) {}
+
+                // Fallback to localStorage
+                try {
+                    var stored = localStorage.getItem('gameTimerElapsed');
+                    if (stored) {
+                        window.parent.postMessage({
+                            type: 'streamlit:setComponentValue',
+                            value: parseFloat(stored)
+                        }, '*');
+                        return;
+                    }
+                } catch(e) {}
+
+                // Default to 0
+                window.parent.postMessage({
+                    type: 'streamlit:setComponentValue',
+                    value: 0
+                }, '*');
+            }
+
+            getElapsedTime();
+        })();
+    </script>
+    """
 
 
 def settings_row() -> str:
