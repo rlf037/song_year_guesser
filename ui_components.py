@@ -1524,6 +1524,246 @@ def static_timer(seconds: int = 30) -> str:
     """
 
 
+def year_scroll_wheel(
+    min_year: int, max_year: int, initial_year: int, disabled: bool = False
+) -> str:
+    """Generate a scroll wheel picker for year selection"""
+    disabled_class = "disabled" if disabled else ""
+    disabled_attr = "true" if disabled else "false"
+    return f"""
+    <style>
+        .wheel-container {{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 180px;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }}
+        .wheel-container.disabled {{
+            opacity: 0.5;
+            pointer-events: none;
+        }}
+        .wheel {{
+            position: relative;
+            height: 180px;
+            width: 140px;
+            overflow: hidden;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+        }}
+        .wheel-inner {{
+            transition: transform 0.1s ease-out;
+        }}
+        .wheel-item {{
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #666;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }}
+        .wheel-item.selected {{
+            color: #22d3ee;
+            font-size: 2.8em;
+            text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+        }}
+        .wheel-item:hover:not(.selected) {{
+            color: #888;
+        }}
+        .wheel-highlight {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 130px;
+            height: 60px;
+            border-top: 2px solid rgba(34, 211, 238, 0.4);
+            border-bottom: 2px solid rgba(34, 211, 238, 0.4);
+            pointer-events: none;
+            border-radius: 8px;
+            background: rgba(34, 211, 238, 0.05);
+        }}
+        .wheel-container.disabled .wheel-highlight {{
+            border-color: rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.05);
+        }}
+        .wheel-container.disabled .wheel-item.selected {{
+            color: #ef4444;
+            text-shadow: none;
+        }}
+    </style>
+    <div class="wheel-container {disabled_class}" id="wheel-container">
+        <div class="wheel" id="wheel">
+            <div class="wheel-inner" id="wheel-inner"></div>
+        </div>
+        <div class="wheel-highlight"></div>
+    </div>
+    <script>
+        (function() {{
+            var minYear = {min_year};
+            var maxYear = {max_year};
+            var currentYear = {initial_year};
+            var disabled = {disabled_attr};
+            var itemHeight = 60;
+            var container = document.getElementById('wheel-container');
+            var wheel = document.getElementById('wheel');
+            var inner = document.getElementById('wheel-inner');
+
+            // Build year items
+            var years = [];
+            for (var y = minYear; y <= maxYear; y++) {{
+                years.push(y);
+            }}
+
+            // Create DOM elements
+            inner.innerHTML = '';
+            years.forEach(function(year, idx) {{
+                var item = document.createElement('div');
+                item.className = 'wheel-item';
+                item.textContent = year;
+                item.dataset.year = year;
+                item.dataset.index = idx;
+                if (year === currentYear) {{
+                    item.classList.add('selected');
+                }}
+                inner.appendChild(item);
+            }});
+
+            // Position to show current year in center
+            var currentIndex = years.indexOf(currentYear);
+            if (currentIndex === -1) currentIndex = Math.floor(years.length / 2);
+
+            // Center the wheel (account for 3 visible items)
+            var offset = -(currentIndex * itemHeight) + itemHeight;
+            inner.style.transform = 'translateY(' + offset + 'px)';
+
+            function selectYear(year) {{
+                if (disabled) return;
+                currentYear = year;
+                var idx = years.indexOf(year);
+                var offset = -(idx * itemHeight) + itemHeight;
+                inner.style.transform = 'translateY(' + offset + 'px)';
+
+                // Update selected class
+                var items = inner.querySelectorAll('.wheel-item');
+                items.forEach(function(item) {{
+                    item.classList.toggle('selected', parseInt(item.dataset.year) === year);
+                }});
+
+                // Send to Streamlit
+                try {{
+                    localStorage.setItem('selectedYear', year.toString());
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: year
+                    }}, '*');
+                }} catch(e) {{}}
+            }}
+
+            // Click handler
+            inner.addEventListener('click', function(e) {{
+                if (disabled) return;
+                var item = e.target.closest('.wheel-item');
+                if (item) {{
+                    selectYear(parseInt(item.dataset.year));
+                }}
+            }});
+
+            // Wheel scroll handler
+            var scrollTimeout = null;
+            wheel.addEventListener('wheel', function(e) {{
+                if (disabled) return;
+                e.preventDefault();
+
+                var delta = e.deltaY > 0 ? 1 : -1;
+                var idx = years.indexOf(currentYear);
+                var newIdx = Math.max(0, Math.min(years.length - 1, idx + delta));
+
+                if (newIdx !== idx) {{
+                    selectYear(years[newIdx]);
+                }}
+            }}, {{ passive: false }});
+
+            // Touch/drag support
+            var touchStartY = 0;
+            var touchMoveY = 0;
+            var isDragging = false;
+
+            wheel.addEventListener('touchstart', function(e) {{
+                if (disabled) return;
+                touchStartY = e.touches[0].clientY;
+                isDragging = true;
+            }});
+
+            wheel.addEventListener('touchmove', function(e) {{
+                if (disabled || !isDragging) return;
+                e.preventDefault();
+                touchMoveY = e.touches[0].clientY;
+                var diff = touchStartY - touchMoveY;
+
+                if (Math.abs(diff) > 30) {{
+                    var delta = diff > 0 ? 1 : -1;
+                    var idx = years.indexOf(currentYear);
+                    var newIdx = Math.max(0, Math.min(years.length - 1, idx + delta));
+                    if (newIdx !== idx) {{
+                        selectYear(years[newIdx]);
+                    }}
+                    touchStartY = touchMoveY;
+                }}
+            }}, {{ passive: false }});
+
+            wheel.addEventListener('touchend', function() {{
+                isDragging = false;
+            }});
+
+            // Mouse drag support
+            wheel.addEventListener('mousedown', function(e) {{
+                if (disabled) return;
+                touchStartY = e.clientY;
+                isDragging = true;
+            }});
+
+            document.addEventListener('mousemove', function(e) {{
+                if (disabled || !isDragging) return;
+                touchMoveY = e.clientY;
+                var diff = touchStartY - touchMoveY;
+
+                if (Math.abs(diff) > 20) {{
+                    var delta = diff > 0 ? 1 : -1;
+                    var idx = years.indexOf(currentYear);
+                    var newIdx = Math.max(0, Math.min(years.length - 1, idx + delta));
+                    if (newIdx !== idx) {{
+                        selectYear(years[newIdx]);
+                    }}
+                    touchStartY = touchMoveY;
+                }}
+            }});
+
+            document.addEventListener('mouseup', function() {{
+                isDragging = false;
+            }});
+
+            // Expose for external access
+            window.yearWheel = {{
+                getYear: function() {{ return currentYear; }},
+                setYear: selectYear
+            }};
+
+            // Initialize localStorage
+            try {{
+                localStorage.setItem('selectedYear', currentYear.toString());
+            }} catch(e) {{}}
+        }})();
+    </script>
+    """
+
+
 def result_display(emoji: str, message: str, subtitle: str, color: str) -> str:
     """Generate the result message display"""
     return f"""

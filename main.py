@@ -36,6 +36,7 @@ from ui_components import (
     spotify_button,
     static_timer,
     timer_html,
+    year_scroll_wheel,
 )
 
 # Page configuration - centered layout for cleaner look
@@ -878,39 +879,20 @@ def render_game_interface():
                 unsafe_allow_html=True,
             )
 
-            # Slider for year selection (works with scroll wheel natively)
-            if not is_locked:
-                selected_year = st.slider(
-                    "Year",
-                    min_value=start_year,
-                    max_value=end_year,
-                    value=st.session_state.current_guess,
-                    step=1,
-                    key="year_slider",
-                    label_visibility="collapsed",
-                )
-                if selected_year != st.session_state.current_guess:
-                    st.session_state.current_guess = selected_year
-            else:
-                # When locked, show disabled slider with the locked value
-                st.slider(
-                    "Year",
-                    min_value=start_year,
-                    max_value=end_year,
-                    value=st.session_state.current_guess,
-                    step=1,
-                    key="year_slider_locked",
-                    label_visibility="collapsed",
-                    disabled=True,
-                )
-
-            # Large year display
-            lock_class = "locked" if is_locked else ""
-            lock_icon = "🔒 " if is_locked else ""
-            st.markdown(
-                f'<div class="year-display {lock_class}">{lock_icon}{st.session_state.current_guess}</div>',
-                unsafe_allow_html=True,
+            # Scroll wheel for year selection
+            selected_year = components.html(
+                year_scroll_wheel(
+                    start_year,
+                    end_year,
+                    st.session_state.current_guess,
+                    disabled=is_locked,
+                ),
+                height=190,
             )
+
+            # Update current_guess if wheel returned a value
+            if selected_year is not None and not is_locked:
+                st.session_state.current_guess = int(selected_year)
 
             if is_locked:
                 st.markdown(
