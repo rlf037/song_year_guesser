@@ -6,7 +6,6 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from pathlib import Path
 
 import requests
 import streamlit as st
@@ -235,8 +234,8 @@ _tracks_cache: dict[int, tuple[float, list[dict]]] = {}
 _image_cache: dict[str, str] = {}
 CACHE_EXPIRY_SECONDS = 300  # 5 minutes - shorter for more variety
 
-# Persistent leaderboard file
-LEADERBOARD_FILE = Path(__file__).parent / "leaderboard.json"
+# Leaderboard storage (session-based, persists during browser session)
+# Note: For true persistence, would need a database
 MAX_LEADERBOARD_ENTRIES = 20
 
 
@@ -248,26 +247,18 @@ def clear_song_cache():
 
 
 def load_leaderboard() -> list[dict]:
-    """Load leaderboard from persistent storage"""
-    try:
-        if LEADERBOARD_FILE.exists():
-            with open(LEADERBOARD_FILE) as f:
-                return json.load(f)
-    except Exception:
-        pass
-    return []
+    """Load leaderboard from session state"""
+    if "leaderboard" not in st.session_state:
+        st.session_state.leaderboard = []
+    return st.session_state.leaderboard
 
 
 def save_leaderboard(leaderboard: list[dict]):
-    """Save leaderboard to persistent storage"""
-    try:
-        # Sort by score and keep top entries
-        sorted_lb = sorted(leaderboard, key=lambda x: x["total_score"], reverse=True)
-        sorted_lb = sorted_lb[:MAX_LEADERBOARD_ENTRIES]
-        with open(LEADERBOARD_FILE, "w") as f:
-            json.dump(sorted_lb, f, indent=2)
-    except Exception:
-        pass
+    """Save leaderboard to session state"""
+    # Sort by score and keep top entries
+    sorted_lb = sorted(leaderboard, key=lambda x: x["total_score"], reverse=True)
+    sorted_lb = sorted_lb[:MAX_LEADERBOARD_ENTRIES]
+    st.session_state.leaderboard = sorted_lb
 
 
 def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str):
