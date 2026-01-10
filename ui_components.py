@@ -1654,7 +1654,7 @@ def leaderboard_entry(idx: int, entry: dict) -> str:
     """
 
 
-def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
+def audio_player(preview_url: str, song_id: str, autoplay: bool = True, time_locked: bool = False) -> str:
     """Generate an audio player with visualizer sync and timer pause control"""
     autoplay_attr = "autoplay" if autoplay else ""
     return f"""
@@ -1668,6 +1668,12 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
         (function() {{
             var audio = document.getElementById('gameAudio');
             if (!audio) return;
+            var timeLocked = {str(time_locked).lower()};
+            
+            // Stop playback if time is locked
+            if (timeLocked && !audio.paused) {{
+                audio.pause();
+            }}
             
             // Find visualizer in parent document
             function getVizContainer() {{
@@ -1678,10 +1684,11 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 }}
             }}
             
-            // Set audio playing state in parent for timer sync
+            // Set audio playing state in parent for timer sync and Streamlit
             function setAudioPlaying(playing) {{
                 try {{
                     window.parent.__audioPlaying = playing;
+                    window.parent.__audioPaused = !playing;
                     // Signal that audio has started at least once (for timer start)
                     if (playing && !window.parent.__audioEverStarted) {{
                         window.parent.__audioEverStarted = true;
@@ -1702,6 +1709,10 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
             }}
             
             audio.addEventListener('play', function() {{ 
+                if (timeLocked) {{
+                    audio.pause();
+                    return;
+                }}
                 updateViz(true); 
                 setAudioPlaying(true);
             }});
@@ -1714,7 +1725,7 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 setAudioPlaying(false);
             }});
             
-            {'audio.volume = 1.0; audio.play().catch(function(e) { console.log("Autoplay prevented:", e); });' if autoplay else ""}
+            {'audio.volume = 1.0; if (!timeLocked) { audio.play().catch(function(e) { console.log("Autoplay prevented:", e); }); }' if autoplay else ""}
         }})();
     </script>
     """

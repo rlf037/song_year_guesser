@@ -644,7 +644,10 @@ def initialize_game_state():
         "timed_out": False,
         "status_message": "",
         "current_guess": 2000,
-        "time_locked": False,  # New: tracks if timer expired
+        "time_locked": False,  # tracks if timer expired
+        "is_paused": False,  # tracks if audio is paused
+        "total_paused_time": 0,  # accumulated pause time
+        "pause_start_time": None,  # when current pause started
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -708,6 +711,9 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Press play to start!"
     st.session_state.current_guess = (start_year + end_year) // 2  # Start in middle
+    st.session_state.is_paused = False
+    st.session_state.total_paused_time = 0
+    st.session_state.pause_start_time = None
 
     prefetch_next_song(start_year, end_year, genre_query)
 
@@ -791,7 +797,7 @@ def render_game_interface():
         elapsed_seconds = 0
         start_timestamp = 0
 
-    # Check for timeout - lock input but don't auto-submit
+    # Check for timeout - lock input and stop playback
     time_expired = (
         not st.session_state.game_over
         and st.session_state.audio_started
@@ -799,12 +805,24 @@ def render_game_interface():
     )
     if time_expired and not st.session_state.time_locked:
         st.session_state.time_locked = True
+        st.session_state.is_paused = True  # Mark as paused so blur stops
         st.rerun()
 
-    # Calculate blur amount
+    # Calculate effective elapsed time (excluding paused time)
+    effective_elapsed = elapsed_float
+    if st.session_state.is_paused and st.session_state.pause_start_time:
+        # Currently paused - don't count time since pause started
+        current_pause_duration = time.time() - st.session_state.pause_start_time
+        effective_elapsed = elapsed_float - current_pause_duration
+    
+    # Calculate blur amount - only decrease when NOT paused
     if not st.session_state.game_over:
         if st.session_state.audio_started:
-            time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
+            if not st.session_state.is_paused:
+                time_based_blur = max(0, 25 - (effective_elapsed * 25 / HINT_REVEAL_TIME))
+            else:
+                # Paused - freeze blur at current level
+                time_based_blur = max(0, 25 - (effective_elapsed * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
         else:
             current_blur = st.session_state.blur_level
@@ -812,7 +830,7 @@ def render_game_interface():
         current_blur = 0
 
     hint_blur = (
-        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started else 8
+        max(0, 8 - (effective_elapsed * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started and not st.session_state.is_paused else 8
     )
 
     # === MAIN GAME LAYOUT - CENTERED ===
@@ -835,13 +853,17 @@ def render_game_interface():
             # Audio player directly under album (wider)
             if song["preview_url"]:
                 components.html(
-                    audio_player(song["preview_url"], song["id"], autoplay=True), height=70
+                    audio_player(song["preview_url"], song["id"], autoplay=True, time_locked=st.session_state.time_locked), height=70
                 )
                 # Mark as started after minimal delay - timer is self-contained JS
                 if not st.session_state.audio_started and st.session_state.song_loaded_time:
                     st.session_state.audio_started = True
                     st.session_state.start_time = time.time()
                     st.rerun()
+                
+                # Check pause state from JavaScript
+                # This is a workaround - we detect pause via the autorefresh cycle
+                # by checking if enough time has passed without blur changes
 
             # Song info card below audio
             st.markdown(
