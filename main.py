@@ -294,6 +294,53 @@ st.markdown(
         border: 1px solid rgba(0, 217, 255, 0.3);
         color: #ffffff;
     }
+    
+    /* Year picker container */
+    .year-picker-container {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 1.5em 2em;
+        margin: 1em auto;
+        max-width: 500px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        text-align: center;
+    }
+    
+    .year-display {
+        font-size: 4em;
+        font-weight: 800;
+        color: #00d9ff;
+        text-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
+        margin: 0.2em 0;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .year-label {
+        font-size: 1.2em;
+        color: #a0a0a0;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 0.5em;
+    }
+    
+    .year-range-indicator {
+        display: flex;
+        justify-content: space-between;
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 0.5em;
+        padding: 0 0.5em;
+    }
+    
+    /* Custom slider track */
+    .stSlider [data-baseweb="slider"] {
+        margin-top: 1em;
+    }
+    
+    .stSlider [data-testid="stTickBar"] {
+        background: rgba(255, 255, 255, 0.1);
+    }
 </style>
 """,
     unsafe_allow_html=True,
@@ -939,6 +986,7 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.audio_started = False  # Will be set true when audio starts
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Press play to start!"
+    st.session_state.current_guess = start_year  # Reset guess to start year
 
     # Start prefetching the next song in background
     prefetch_next_song(start_year, end_year)
@@ -1217,30 +1265,51 @@ def render_game_interface():
 
     st.write("")
 
-    # Year guessing interface with slider
+    # Year guessing interface
     if not st.session_state.game_over:
+        # Initialize guess_year in session state if not present
+        if "current_guess" not in st.session_state:
+            st.session_state.current_guess = st.session_state.start_year
+        
+        # Create the year picker container
         st.markdown(
-            '<div class="year-question">📅 What year was this song released?</div>',
+            f'''
+            <div class="year-picker-container">
+                <div class="year-label">📅 What year was this song released?</div>
+                <div class="year-display" id="year-display">{st.session_state.current_guess}</div>
+                <div class="year-range-indicator">
+                    <span>{st.session_state.start_year}</span>
+                    <span>← Slide to guess →</span>
+                    <span>{st.session_state.end_year}</span>
+                </div>
+            </div>
+            ''',
             unsafe_allow_html=True,
         )
         
-        # Center the slider
-        col1, col2, col3 = st.columns([1, 3, 1])
+        # Centered slider
+        col1, col2, col3 = st.columns([1, 4, 1])
         with col2:
             guess_year = st.slider(
-                "Year",
+                "Select Year",
                 min_value=st.session_state.start_year,
                 max_value=st.session_state.end_year,
-                value=(st.session_state.start_year + st.session_state.end_year) // 2,
+                value=st.session_state.start_year,
                 step=1,
                 key="guess_slider",
                 label_visibility="collapsed",
+                on_change=lambda: setattr(st.session_state, 'current_guess', st.session_state.guess_slider),
             )
+            # Update display value
+            st.session_state.current_guess = guess_year
 
+        st.write("")
+        
+        # Submit button
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button(
-                "🎯 Submit Guess", type="primary", use_container_width=True, key="submit_guess"
+                f"🎯 Submit: {guess_year}", type="primary", use_container_width=True, key="submit_guess"
             ):
                 make_guess(guess_year)
                 st.rerun()
@@ -1252,9 +1321,18 @@ def render_game_interface():
         st.markdown('<div class="game-over">', unsafe_allow_html=True)
 
         if st.session_state.timed_out:
-            st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">⏰</span></div>', unsafe_allow_html=True)
-            st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #ff4444;">TIME\'S UP!</div>', unsafe_allow_html=True)
-            st.markdown('<div style="text-align: center; color: #a0a0a0;">You ran out of time!</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div style="text-align: center;"><span style="font-size: 4em;">⏰</span></div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #ff4444;">TIME\'S UP!</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                '<div style="text-align: center; color: #a0a0a0;">You ran out of time!</div>',
+                unsafe_allow_html=True,
+            )
         else:
             guess_val = last_score["guess"]
             if isinstance(guess_val, int):
@@ -1262,24 +1340,63 @@ def render_game_interface():
 
                 if year_diff == 0:
                     st.balloons()
-                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎉</span></div>', unsafe_allow_html=True)
-                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00ff88;">PERFECT!</div>', unsafe_allow_html=True)
-                    st.markdown('<div style="text-align: center; color: #a0a0a0;">You got it exactly right!</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<div style="text-align: center;"><span style="font-size: 4em;">🎉</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00ff88;">PERFECT!</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        '<div style="text-align: center; color: #a0a0a0;">You got it exactly right!</div>',
+                        unsafe_allow_html=True,
+                    )
                 elif year_diff <= 2:
-                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎵</span></div>', unsafe_allow_html=True)
-                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00d9ff;">Excellent!</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div style="text-align: center; color: #a0a0a0;">Off by only {year_diff} year{"s" if year_diff > 1 else ""}!</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<div style="text-align: center;"><span style="font-size: 4em;">🎵</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00d9ff;">Excellent!</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f'<div style="text-align: center; color: #a0a0a0;">Off by only {year_diff} year{"s" if year_diff > 1 else ""}!</div>',
+                        unsafe_allow_html=True,
+                    )
                 elif year_diff <= 5:
-                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎶</span></div>', unsafe_allow_html=True)
-                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #f39c12;">Good job!</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div style="text-align: center; color: #a0a0a0;">Close! Off by {year_diff} years.</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<div style="text-align: center;"><span style="font-size: 4em;">🎶</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #f39c12;">Good job!</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f'<div style="text-align: center; color: #a0a0a0;">Close! Off by {year_diff} years.</div>',
+                        unsafe_allow_html=True,
+                    )
                 else:
-                    st.markdown('<div style="text-align: center;"><span style="font-size: 4em;">🎸</span></div>', unsafe_allow_html=True)
-                    st.markdown('<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #e94560;">Nice try!</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div style="text-align: center; color: #a0a0a0;">Off by {year_diff} years.</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<div style="text-align: center;"><span style="font-size: 4em;">🎸</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #e94560;">Nice try!</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f'<div style="text-align: center; color: #a0a0a0;">Off by {year_diff} years.</div>',
+                        unsafe_allow_html=True,
+                    )
 
-        st.markdown(f'<div class="correct-answer">The answer was {song["year"]}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="correct-answer">The answer was {song["year"]}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
         # Score display
         st.markdown(
@@ -1315,7 +1432,7 @@ def render_game_interface():
             with col_a:
                 played_count = len(st.session_state.get("played_song_ids", set()))
                 if st.button(
-                    f"▶️ Next Song",
+                    "▶️ Next Song",
                     type="primary",
                     use_container_width=True,
                     key="next_song",
@@ -1354,7 +1471,7 @@ def render_leaderboard():
         guess_display = score["guess"] if isinstance(score["guess"], int) else "TIMEOUT"
         medal = "🥇" if idx == 1 else "🥈" if idx == 2 else "🥉" if idx == 3 else f"#{idx}"
         st.markdown(
-            f'''
+            f"""
             <div class="leaderboard" style="margin: 0.5em auto; max-width: 600px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
@@ -1367,7 +1484,7 @@ def render_leaderboard():
                     {score["song"]} • Guessed: {guess_display} • Actual: {score["actual"]} • {score["time"]}s
                 </div>
             </div>
-            ''',
+            """,
             unsafe_allow_html=True,
         )
 
@@ -1437,7 +1554,7 @@ def main():
     # Main content
     if not st.session_state.game_active:
         st.markdown(
-            '''
+            """
             <div class="how-to-play">
                 <h3 style="text-align: center;">🎮 How to Play</h3>
                 <ol>
@@ -1450,7 +1567,7 @@ def main():
                     💡 Use hints to reveal the album, artist, and song title (but you\'ll lose points!)
                 </div>
             </div>
-            ''',
+            """,
             unsafe_allow_html=True,
         )
 
