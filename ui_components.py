@@ -1790,10 +1790,20 @@ def year_scroll_wheel(
                 setYear: selectYear
             }};
 
-            // Initialize localStorage
-            try {{
-                localStorage.setItem('selectedYear', currentYear.toString());
-            }} catch(e) {{}}
+            // Send initial value to Streamlit and localStorage
+            function sendCurrentYear() {{
+                try {{
+                    localStorage.setItem('selectedYear', currentYear.toString());
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: currentYear
+                    }}, '*');
+                }} catch(e) {{}}
+            }}
+
+            // Send immediately and keep sending periodically to ensure sync
+            sendCurrentYear();
+            setInterval(sendCurrentYear, 300);
         }})();
     </script>
     """

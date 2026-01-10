@@ -25,7 +25,6 @@ from ui_components import (
     empty_leaderboard,
     game_header,
     get_elapsed_time_js,
-    get_selected_year_js,
     how_to_play,
     leaderboard_entry,
     leaderboard_header,
@@ -90,7 +89,7 @@ COMPILATION_KEYWORDS = [
     "digitally",
 ]
 
-MIN_SPOTIFY_POPULARITY = 80  # Lowered slightly for more variety
+MIN_SPOTIFY_POPULARITY = 50  # Lower threshold for more song variety
 MAX_GUESS_TIME = 30
 HINT_REVEAL_TIME = 25
 
@@ -880,8 +879,8 @@ def render_game_interface():
                 unsafe_allow_html=True,
             )
 
-            # Scroll wheel for year selection
-            components.html(
+            # Scroll wheel for year selection (sends value directly to Streamlit)
+            selected_year = components.html(
                 year_scroll_wheel(
                     start_year,
                     end_year,
@@ -891,10 +890,7 @@ def render_game_interface():
                 height=310,
             )
 
-            # Hidden component to continuously read selected year from localStorage
-            selected_year = components.html(get_selected_year_js(), height=0)
-
-            # Update current_guess if year reader returned a valid value
+            # Update current_guess if wheel returned a valid value
             if selected_year is not None and selected_year != 0 and not is_locked:
                 try:
                     year_value = int(selected_year)
@@ -1172,14 +1168,11 @@ def main():
             st.rerun()
         return
 
-    # Handle guess submission with spinner
+    # Handle guess submission (quick operation, no spinner needed)
     if st.session_state.submitting_guess:
-        st.markdown(main_title(), unsafe_allow_html=True)
-        with st.spinner("🎯 Calculating your score..."):
-            make_guess(st.session_state.current_guess, timed_out=st.session_state.guess_timed_out)
-            st.session_state.submitting_guess = False
-            st.rerun()
-        return
+        make_guess(st.session_state.current_guess, timed_out=st.session_state.guess_timed_out)
+        st.session_state.submitting_guess = False
+        st.rerun()
 
     if not st.session_state.game_active:
         # Welcome screen
