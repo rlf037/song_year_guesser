@@ -1572,7 +1572,7 @@ def year_scroll_wheel(
             justify-content: center;
             align-items: center;
             width: 100%;
-            height: 180px;
+            height: 300px;
             position: relative;
             overflow: hidden;
             user-select: none;
@@ -1583,11 +1583,11 @@ def year_scroll_wheel(
         }}
         .wheel {{
             position: relative;
-            height: 180px;
+            height: 300px;
             width: 140px;
             overflow: hidden;
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
-            mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
         }}
         .wheel-inner {{
             transition: transform 0.1s ease-out;
@@ -1674,15 +1674,15 @@ def year_scroll_wheel(
             var currentIndex = years.indexOf(currentYear);
             if (currentIndex === -1) currentIndex = Math.floor(years.length / 2);
 
-            // Center the wheel (account for 3 visible items)
-            var offset = -(currentIndex * itemHeight) + itemHeight;
+            // Center the wheel (account for 5 visible items, center is index 2)
+            var offset = -(currentIndex * itemHeight) + (2 * itemHeight);
             inner.style.transform = 'translateY(' + offset + 'px)';
 
             function selectYear(year) {{
                 if (disabled) return;
                 currentYear = year;
                 var idx = years.indexOf(year);
-                var offset = -(idx * itemHeight) + itemHeight;
+                var offset = -(idx * itemHeight) + (2 * itemHeight);
                 inner.style.transform = 'translateY(' + offset + 'px)';
 
                 // Update selected class

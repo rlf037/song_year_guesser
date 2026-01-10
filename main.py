@@ -888,7 +888,7 @@ def render_game_interface():
                     st.session_state.current_guess,
                     disabled=is_locked,
                 ),
-                height=190,
+                height=310,
             )
 
             # Hidden component to continuously read selected year from localStorage
