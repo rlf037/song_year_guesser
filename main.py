@@ -92,7 +92,7 @@ MIN_SPOTIFY_POPULARITY = 80  # Lowered slightly for more variety
 MAX_GUESS_TIME = 30
 HINT_REVEAL_TIME = 25
 
-# Genre configuration - all default to 1995-2020
+# Genre configuration with golden age years for each genre
 GENRE_CONFIG = {
     "All Genres": {
         "query": "",  # Empty means no genre filter
@@ -101,52 +101,52 @@ GENRE_CONFIG = {
     },
     "Pop": {
         "query": "pop",
-        "best_years": (1995, 2020),
+        "best_years": (1985, 2000),
         "icon": "🎤",
     },
     "Rock": {
         "query": "rock",
-        "best_years": (1995, 2020),
+        "best_years": (1968, 1985),
         "icon": "🎸",
     },
     "Hip-Hop": {
         "query": "hip hop rap",
-        "best_years": (1995, 2020),
+        "best_years": (1994, 2009),
         "icon": "🎧",
     },
     "R&B": {
         "query": "r&b soul",
-        "best_years": (1995, 2020),
+        "best_years": (1990, 2005),
         "icon": "💜",
     },
     "Electronic": {
         "query": "electronic dance edm",
-        "best_years": (1995, 2020),
+        "best_years": (1998, 2013),
         "icon": "🎹",
     },
     "Country": {
         "query": "country",
-        "best_years": (1995, 2020),
+        "best_years": (1990, 2005),
         "icon": "🤠",
     },
     "Alternative": {
         "query": "alternative indie",
-        "best_years": (1995, 2020),
+        "best_years": (1991, 2006),
         "icon": "🎪",
     },
     "Metal": {
         "query": "metal heavy",
-        "best_years": (1995, 2020),
+        "best_years": (1983, 1998),
         "icon": "🤘",
     },
     "Disco/Funk": {
         "query": "disco funk",
-        "best_years": (1995, 2020),
+        "best_years": (1975, 1985),
         "icon": "🕺",
     },
     "80s": {
         "query": "80s hits",
-        "best_years": (1995, 2020),
+        "best_years": (1980, 1989),
         "icon": "📼",
     },
 }
@@ -1100,7 +1100,7 @@ def render_settings_panel():
     )
 
     # Row 1: Genre and Player Name
-    col_genre, col_name, col_btn = st.columns([2, 1.5, 1])
+    col_genre, col_name = st.columns([2, 1.5])
 
     with col_genre:
         # Genre selection with icons
@@ -1141,15 +1141,6 @@ def render_settings_panel():
             placeholder="Enter your name",
         )
         st.session_state.current_player = player_name
-
-    with col_btn:
-        if st.button("🔄 New Songs", help="Get fresh songs from the selected genre and year range"):
-            clear_song_cache()
-            st.session_state.played_song_ids = set()
-            st.session_state.played_song_keys = set()
-            st.session_state.next_song_cache = None
-            st.toast("Song pool refreshed!")
-            st.rerun()
 
     # Row 2: Year range slider (full width)
     year_range = st.slider(
