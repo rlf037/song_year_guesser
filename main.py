@@ -15,41 +15,73 @@ from streamlit_autorefresh import st_autorefresh
 # Import UI components
 from ui_components import (
     MAIN_CSS,
-    game_header,
-    main_title,
-    song_info_card,
     album_image,
-    year_picker_display,
-    timer_html,
-    static_timer,
-    result_display,
-    correct_answer,
-    score_card,
-    status_line,
-    spotify_button,
+    audio_player,
+    audio_visualizer,
+    correct_answer_with_diff,
+    empty_leaderboard,
+    game_header,
     how_to_play,
     leaderboard_entry,
-    audio_player,
+    leaderboard_header,
+    main_title,
+    result_display,
+    score_card,
+    song_history_item,
+    song_info_card,
+    spotify_button,
+    static_timer,
+    timer_html,
 )
 
-# Page configuration - wide layout for side-by-side design
+# Page configuration - centered layout for cleaner look
 st.set_page_config(
     page_title="Song Year Guesser",
     page_icon="🎵",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 st.markdown(MAIN_CSS, unsafe_allow_html=True)
 
 
 COMPILATION_KEYWORDS = [
-    "greatest hits", "best of", "collection", "anthology", "compilation",
-    "essentials", "hits", "singles", "retrospective", "very best",
-    "ultimate", "deluxe", "remastered", "live", "remix", "acoustic",
-    "version", "edition", "anniversary", "remaster", "expanded",
-    "bonus", "special", "complete", "definitive", "gold", "platinum",
-    "legend", "classic", "chronicles", "archive", "re-issue", "reissue",
-    "re-release", "mono", "stereo", "digitally",
+    "greatest hits",
+    "best of",
+    "collection",
+    "anthology",
+    "compilation",
+    "essentials",
+    "hits",
+    "singles",
+    "retrospective",
+    "very best",
+    "ultimate",
+    "deluxe",
+    "remastered",
+    "live",
+    "remix",
+    "acoustic",
+    "version",
+    "edition",
+    "anniversary",
+    "remaster",
+    "expanded",
+    "bonus",
+    "special",
+    "complete",
+    "definitive",
+    "gold",
+    "platinum",
+    "legend",
+    "classic",
+    "chronicles",
+    "archive",
+    "re-issue",
+    "reissue",
+    "re-release",
+    "mono",
+    "stereo",
+    "digitally",
 ]
 
 MIN_SPOTIFY_POPULARITY = 80  # Lowered slightly for more variety
@@ -217,7 +249,9 @@ def get_songs_from_spotify(year: int) -> list[dict]:
 
     if playlist_id:
         try:
-            playlist_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100&market=US"
+            playlist_url = (
+                f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100&market=US"
+            )
             response = requests.get(playlist_url, headers=headers, timeout=5)
 
             if response.status_code == 200:
@@ -231,7 +265,9 @@ def get_songs_from_spotify(year: int) -> list[dict]:
                     track_name = track.get("name", "")
                     album_name = album.get("name", "")
 
-                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(track_name):
+                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(
+                        track_name
+                    ):
                         continue
 
                     artists = track.get("artists", [])
@@ -252,23 +288,27 @@ def get_songs_from_spotify(year: int) -> list[dict]:
 
                     song_key = f"{artist_name.lower()}|{track_name.lower()}"
 
-                    tracks.append({
-                        "id": track["id"],
-                        "name": track_name,
-                        "artist": artist_name,
-                        "album": album_name,
-                        "year": album_year,
-                        "image_url": image_url,
-                        "popularity": popularity,
-                        "spotify_id": track["id"],
-                        "song_key": song_key,
-                    })
+                    tracks.append(
+                        {
+                            "id": track["id"],
+                            "name": track_name,
+                            "artist": artist_name,
+                            "album": album_name,
+                            "year": album_year,
+                            "image_url": image_url,
+                            "popularity": popularity,
+                            "spotify_id": track["id"],
+                            "song_key": song_key,
+                        }
+                    )
         except Exception:
             pass
 
     if not tracks:
         try:
-            search_url = f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
+            search_url = (
+                f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
+            )
             response = requests.get(search_url, headers=headers, timeout=5)
 
             if response.status_code == 200:
@@ -284,7 +324,9 @@ def get_songs_from_spotify(year: int) -> list[dict]:
 
                     album_name = album.get("name", "")
                     track_name = item.get("name", "")
-                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(track_name):
+                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(
+                        track_name
+                    ):
                         continue
 
                     popularity = item.get("popularity", 0)
@@ -302,17 +344,19 @@ def get_songs_from_spotify(year: int) -> list[dict]:
 
                     song_key = f"{artist_name.lower()}|{track_name.lower()}"
 
-                    tracks.append({
-                        "id": item["id"],
-                        "name": track_name,
-                        "artist": artist_name,
-                        "album": album_name,
-                        "year": album_year,
-                        "image_url": image_url,
-                        "popularity": popularity,
-                        "spotify_id": item["id"],
-                        "song_key": song_key,
-                    })
+                    tracks.append(
+                        {
+                            "id": item["id"],
+                            "name": track_name,
+                            "artist": artist_name,
+                            "album": album_name,
+                            "year": album_year,
+                            "image_url": image_url,
+                            "popularity": popularity,
+                            "spotify_id": item["id"],
+                            "song_key": song_key,
+                        }
+                    )
         except Exception:
             pass
 
@@ -339,7 +383,9 @@ def _fetch_deezer_preview(track: dict) -> tuple[dict, str | None]:
     return (track, preview_url)
 
 
-def get_random_song(start_year: int, end_year: int, played_ids: set | None = None, played_keys: set | None = None) -> dict | None:
+def get_random_song(
+    start_year: int, end_year: int, played_ids: set | None = None, played_keys: set | None = None
+) -> dict | None:
     """Get a random popular song from the specified year range."""
     if played_ids is None:
         played_ids = set()
@@ -356,7 +402,8 @@ def get_random_song(start_year: int, end_year: int, played_ids: set | None = Non
             continue
 
         available_tracks = [
-            t for t in tracks
+            t
+            for t in tracks
             if t["id"] not in played_ids
             and t.get("song_key") not in played_keys
             and start_year <= t.get("year", year) <= end_year
@@ -387,7 +434,9 @@ def get_random_song(start_year: int, end_year: int, played_ids: set | None = Non
                             "preview_url": preview_url,
                             "image_url": track["image_url"],
                             "deezer_url": f"https://open.spotify.com/track/{track['spotify_id']}",
-                            "song_key": track.get("song_key", f"{track['artist'].lower()}|{track['name'].lower()}"),
+                            "song_key": track.get(
+                                "song_key", f"{track['artist'].lower()}|{track['name'].lower()}"
+                            ),
                         }
                 except Exception:
                     continue
@@ -556,14 +605,16 @@ def make_guess(guess_year: int, timed_out: bool = False):
     else:
         score = calculate_score(guess_year, song["year"], time_taken)
 
-    st.session_state.player_scores.append({
-        "player": st.session_state.current_player,
-        "song": f"{song['name']} by {song['artist']}",
-        "guess": guess_year,
-        "actual": song["year"],
-        "score": score,
-        "time": time_taken,
-    })
+    st.session_state.player_scores.append(
+        {
+            "player": st.session_state.current_player,
+            "song": f"{song['name']} by {song['artist']}",
+            "guess": guess_year,
+            "actual": song["year"],
+            "score": score,
+            "time": time_taken,
+        }
+    )
 
     st.session_state.game_over = True
     st.session_state.blur_level = 0
@@ -590,9 +641,9 @@ def render_game_interface():
             st.session_state.current_round,
             st.session_state.start_year,
             st.session_state.end_year,
-            total_score
+            total_score,
         ),
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     # Auto-refresh for game state updates
@@ -632,93 +683,102 @@ def render_game_interface():
     else:
         current_blur = 0
 
-    hint_blur = max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started else 8
+    hint_blur = (
+        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started else 8
+    )
 
-    # === MAIN GAME LAYOUT ===
-    # Timer in center
-    timer_col1, timer_col2, timer_col3 = st.columns([1, 1, 1])
-    with timer_col2:
-        if st.session_state.audio_started and not st.session_state.game_over:
-            components.html(timer_html(start_timestamp, MAX_GUESS_TIME), height=120)
-        elif not st.session_state.game_over:
-            st.markdown(static_timer(30), unsafe_allow_html=True)
+    # === MAIN GAME LAYOUT - CENTERED ===
 
-    # Status message
-    if st.session_state.status_message and not st.session_state.game_over:
-        st.markdown(status_line(st.session_state.status_message), unsafe_allow_html=True)
+    # === TWO COLUMN: Album+Audio LEFT, Year Picker RIGHT ===
+    if not st.session_state.game_over:
+        col1, main_left, main_right, col4 = st.columns([0.1, 1.2, 0.8, 0.1])
 
-    # Audio player
-    if song["preview_url"]:
-        audio_col1, audio_col2, audio_col3 = st.columns([1, 2, 1])
-        with audio_col2:
-            if not st.session_state.game_over:
-                components.html(audio_player(song["preview_url"], song["id"], autoplay=True), height=70)
-                
+        with main_left:
+            # Album artwork (much larger - 450px)
+            if song["image_url"]:
+                blurred_image = blur_image(song["image_url"], int(current_blur))
+                if blurred_image:
+                    st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
+
+            # Audio visualizer bars - stop when time is up
+            is_playing = st.session_state.audio_started and not st.session_state.time_locked
+            st.markdown(audio_visualizer(is_playing=is_playing), unsafe_allow_html=True)
+
+            # Audio player directly under album (wider)
+            if song["preview_url"]:
+                components.html(
+                    audio_player(song["preview_url"], song["id"], autoplay=True), height=70
+                )
                 if not st.session_state.audio_started:
-                    if st.session_state.song_loaded_time and (time.time() - st.session_state.song_loaded_time) > 1.0:
+                    if (
+                        st.session_state.song_loaded_time
+                        and (time.time() - st.session_state.song_loaded_time) > 1.0
+                    ):
                         st.session_state.audio_started = True
                         st.session_state.start_time = time.time()
-                        st.session_state.status_message = "🎵 Listening... make your guess!"
                         st.rerun()
-            else:
-                components.html(audio_player(song["preview_url"], song["id"], autoplay=False), height=70)
 
-    st.write("")
+            # Song info card below audio
+            st.markdown(
+                song_info_card(song, hint_blur if st.session_state.audio_started else 8),
+                unsafe_allow_html=True,
+            )
 
-    # === SIDE BY SIDE LAYOUT ===
-    left_col, right_col = st.columns([1, 1])
-
-    with left_col:
-        # Song info card (above album art) with blur
-        if not st.session_state.game_over:
-            st.markdown(song_info_card(song, hint_blur if st.session_state.audio_started else 8), unsafe_allow_html=True)
-        else:
-            st.markdown(song_info_card(song, 0), unsafe_allow_html=True)
-
-        # Album artwork
-        if song["image_url"]:
-            blurred_image = blur_image(song["image_url"], int(current_blur))
-            if blurred_image:
-                st.markdown(album_image(blurred_image, 280), unsafe_allow_html=True)
-
-    with right_col:
-        # Year picker with scroll wheel
-        if not st.session_state.game_over:
+        with main_right:
             start_year = st.session_state.start_year
             end_year = st.session_state.end_year
             is_locked = st.session_state.time_locked
 
-            # Year display header
+            # Year picker label
             st.markdown(
-                year_picker_display(
-                    st.session_state.current_guess,
-                    start_year,
-                    end_year,
-                    locked=is_locked
-                ),
-                unsafe_allow_html=True
+                '<div style="text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 0.75em; margin-bottom: 0.5em;">🎯 Select Release Year</div>',
+                unsafe_allow_html=True,
             )
 
-            # Scroll wheel input (number_input)
-            selected_year = st.number_input(
-                "Year",
-                min_value=start_year,
-                max_value=end_year,
-                value=st.session_state.current_guess,
-                step=1,
-                key="year_input",
-                label_visibility="collapsed",
-                disabled=is_locked,
+            # Slider for year selection (works with scroll wheel natively)
+            if not is_locked:
+                selected_year = st.slider(
+                    "Year",
+                    min_value=start_year,
+                    max_value=end_year,
+                    value=st.session_state.current_guess,
+                    step=1,
+                    key="year_slider",
+                    label_visibility="collapsed",
+                )
+                if selected_year != st.session_state.current_guess:
+                    st.session_state.current_guess = selected_year
+            else:
+                # When locked, show disabled slider with the locked value
+                st.slider(
+                    "Year",
+                    min_value=start_year,
+                    max_value=end_year,
+                    value=st.session_state.current_guess,
+                    step=1,
+                    key="year_slider_locked",
+                    label_visibility="collapsed",
+                    disabled=True,
+                )
+
+            # Large year display
+            lock_class = "locked" if is_locked else ""
+            lock_icon = "🔒 " if is_locked else ""
+            st.markdown(
+                f'<div class="year-display {lock_class}">{lock_icon}{st.session_state.current_guess}</div>',
+                unsafe_allow_html=True,
             )
-            if selected_year != st.session_state.current_guess:
-                st.session_state.current_guess = selected_year
 
-            st.write("")
+            if is_locked:
+                st.markdown(
+                    '<div style="text-align: center; color: #f59e0b; font-size: 0.85em; margin-top: 0.5em;">TIME\'S UP - Submit now!</div>',
+                    unsafe_allow_html=True,
+                )
 
-            # Submit button - always visible, disabled when not applicable
-            submit_disabled = not st.session_state.audio_started
+            # Submit button - disabled UNTIL time is up
+            submit_disabled = not is_locked
             if st.button(
-                "🎯 Submit Guess",
+                "Submit Guess" if not is_locked else "✓ Submit Now!",
                 type="primary",
                 use_container_width=True,
                 key="submit_guess",
@@ -727,24 +787,12 @@ def render_game_interface():
                 make_guess(st.session_state.current_guess, timed_out=is_locked)
                 st.rerun()
 
-            st.write("")
-
-            # Next Song and End Game buttons - always visible, disabled during active play
-            btn_col1, btn_col2 = st.columns(2)
-            with btn_col1:
-                st.button(
-                    "⏭️ Skip Song",
-                    use_container_width=True,
-                    key="skip_disabled",
-                    disabled=True,  # Always disabled during game
-                )
-            with btn_col2:
-                st.button(
-                    "🏁 End Game",
-                    use_container_width=True,
-                    key="end_disabled",
-                    disabled=True,  # Always disabled during game
-                )
+            # Timer in right column - compact
+            st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
+            if st.session_state.audio_started:
+                components.html(timer_html(start_timestamp, MAX_GUESS_TIME), height=220)
+            else:
+                st.markdown(static_timer(30), unsafe_allow_html=True)
 
     # === GAME OVER DISPLAY ===
     if st.session_state.game_over:
@@ -754,33 +802,74 @@ def render_game_interface():
 
         # Result message based on accuracy
         if st.session_state.timed_out:
-            emoji, message, subtitle, color = "⏰", "TIME'S UP!", f"Your guess of {guess_val} was submitted.", "#f59e0b"
+            emoji, message, subtitle, color = (
+                "⏰",
+                "TIME'S UP!",
+                f"Your guess of {guess_val} was submitted.",
+                "#f59e0b",
+            )
         elif year_diff == 0:
             st.balloons()
-            emoji, message, subtitle, color = "🎉", "PERFECT!", "You got it exactly right!", "#00ff88"
+            emoji, message, subtitle, color = (
+                "🎉",
+                "PERFECT!",
+                "You got it exactly right!",
+                "#00ff88",
+            )
         elif year_diff <= 2:
-            emoji, message, subtitle, color = "🎵", "Excellent!", f"Off by only {year_diff} year{'s' if year_diff > 1 else ''}!", "#22d3ee"
+            emoji, message, subtitle, color = (
+                "🎵",
+                "Excellent!",
+                f"Off by only {year_diff} year{'s' if year_diff > 1 else ''}!",
+                "#22d3ee",
+            )
         elif year_diff <= 5:
-            emoji, message, subtitle, color = "🎶", "Good job!", f"Close! Off by {year_diff} years.", "#a78bfa"
+            emoji, message, subtitle, color = (
+                "🎶",
+                "Good job!",
+                f"Close! Off by {year_diff} years.",
+                "#a78bfa",
+            )
         else:
-            emoji, message, subtitle, color = "🎸", "Nice try!", f"Off by {year_diff} years.", "#8b5cf6"
+            emoji, message, subtitle, color = (
+                "🎸",
+                "Nice try!",
+                f"Off by {year_diff} years.",
+                "#8b5cf6",
+            )
 
         st.markdown(result_display(emoji, message, subtitle, color), unsafe_allow_html=True)
-        st.markdown(correct_answer(song["year"]), unsafe_allow_html=True)
-        st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
 
-        # Spotify button
-        st.markdown(spotify_button(song["deezer_url"]), unsafe_allow_html=True)
+        # Show revealed album and song info centered
+        result_col1, result_spacer, result_col2 = st.columns([1.2, 0.1, 0.8])
+        with result_col1:
+            if song["image_url"]:
+                blurred_image = blur_image(song["image_url"], 0)  # Fully revealed
+                if blurred_image:
+                    st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
 
-        st.write("")
+            # Audio player under album in results too
+            if song["preview_url"]:
+                components.html(
+                    audio_player(song["preview_url"], song["id"], autoplay=False), height=70
+                )
 
-        # Action buttons - now enabled
-        btn_col1, btn_col2 = st.columns(2)
-        with btn_col1:
+            st.markdown(song_info_card(song, 0), unsafe_allow_html=True)
+
+        with result_col2:
+            st.markdown(correct_answer_with_diff(song["year"], guess_val), unsafe_allow_html=True)
+            st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
+
+            # Listen on Deezer button
+            st.markdown(spotify_button(song["deezer_url"]), unsafe_allow_html=True)
+
+            st.write("")
+
+            # Action buttons
             if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
                 start_new_game(st.session_state.start_year, st.session_state.end_year)
                 st.rerun()
-        with btn_col2:
+
             if st.button("🏁 End Game", use_container_width=True, key="end_game"):
                 st.session_state.game_active = False
                 st.session_state.game_over = False
@@ -794,60 +883,89 @@ def render_game_interface():
 def render_leaderboard():
     """Display the leaderboard"""
     if not st.session_state.player_scores:
-        st.markdown(
-            '<div style="text-align: center; color: #a0a0a0; padding: 2em;">🎮 No scores yet! Play a game to see your scores here.</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(empty_leaderboard(), unsafe_allow_html=True)
         return
 
-    st.markdown('<div class="leaderboard-header">🏆 Leaderboard</div>', unsafe_allow_html=True)
-
+    st.markdown(leaderboard_header(), unsafe_allow_html=True)
     sorted_scores = sorted(st.session_state.player_scores, key=lambda x: x["score"], reverse=True)
-
     for idx, score in enumerate(sorted_scores[:10], 1):
         st.markdown(leaderboard_entry(idx, score), unsafe_allow_html=True)
 
 
+def render_song_history():
+    """Display recent song history"""
+    if not st.session_state.player_scores:
+        return
+
+    st.markdown('<div class="history-container">', unsafe_allow_html=True)
+    st.markdown('<div class="history-header">📜 Recent Songs</div>', unsafe_allow_html=True)
+
+    # Show last 5 songs in reverse order (most recent first)
+    recent_scores = list(reversed(st.session_state.player_scores[-5:]))
+    for score in recent_scores:
+        history_data = {
+            "song_name": score["song"].split(" by ")[0]
+            if " by " in score["song"]
+            else score["song"],
+            "artist": score["song"].split(" by ")[1] if " by " in score["song"] else "Unknown",
+            "guess": score["guess"],
+            "actual": score["actual"],
+            "score": score["score"],
+        }
+        st.markdown(song_history_item(history_data), unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def render_settings_panel():
-    """Render the settings panel in the main page"""
-    st.markdown("---")
-    
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-    
-    with col1:
-        player_name = st.text_input("👤 Player Name", value=st.session_state.current_player, max_chars=20)
+    """Render a compact settings row"""
+    # Use a range slider for year selection - much cleaner
+    st.markdown(
+        '<div style="text-align: center; margin-bottom: 1em;">',
+        unsafe_allow_html=True,
+    )
+
+    # Player name input
+    col_name, col_years, col_btn = st.columns([1, 2, 1])
+
+    with col_name:
+        player_name = st.text_input(
+            "Player Name",
+            value=st.session_state.current_player,
+            max_chars=15,
+            label_visibility="collapsed",
+            placeholder="Enter your name",
+        )
         st.session_state.current_player = player_name
-    
-    with col2:
-        start_year = st.number_input(
-            "📅 Start Year",
+
+    with col_years:
+        # Year range slider - clean and simple
+        year_range = st.slider(
+            "Year Range",
             min_value=1960,
-            max_value=datetime.now().year - 1,
-            value=st.session_state.start_year,
-        )
-        st.session_state.start_year = start_year
-    
-    with col3:
-        end_year = st.number_input(
-            "📅 End Year",
-            min_value=start_year,
             max_value=datetime.now().year,
-            value=max(st.session_state.end_year, start_year),
+            value=(st.session_state.start_year, st.session_state.end_year),
+            label_visibility="collapsed",
         )
-        st.session_state.end_year = end_year
-    
-    with col4:
-        st.write("")  # Spacing
-        st.write("")
-        if st.button("🔄 Refresh Songs", use_container_width=True):
+        st.session_state.start_year = year_range[0]
+        st.session_state.end_year = year_range[1]
+
+        # Show selected range
+        st.markdown(
+            f'<div style="text-align: center; color: #22d3ee; font-size: 0.9em; margin-top: -0.5em;">{year_range[0]} — {year_range[1]}</div>',
+            unsafe_allow_html=True,
+        )
+
+    with col_btn:
+        if st.button("🔄 New Songs", help="Get fresh songs from the selected year range"):
             clear_song_cache()
             st.session_state.played_song_ids = set()
             st.session_state.played_song_keys = set()
             st.session_state.next_song_cache = None
-            st.toast("Song pool refreshed! 🎵")
+            st.toast("Song pool refreshed!")
             st.rerun()
 
-    st.markdown("---")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def main():
@@ -857,10 +975,10 @@ def main():
     if not st.session_state.game_active:
         # Welcome screen
         st.markdown(main_title(), unsafe_allow_html=True)
-        
+
         # Settings panel
         render_settings_panel()
-        
+
         # How to play
         st.markdown(how_to_play(), unsafe_allow_html=True)
 
@@ -869,7 +987,9 @@ def main():
         # Start button - centered
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🎵 Start New Game", type="primary", use_container_width=True, key="start_game"):
+            if st.button(
+                "🎵 Start New Game", type="primary", use_container_width=True, key="start_game"
+            ):
                 st.session_state.current_round = 0
                 st.session_state.played_song_ids = set()
                 st.session_state.played_song_keys = set()
@@ -882,17 +1002,12 @@ def main():
 
         # Leaderboard
         render_leaderboard()
-
-        # Clear leaderboard button
-        if st.session_state.player_scores:
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col2:
-                if st.button("🗑️ Clear Leaderboard", use_container_width=True):
-                    st.session_state.player_scores = []
-                    st.rerun()
     else:
         # Game is active
         render_game_interface()
+
+        # Song history at bottom
+        render_song_history()
 
 
 if __name__ == "__main__":
