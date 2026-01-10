@@ -42,7 +42,6 @@ from ui_components import (
     spotify_button,
     static_timer,
     timer_html,
-    year_scroll_wheel,
 )
 
 # Page configuration - centered layout for cleaner look
@@ -906,35 +905,31 @@ def render_game_interface():
             end_year = st.session_state.end_year
             is_locked = st.session_state.time_locked
 
-            # Year picker label
+            # Year picker using native number_input (reliable)
+            if not is_locked:
+                selected_year = st.number_input(
+                    "🎯 Select Release Year",
+                    min_value=start_year,
+                    max_value=end_year,
+                    value=st.session_state.current_guess,
+                    step=1,
+                    key="year_input",
+                )
+                st.session_state.current_guess = selected_year
+            else:
+                st.number_input(
+                    "🎯 Select Release Year",
+                    min_value=start_year,
+                    max_value=end_year,
+                    value=st.session_state.current_guess,
+                    step=1,
+                    key="year_input_locked",
+                    disabled=True,
+                )
+
+            # Show selected year prominently
             st.markdown(
-                '<div style="text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 0.75em; margin-bottom: 0.5em;">🎯 Select Release Year</div>',
-                unsafe_allow_html=True,
-            )
-
-            # Scroll wheel for year selection (sends value directly to Streamlit)
-            selected_year = components.html(
-                year_scroll_wheel(
-                    start_year,
-                    end_year,
-                    st.session_state.current_guess,
-                    disabled=is_locked,
-                ),
-                height=310,
-            )
-
-            # Update current_guess if wheel returned a valid value
-            if selected_year is not None and selected_year != 0 and not is_locked:
-                try:
-                    year_value = int(selected_year)
-                    if start_year <= year_value <= end_year:
-                        st.session_state.current_guess = year_value
-                except (ValueError, TypeError):
-                    pass
-
-            # Show selected year label
-            st.markdown(
-                f'<div style="text-align: center; font-size: 2.5em; font-weight: 800; color: {"#ef4444" if is_locked else "#22d3ee"}; margin: 0.5em 0;">{"🔒 " if is_locked else ""}{st.session_state.current_guess}</div>',
+                f'<div style="text-align: center; font-size: 3em; font-weight: 800; color: {"#ef4444" if is_locked else "#22d3ee"}; margin: 0.3em 0;">{"🔒 " if is_locked else ""}{st.session_state.current_guess}</div>',
                 unsafe_allow_html=True,
             )
 
@@ -1043,9 +1038,6 @@ def render_game_interface():
             st.markdown(song_info_card(song, 0), unsafe_allow_html=True)
 
         with result_col2:
-            # Add spacing to align buttons with bottom of song info
-            st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
-
             st.markdown(correct_answer_with_diff(song["year"], guess_val), unsafe_allow_html=True)
             st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
 
