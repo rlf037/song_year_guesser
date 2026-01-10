@@ -646,6 +646,7 @@ def initialize_game_state():
         "current_guess": 2000,
         "time_locked": False,
         "elapsed_playing_time": 0,
+        "loading_game": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -1021,8 +1022,7 @@ def render_game_interface():
 
             # Action buttons
             if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
-                genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
-                start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
+                st.session_state.loading_game = True
                 st.rerun()
 
             if st.button("🏁 End Game", use_container_width=True, key="end_game"):
@@ -1168,6 +1168,16 @@ def main():
     """Main application"""
     initialize_game_state()
 
+    # Handle loading state - show spinner while fetching song
+    if st.session_state.loading_game:
+        st.markdown(main_title(), unsafe_allow_html=True)
+        with st.spinner("🎵 Finding a song for you..."):
+            genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
+            start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
+            st.session_state.loading_game = False
+            st.rerun()
+        return
+
     if not st.session_state.game_active:
         # Welcome screen
         st.markdown(main_title(), unsafe_allow_html=True)
@@ -1190,8 +1200,7 @@ def main():
                 st.session_state.played_song_ids = set()
                 st.session_state.played_song_keys = set()
                 st.session_state.next_song_cache = None
-                genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
-                start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
+                st.session_state.loading_game = True
                 st.rerun()
 
         st.write("")
