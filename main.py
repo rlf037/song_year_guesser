@@ -13,6 +13,13 @@ import streamlit.components.v1 as components
 from PIL import Image, ImageFilter
 from streamlit_autorefresh import st_autorefresh
 
+# Supabase for persistent leaderboard
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+
 # Import UI components
 from ui_components import (
     MAIN_CSS,
@@ -234,9 +241,22 @@ _tracks_cache: dict[int, tuple[float, list[dict]]] = {}
 _image_cache: dict[str, str] = {}
 CACHE_EXPIRY_SECONDS = 300  # 5 minutes - shorter for more variety
 
-# Leaderboard storage (session-based, persists during browser session)
-# Note: For true persistence, would need a database
+# Leaderboard storage - uses Supabase if configured, falls back to session state
 MAX_LEADERBOARD_ENTRIES = 20
+
+
+def get_supabase_client() -> "Client | None":
+    """Get Supabase client if configured"""
+    if not SUPABASE_AVAILABLE:
+        return None
+    try:
+        url = st.secrets.get("SUPABASE_URL", "")
+        key = st.secrets.get("SUPABASE_KEY", "")
+        if url and key:
+            return create_client(url, key)
+    except Exception:
+        pass
+    return None
 
 
 def clear_song_cache():
@@ -247,15 +267,26 @@ def clear_song_cache():
 
 
 def load_leaderboard() -> list[dict]:
-    """Load leaderboard from session state"""
+    """Load leaderboard from Supabase or session state"""
+    # Try Supabase first
+    client = get_supabase_client()
+    if client:
+        try:
+            response = client.table("leaderboard").select("*").order(
+                "total_score", desc=True
+            ).limit(MAX_LEADERBOARD_ENTRIES).execute()
+            return response.data if response.data else []
+        except Exception:
+            pass
+
+    # Fall back to session state
     if "leaderboard" not in st.session_state:
         st.session_state.leaderboard = []
     return st.session_state.leaderboard
 
 
 def save_leaderboard(leaderboard: list[dict]):
-    """Save leaderboard to session state"""
-    # Sort by score and keep top entries
+    """Save leaderboard to session state (Supabase saves directly in add_to_leaderboard)"""
     sorted_lb = sorted(leaderboard, key=lambda x: x["total_score"], reverse=True)
     sorted_lb = sorted_lb[:MAX_LEADERBOARD_ENTRIES]
     st.session_state.leaderboard = sorted_lb
@@ -263,7 +294,6 @@ def save_leaderboard(leaderboard: list[dict]):
 
 def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str):
     """Add a game session to the leaderboard"""
-    leaderboard = load_leaderboard()
     entry = {
         "player": player,
         "total_score": total_score,
@@ -272,6 +302,18 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
         "genre": genre,
         "date": datetime.now().strftime("%b %d"),
     }
+
+    # Try to save to Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            client.table("leaderboard").insert(entry).execute()
+            return  # Success - Supabase handles storage
+        except Exception:
+            pass  # Fall back to session state
+
+    # Fall back to session state
+    leaderboard = load_leaderboard()
     leaderboard.append(entry)
     save_leaderboard(leaderboard)
 
