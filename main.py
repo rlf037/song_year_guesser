@@ -12,6 +12,17 @@ import streamlit.components.v1 as components
 from PIL import Image, ImageFilter
 from streamlit_autorefresh import st_autorefresh
 
+# Import UI components
+from ui_components import (
+    MAIN_CSS,
+    correct_answer,
+    how_to_play,
+    main_header,
+    round_badge,
+    score_card,
+    status_line,
+)
+
 # Page configuration
 st.set_page_config(
     page_title="Song Year Game",
@@ -19,383 +30,7 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
-st.markdown(
-    """
-<style>
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Consistent button styling */
-    .stButton > button {
-        min-height: 3em;
-        font-weight: 600;
-    }
-    
-    /* Dark game theme - deep purple/blue */
-    .stApp {
-        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #0f0f23 100%);
-    }
-    
-    /* Main header styling */
-    .main-header {
-        text-align: center;
-        font-size: 3.5em;
-        font-weight: 800;
-        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shimmer 3s linear infinite;
-        margin-bottom: 0.3em;
-    }
-    
-    @keyframes shimmer {
-        0% { background-position: 0% center; }
-        100% { background-position: 200% center; }
-    }
-    
-    /* Round indicator */
-    .round-badge {
-        text-align: center;
-        font-size: 1.2em;
-        font-weight: 600;
-        color: #8b5cf6;
-        background: rgba(139, 92, 246, 0.15);
-        padding: 0.5em 1.5em;
-        border-radius: 25px;
-        display: inline-block;
-        margin: 0 auto 1em auto;
-        border: 2px solid rgba(139, 92, 246, 0.3);
-    }
-    
-    /* Center container */
-    .center-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        width: 100%;
-    }
-    
-    /* Score card */
-    .score-card {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        padding: 1.5em 3em;
-        border-radius: 20px;
-        text-align: center;
-        color: white;
-        font-size: 1.8em;
-        font-weight: 700;
-        margin: 1em auto;
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
-        max-width: 400px;
-    }
-    
-    /* Blurred hint text */
-    .hint-text {
-        text-align: center;
-        font-size: 1.1em;
-        color: #ffffff;
-        padding: 0.6em 1em;
-        margin: 0.3em auto;
-        max-width: 450px;
-        transition: filter 0.3s ease;
-    }
-    
-    .hint-label {
-        color: #8b5cf6;
-        font-weight: 600;
-        margin-right: 0.5em;
-    }
-    
-    /* Timer */
-    .timer {
-        font-size: 2.5em;
-        font-weight: bold;
-        text-align: center;
-        color: #22d3ee;
-        margin: 0.3em 0;
-        text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
-    }
-    
-    /* Leaderboard */
-    .leaderboard {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        padding: 1em 1.5em;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    
-    /* Game over styling */
-    .game-over {
-        text-align: center;
-        padding: 1em;
-        margin: 0.5em 0;
-    }
-    
-    /* Status line */
-    .status-line {
-        text-align: center;
-        padding: 0.8em 1.5em;
-        background: rgba(34, 211, 238, 0.1);
-        border-radius: 25px;
-        margin: 0.5em auto;
-        font-size: 1em;
-        color: #22d3ee;
-        max-width: 400px;
-        border: 1px solid rgba(34, 211, 238, 0.2);
-    }
-    
-    /* Album artwork container */
-    .album-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 1em auto;
-    }
-    
-    .album-art {
-        border-radius: 16px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 60px rgba(139, 92, 246, 0.15);
-        border: 2px solid rgba(255, 255, 255, 0.08);
-    }
-    
-    /* Audio player styling */
-    .audio-container {
-        margin: 1em auto;
-        max-width: 380px;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    
-    /* How to play box */
-    .how-to-play {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        padding: 2em;
-        margin: 1em auto;
-        max-width: 600px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #ffffff;
-    }
-    
-    .how-to-play h3 {
-        color: #8b5cf6;
-        margin-bottom: 1em;
-    }
-    
-    .how-to-play ol {
-        text-align: left;
-        line-height: 2;
-    }
-    
-    /* Song details card */
-    .song-details {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border-radius: 15px;
-        padding: 1.5em;
-        margin: 1em auto;
-        max-width: 500px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #ffffff;
-    }
-    
-    /* Correct answer highlight */
-    .correct-answer {
-        font-size: 2em;
-        font-weight: 700;
-        color: #22d3ee;
-        text-align: center;
-        margin: 0.5em 0;
-        text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
-    }
-    
-    /* Button styling overrides */
-    .stButton > button {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 0.6em 2em;
-        font-weight: 600;
-        font-size: 1.1em;
-        transition: all 0.15s ease;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
-    }
-    
-    .stButton > button:active {
-        transform: translateY(0px);
-        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: rgba(13, 13, 26, 0.98);
-    }
-    
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #ffffff;
-    }
-    
-    /* Input fields */
-    .stTextInput input {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        color: #ffffff;
-        border-radius: 8px;
-    }
-    
-    /* Metrics */
-    [data-testid="stMetricValue"] {
-        color: #22d3ee;
-    }
-    
-    /* Year picker - completely custom */
-    .year-picker {
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 20px;
-        padding: 1.5em;
-        margin: 1em auto;
-        max-width: 400px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        text-align: center;
-    }
-    
-    .year-picker-label {
-        font-size: 1em;
-        color: #888;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 0.8em;
-    }
-    
-    .year-picker-display {
-        font-size: 5em;
-        font-weight: 800;
-        color: #22d3ee;
-        text-shadow: 0 0 40px rgba(34, 211, 238, 0.4);
-        margin: 0.1em 0;
-        font-family: 'SF Mono', 'Courier New', monospace;
-        letter-spacing: -3px;
-        user-select: none;
-    }
-    
-    .year-picker-controls {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 1em;
-        margin-top: 1em;
-    }
-    
-    .year-btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        border: 2px solid rgba(139, 92, 246, 0.5);
-        background: rgba(139, 92, 246, 0.15);
-        color: #8b5cf6;
-        font-size: 1.5em;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .year-btn:hover {
-        background: rgba(139, 92, 246, 0.3);
-        border-color: #8b5cf6;
-        transform: scale(1.1);
-    }
-    
-    .year-btn:active {
-        transform: scale(0.95);
-    }
-    
-    .year-btn-big {
-        width: 60px;
-        height: 60px;
-        font-size: 1.8em;
-    }
-    
-    .year-range-hint {
-        color: #555;
-        font-size: 0.85em;
-        margin-top: 1em;
-    }
-    
-    /* Submit button special styling */
-    .submit-btn-container {
-        margin: 1.5em auto;
-        max-width: 300px;
-    }
-    
-    .submit-btn {
-        width: 100%;
-        padding: 1em 2em;
-        font-size: 1.3em;
-        font-weight: 700;
-        color: white;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: none;
-        border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.1s ease;
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-    }
-    
-    .submit-btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5);
-    }
-    
-    .submit-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-    }
-    
-    /* Number input styling */
-    .stNumberInput input {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border: 2px solid rgba(139, 92, 246, 0.3) !important;
-        color: #22d3ee !important;
-        font-size: 2em !important;
-        font-weight: 700 !important;
-        text-align: center !important;
-        border-radius: 12px !important;
-        padding: 0.5em !important;
-    }
-    
-    .stNumberInput button {
-        background: rgba(139, 92, 246, 0.2) !important;
-        border: none !important;
-        color: #8b5cf6 !important;
-    }
-    
-    .stNumberInput button:hover {
-        background: rgba(139, 92, 246, 0.4) !important;
-    }
-</style>
-""",
-    unsafe_allow_html=True,
-)
+st.markdown(MAIN_CSS, unsafe_allow_html=True)
 
 
 COMPILATION_KEYWORDS = [
@@ -1121,10 +756,7 @@ def render_game_interface():
             st_autorefresh(interval=500, key="audio_start_check")
 
     # Display round counter with styled badge
-    st.markdown(
-        f'<div class="center-container"><div class="round-badge">🎮 Round {st.session_state.current_round}</div></div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown(round_badge(st.session_state.current_round), unsafe_allow_html=True)
 
     # Calculate elapsed time for server-side checks
     if st.session_state.start_time is not None:
@@ -1243,10 +875,7 @@ def render_game_interface():
 
     # Status line with styled message
     if st.session_state.status_message and not st.session_state.game_over:
-        st.markdown(
-            f'<div class="status-line">{st.session_state.status_message}</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(status_line(st.session_state.status_message), unsafe_allow_html=True)
 
     # Calculate progressive blur based on time (starts at 25, fully reveals at 25 seconds)
     if not st.session_state.game_over:
@@ -1553,17 +1182,11 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
 
-        st.markdown(
-            f'<div class="correct-answer">The answer was {song["year"]}</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(correct_answer(song["year"]), unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
         # Score display
-        st.markdown(
-            f'<div class="score-card">🎯 {last_score["score"]} points</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
 
         # Reveal all info in styled card
         st.markdown(
@@ -1684,7 +1307,7 @@ def main():
     initialize_game_state()
 
     # Header
-    st.markdown('<h1 class="main-header">🎵 Song Year Guesser 🎵</h1>', unsafe_allow_html=True)
+    st.markdown(main_header(), unsafe_allow_html=True)
 
     # Sidebar for settings
     with st.sidebar:
@@ -1754,23 +1377,7 @@ def main():
 
     # Main content
     if not st.session_state.game_active:
-        st.markdown(
-            """
-            <div class="how-to-play">
-                <h3 style="text-align: center;">🎮 How to Play</h3>
-                <ol>
-                    <li><strong>🎧 Listen</strong> to a 30-second song preview</li>
-                    <li><strong>🖼️ Watch</strong> the album artwork gradually reveal</li>
-                    <li><strong>🤔 Guess</strong> the year the song was released</li>
-                    <li><strong>🏆 Score</strong> points based on accuracy and speed!</li>
-                </ol>
-                <div style="text-align: center; margin-top: 1em; padding: 0.8em; background: rgba(233, 69, 96, 0.2); border-radius: 10px;">
-                    💡 Use hints to reveal the album, artist, and song title (but you\'ll lose points!)
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown(how_to_play(), unsafe_allow_html=True)
 
         st.write("")
         st.write("")
