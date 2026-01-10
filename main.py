@@ -932,6 +932,12 @@ def render_game_interface():
                 except (ValueError, TypeError):
                     pass
 
+            # Show selected year label
+            st.markdown(
+                f'<div style="text-align: center; font-size: 2.5em; font-weight: 800; color: {"#ef4444" if is_locked else "#22d3ee"}; margin: 0.5em 0;">{"🔒 " if is_locked else ""}{st.session_state.current_guess}</div>',
+                unsafe_allow_html=True,
+            )
+
             if is_locked:
                 st.markdown(
                     """<div style="
@@ -1037,6 +1043,9 @@ def render_game_interface():
             st.markdown(song_info_card(song, 0), unsafe_allow_html=True)
 
         with result_col2:
+            # Add spacing to align buttons with bottom of song info
+            st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
+
             st.markdown(correct_answer_with_diff(song["year"], guess_val), unsafe_allow_html=True)
             st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
 
