@@ -1086,7 +1086,8 @@ def year_picker_display(year: int, start_year: int, end_year: int, locked: bool 
 def scroll_wheel_year_picker(
     current_year: int, start_year: int, end_year: int, locked: bool = False
 ) -> str:
-    """Generate the JavaScript scroll wheel year picker - works with mouse wheel, trackpad, drag, click, keyboard"""
+    """Generate the JavaScript scroll wheel year picker that syncs via URL query params.
+    Works with mouse wheel, trackpad, drag, click, keyboard."""
     locked_style = "opacity: 0.6; pointer-events: none;" if locked else ""
     locked_border = "rgba(239, 68, 68, 0.5)" if locked else "rgba(139, 92, 246, 0.4)"
     locked_indicator = (
@@ -1107,7 +1108,7 @@ def scroll_wheel_year_picker(
         <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 0.7em; margin-bottom: 0.8em;">
             &#x1F3AF; Scroll to select year
         </div>
-        
+
         <div id="scroll-container" style="
             position: relative;
             height: 200px;
@@ -1133,7 +1134,7 @@ def scroll_wheel_year_picker(
                 text-align: center;
                 transition: transform 0.08s ease-out;
             "></div>
-            
+
             <div style="
                 position: absolute;
                 top: 50%;
@@ -1147,13 +1148,13 @@ def scroll_wheel_year_picker(
                 box-shadow: 0 0 20px {"rgba(245, 158, 11, 0.2)" if locked else "rgba(34, 211, 238, 0.2)"};
             "></div>
         </div>
-        
+
         <div style="color: #666; font-size: 0.75em; margin-top: 0.6em; letter-spacing: 1px;">
             {start_year} &#x2014; {end_year}
         </div>
         {locked_indicator}
     </div>
-    
+
     <script>
     (function() {{
         const minYear = {start_year};
@@ -1164,15 +1165,15 @@ def scroll_wheel_year_picker(
         let lastY = 0;
         let isDragging = false;
         let animationId = null;
-        
+
         const container = document.getElementById('scroll-container');
         const track = document.getElementById('year-track');
         const itemHeight = 52;
-        
+
         if (isLocked) {{
             container.style.cursor = 'not-allowed';
         }}
-        
+
         function buildYearTrack() {{
             track.innerHTML = '';
             for (let year = minYear; year <= maxYear; year++) {{
@@ -1193,7 +1194,7 @@ def scroll_wheel_year_picker(
             }}
             updatePosition(false);
         }}
-        
+
         function updatePosition(animate = true) {{
             const offset = (currentYear - minYear) * itemHeight;
             const containerHeight = 200;
@@ -1201,7 +1202,7 @@ def scroll_wheel_year_picker(
             track.style.transform = `translateY(${{centerOffset - offset}}px)`;
             if (!animate) track.style.transition = 'none';
             else track.style.transition = 'transform 0.08s ease-out';
-            
+
             document.querySelectorAll('.year-item').forEach(item => {{
                 const year = parseInt(item.dataset.year);
                 const distance = Math.abs(year - currentYear);
@@ -1220,29 +1221,35 @@ def scroll_wheel_year_picker(
                 }}
             }});
         }}
-        
-        function setYear(year, sendToStreamlit = true) {{
+
+        function syncToUrl() {{
+            // Update URL query param so Streamlit can read it
+            try {{
+                const url = new URL(window.parent.location.href);
+                url.searchParams.set('yr', currentYear.toString());
+                window.parent.history.replaceState(null, '', url.toString());
+            }} catch(e) {{
+                console.log('Could not update URL:', e);
+            }}
+        }}
+
+        function setYear(year) {{
             if (isLocked) return;
             const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
             if (newYear !== currentYear) {{
                 currentYear = newYear;
                 updatePosition();
-                if (sendToStreamlit) {{
-                    window.parent.postMessage({{
-                        type: 'streamlit:setComponentValue',
-                        value: currentYear
-                    }}, '*');
-                }}
+                syncToUrl();
             }}
         }}
-        
+
         if (!isLocked) {{
             container.addEventListener('wheel', (e) => {{
                 e.preventDefault();
                 const delta = Math.sign(e.deltaY);
                 setYear(currentYear + delta);
             }}, {{ passive: false }});
-            
+
             container.addEventListener('mousedown', (e) => {{
                 isDragging = true;
                 lastY = e.clientY;
@@ -1250,14 +1257,14 @@ def scroll_wheel_year_picker(
                 if (animationId) cancelAnimationFrame(animationId);
                 e.preventDefault();
             }});
-            
+
             container.addEventListener('touchstart', (e) => {{
                 isDragging = true;
                 lastY = e.touches[0].clientY;
                 velocity = 0;
                 if (animationId) cancelAnimationFrame(animationId);
             }}, {{ passive: true }});
-            
+
             document.addEventListener('mousemove', (e) => {{
                 if (!isDragging) return;
                 const deltaY = lastY - e.clientY;
@@ -1268,7 +1275,7 @@ def scroll_wheel_year_picker(
                     lastY = e.clientY;
                 }}
             }});
-            
+
             document.addEventListener('touchmove', (e) => {{
                 if (!isDragging) return;
                 const deltaY = lastY - e.touches[0].clientY;
@@ -1279,7 +1286,7 @@ def scroll_wheel_year_picker(
                     lastY = e.touches[0].clientY;
                 }}
             }}, {{ passive: true }});
-            
+
             document.addEventListener('mouseup', () => {{
                 if (isDragging) {{
                     isDragging = false;
@@ -1296,7 +1303,7 @@ def scroll_wheel_year_picker(
                     }}
                 }}
             }});
-            
+
             document.addEventListener('touchend', () => {{
                 if (isDragging) {{
                     isDragging = false;
@@ -1313,7 +1320,7 @@ def scroll_wheel_year_picker(
                     }}
                 }}
             }});
-            
+
             container.addEventListener('click', (e) => {{
                 if (Math.abs(velocity) > 2) return;
                 const rect = container.getBoundingClientRect();
@@ -1322,7 +1329,7 @@ def scroll_wheel_year_picker(
                 const diff = Math.round((clickY - centerY) / itemHeight);
                 if (diff !== 0) setYear(currentYear + diff);
             }});
-            
+
             container.setAttribute('tabindex', '0');
             container.addEventListener('keydown', (e) => {{
                 if (e.key === 'ArrowUp') {{ setYear(currentYear - 1); e.preventDefault(); }}
@@ -1331,13 +1338,11 @@ def scroll_wheel_year_picker(
                 if (e.key === 'PageDown') {{ setYear(currentYear + 5); e.preventDefault(); }}
             }});
         }}
-        
+
         buildYearTrack();
-        
-        window.parent.postMessage({{
-            type: 'streamlit:setComponentValue',
-            value: currentYear
-        }}, '*');
+
+        // Initial sync to URL
+        syncToUrl();
     }})();
     </script>
     """
@@ -1494,12 +1499,11 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     labelEl.classList.remove('paused');
                 }}
 
-                // Send elapsed time to parent for blur calculation
+                // Sync elapsed time to URL query params so Streamlit can read it
                 try {{
-                    window.parent.postMessage({{
-                        type: 'timer:elapsed',
-                        elapsed: elapsed
-                    }}, '*');
+                    var url = new URL(window.parent.location.href);
+                    url.searchParams.set('et', elapsed.toFixed(1));
+                    window.parent.history.replaceState(null, '', url.toString());
                 }} catch(e) {{}}
             }}
 
@@ -2007,12 +2011,16 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 notifyAutoplayStatus(false);
             }});
             audio.addEventListener('pause', function() {{
-                updateViz(false);
-                updateTimer(false);
+                // Only pause timer if audio was manually paused (not ended)
+                if (!audio.ended) {{
+                    updateViz(false);
+                    updateTimer(false);
+                }}
             }});
             audio.addEventListener('ended', function() {{
+                // Audio ended naturally - stop visualizer but DON'T pause timer
                 updateViz(false);
-                updateTimer(false);
+                // Timer continues running - user must submit before time runs out
             }});
 
             {'audio.volume = 1.0; audio.play().then(function() { notifyAutoplayStatus(false); }).catch(function(e) { console.log("Autoplay prevented:", e); notifyAutoplayStatus(true); });' if autoplay else ""}

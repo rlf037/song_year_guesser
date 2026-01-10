@@ -5,7 +5,7 @@ import random
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 import requests
 import streamlit as st
@@ -37,6 +37,7 @@ from ui_components import (
     main_title,
     result_display,
     score_card,
+    scroll_wheel_year_picker,
     song_history_item,
     song_info_card,
     spotify_button,
@@ -293,13 +294,16 @@ def save_leaderboard(leaderboard: list[dict]):
 
 def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str):
     """Add a game session to the leaderboard"""
+    # Use AEDT timezone (UTC+11)
+    aedt = timezone(timedelta(hours=11))
+    now_aedt = datetime.now(aedt)
     entry = {
         "player": player,
         "total_score": total_score,
         "songs_played": songs_played,
         "avg_score": round(total_score / songs_played) if songs_played > 0 else 0,
         "genre": genre,
-        "date": datetime.now().strftime("%b %d"),
+        "date": now_aedt.strftime("%b %d"),
     }
 
     # Try to save to Supabase
@@ -905,39 +909,37 @@ def render_game_interface():
             end_year = st.session_state.end_year
             is_locked = st.session_state.time_locked
 
-            # Year picker using native number_input (reliable)
-            if not is_locked:
-                selected_year = st.number_input(
-                    "🎯 Select Release Year",
-                    min_value=start_year,
-                    max_value=end_year,
-                    value=st.session_state.current_guess,
-                    step=1,
-                    key="year_input",
-                )
-                st.session_state.current_guess = selected_year
-            else:
-                st.number_input(
-                    "🎯 Select Release Year",
-                    min_value=start_year,
-                    max_value=end_year,
-                    value=st.session_state.current_guess,
-                    step=1,
-                    key="year_input_locked",
-                    disabled=True,
-                )
+            # Read year from query params (set by scroll wheel JS)
+            year_from_url = st.query_params.get("yr")
+            if year_from_url:
+                try:
+                    url_year = int(year_from_url)
+                    if start_year <= url_year <= end_year:
+                        st.session_state.current_guess = url_year
+                except (ValueError, TypeError):
+                    pass
 
-            # Show selected year prominently
-            st.markdown(
-                f'<div style="text-align: center; font-size: 3em; font-weight: 800; color: {"#ef4444" if is_locked else "#22d3ee"}; margin: 0.3em 0;">{"🔒 " if is_locked else ""}{st.session_state.current_guess}</div>',
-                unsafe_allow_html=True,
+            # Read elapsed time from query params (set by timer JS)
+            elapsed_from_url = st.query_params.get("et")
+            if elapsed_from_url:
+                try:
+                    st.session_state.elapsed_playing_time = float(elapsed_from_url)
+                except (ValueError, TypeError):
+                    pass
+
+            # Scroll wheel year picker
+            components.html(
+                scroll_wheel_year_picker(
+                    st.session_state.current_guess, start_year, end_year, is_locked
+                ),
+                height=280,
             )
 
             if is_locked:
                 st.markdown(
                     """<div style="
                         text-align: center;
-                        margin-top: 1.5em;
+                        margin-top: 0.5em;
                         padding: 0.8em 1em;
                         background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
                         border: 1px solid rgba(239, 68, 68, 0.3);
@@ -950,9 +952,10 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
 
-            # Submit button - always enabled, faster = more points
+            # Submit button with selected year - always enabled, faster = more points
+            submit_label = f"✓ Submit {st.session_state.current_guess}" if is_locked else f"🎯 Submit {st.session_state.current_guess}"
             if st.button(
-                "✓ Submit Now!" if is_locked else "🎯 Submit Guess",
+                submit_label,
                 type="primary",
                 use_container_width=True,
                 key="submit_guess",
