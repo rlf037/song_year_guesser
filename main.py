@@ -436,7 +436,10 @@ COMPILATION_KEYWORDS = [
 MIN_SPOTIFY_POPULARITY = 85
 
 # Maximum time allowed for guessing (seconds)
-MAX_GUESS_TIME = 60
+MAX_GUESS_TIME = 30
+
+# Time at which hints are fully revealed (seconds before end)
+HINT_REVEAL_TIME = 25
 
 # List of major English-speaking music markets
 ENGLISH_MARKETS = ["US", "GB", "AU", "CA"]
@@ -793,8 +796,12 @@ def get_random_song(
             continue
 
         # Filter out already played songs by ID and by artist+name key
+        # Also ensure the song's actual year is within the user's selected range
         available_tracks = [
-            t for t in tracks if t["id"] not in played_ids and t.get("song_key") not in played_keys
+            t for t in tracks 
+            if t["id"] not in played_ids 
+            and t.get("song_key") not in played_keys
+            and start_year <= t.get("year", year) <= end_year
         ]
 
         if not available_tracks:
@@ -1112,29 +1119,44 @@ def render_game_interface():
         elapsed = 0
         start_timestamp = 0
 
-    # Check for timeout (60 seconds max)
+    # Check for timeout - auto-submit current guess
     if (
         not st.session_state.game_over
         and st.session_state.audio_started
         and elapsed_seconds >= MAX_GUESS_TIME
     ):
-        make_guess(0, timed_out=True)
+        # Submit whatever year the user has currently selected
+        current_guess = st.session_state.get("current_guess", st.session_state.start_year)
+        make_guess(current_guess, timed_out=True)
         st.rerun()
 
-    # Display timer using JavaScript for smooth millisecond updates without blocking UI
+    # Display prominent circular countdown timer with hourglass animation
     if st.session_state.audio_started and not st.session_state.game_over:
         timer_html = f"""
-        <div class="center-container">
-            <div id="js-timer" class="timer">
-                ⏱️ <span id="timer-value">0.0</span>s
+        <div style="display: flex; justify-content: center; align-items: center; margin: 1em 0;">
+            <div id="timer-container" style="position: relative; width: 140px; height: 140px;">
+                <svg width="140" height="140" viewBox="0 0 140 140" style="transform: rotate(-90deg);">
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="#1e1e3f" stroke-width="12"/>
+                    <circle id="timer-circle" cx="70" cy="70" r="60" fill="none" stroke="#22d3ee" stroke-width="12"
+                        stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="0"
+                        style="transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;"/>
+                </svg>
+                <div id="timer-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                    text-align: center; font-family: 'SF Mono', 'Monaco', monospace;">
+                    <div id="timer-seconds" style="font-size: 2.8em; font-weight: 800; color: #22d3ee; line-height: 1;">30</div>
+                    <div style="font-size: 0.75em; color: #666; text-transform: uppercase; letter-spacing: 2px;">seconds</div>
+                </div>
+                <div id="hourglass" style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 1.5em; opacity: 0.8;">⏳</div>
             </div>
         </div>
         <script>
             (function() {{
                 var startTime = {start_timestamp};
                 var maxTime = {MAX_GUESS_TIME};
-                var timerEl = document.getElementById('timer-value');
-                var containerEl = document.getElementById('js-timer');
+                var circle = document.getElementById('timer-circle');
+                var secondsEl = document.getElementById('timer-seconds');
+                var hourglass = document.getElementById('hourglass');
+                var circumference = 2 * Math.PI * 60; // 377
                 
                 function updateTimer() {{
                     var now = Date.now();
@@ -1142,21 +1164,31 @@ def render_game_interface():
                     if (elapsed < 0) elapsed = 0;
                     if (elapsed > maxTime) elapsed = maxTime;
                     
-                    var secs = Math.floor(elapsed);
-                    var tenths = Math.floor((elapsed - secs) * 10);
+                    var remaining = Math.ceil(maxTime - elapsed);
+                    var progress = elapsed / maxTime;
+                    var offset = circumference * progress;
                     
-                    timerEl.textContent = secs + '.' + tenths;
+                    circle.style.strokeDashoffset = offset;
+                    secondsEl.textContent = remaining;
                     
-                    // Update color based on time
-                    if (secs >= 50) {{
-                        containerEl.style.color = '#ef4444';
-                        containerEl.style.textShadow = '0 0 20px rgba(239, 68, 68, 0.8)';
-                    }} else if (secs >= 40) {{
-                        containerEl.style.color = '#f59e0b';
-                        containerEl.style.textShadow = '0 0 20px rgba(245, 158, 11, 0.6)';
+                    // Rotate hourglass
+                    var rotation = (elapsed * 30) % 360;
+                    hourglass.style.transform = 'translateX(-50%) rotate(' + rotation + 'deg)';
+                    
+                    // Color transitions based on remaining time
+                    if (remaining <= 5) {{
+                        circle.style.stroke = '#ef4444';
+                        secondsEl.style.color = '#ef4444';
+                        secondsEl.style.animation = 'pulse 0.5s infinite';
+                        hourglass.textContent = '⌛';
+                    }} else if (remaining <= 10) {{
+                        circle.style.stroke = '#f59e0b';
+                        secondsEl.style.color = '#f59e0b';
+                        hourglass.textContent = '⏳';
                     }} else {{
-                        containerEl.style.color = '#22d3ee';
-                        containerEl.style.textShadow = '0 0 20px rgba(34, 211, 238, 0.5)';
+                        circle.style.stroke = '#22d3ee';
+                        secondsEl.style.color = '#22d3ee';
+                        hourglass.textContent = '⏳';
                     }}
                 }}
                 
@@ -1164,11 +1196,29 @@ def render_game_interface():
                 setInterval(updateTimer, 100);
             }})();
         </script>
+        <style>
+            @keyframes pulse {{
+                0%, 100% {{ transform: translate(-50%, -50%) scale(1); }}
+                50% {{ transform: translate(-50%, -50%) scale(1.1); }}
+            }}
+            #timer-seconds {{ animation: none; }}
+        </style>
         """
-        components.html(timer_html, height=70)
+        components.html(timer_html, height=180)
     elif not st.session_state.game_over:
         st.markdown(
-            '<div class="center-container"><div class="timer">⏱️ 0.0s</div></div>',
+            '''<div style="display: flex; justify-content: center; align-items: center; margin: 1em 0;">
+                <div style="position: relative; width: 140px; height: 140px;">
+                    <svg width="140" height="140" viewBox="0 0 140 140" style="transform: rotate(-90deg);">
+                        <circle cx="70" cy="70" r="60" fill="none" stroke="#1e1e3f" stroke-width="12"/>
+                        <circle cx="70" cy="70" r="60" fill="none" stroke="#22d3ee" stroke-width="12" stroke-dasharray="377"/>
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                        <div style="font-size: 2.8em; font-weight: 800; color: #22d3ee; line-height: 1;">30</div>
+                        <div style="font-size: 0.75em; color: #666; text-transform: uppercase; letter-spacing: 2px;">seconds</div>
+                    </div>
+                </div>
+            </div>''',
             unsafe_allow_html=True,
         )
 
@@ -1179,11 +1229,11 @@ def render_game_interface():
             unsafe_allow_html=True,
         )
 
-    # Calculate progressive blur based on time (starts at 25, decreases to 0 over 30 seconds)
+    # Calculate progressive blur based on time (starts at 25, fully reveals at 25 seconds)
     if not st.session_state.game_over:
         if st.session_state.audio_started:
-            # Gradually reduce blur over 30 seconds
-            time_based_blur = max(0, 25 - (elapsed * 25 / 30))
+            # Gradually reduce blur - fully reveal by HINT_REVEAL_TIME (25 seconds)
+            time_based_blur = max(0, 25 - (elapsed * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
         else:
             current_blur = st.session_state.blur_level
@@ -1262,13 +1312,13 @@ def render_game_interface():
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
 
-    # Progressive blur hints - reveal over 30 seconds (no button needed)
+    # Progressive blur hints - reveal by 25 seconds (no button needed)
     if st.session_state.audio_started and not st.session_state.game_over:
-        # Calculate blur amount based on elapsed time (30 seconds to fully reveal)
-        hint_blur = max(0, 8 - (elapsed * 8 / 30))  # Starts at 8px blur, reaches 0 at 30s
-        
+        # Calculate blur amount based on elapsed time (fully reveal by HINT_REVEAL_TIME)
+        hint_blur = max(0, 8 - (elapsed * 8 / HINT_REVEAL_TIME))  # Starts at 8px blur, reaches 0 at 25s
+
         st.markdown(
-            f'''
+            f"""
             <div style="margin: 1em auto; max-width: 450px;">
                 <div class="hint-text" style="filter: blur({hint_blur:.1f}px);">
                     <span class="hint-label">💿 Album:</span> {song["album"]}
@@ -1280,73 +1330,113 @@ def render_game_interface():
                     <span class="hint-label">🎵 Song:</span> {song["name"]}
                 </div>
             </div>
-            ''',
+            """,
             unsafe_allow_html=True,
         )
 
     st.write("")
 
-    # Year guessing interface
+    # Year guessing interface - visual scroll display with Streamlit buttons
     if not st.session_state.game_over:
         # Initialize guess_year in session state if not present
         if "current_guess" not in st.session_state:
             st.session_state.current_guess = st.session_state.start_year
 
+        start_year = st.session_state.start_year
+        end_year = st.session_state.end_year
+        current_guess = st.session_state.current_guess
+        
+        # Calculate prev/next years for display
+        prev_year = current_guess - 1 if current_guess > start_year else ""
+        next_year = current_guess + 1 if current_guess < end_year else ""
+
+        # Visual year picker display
         st.markdown(
-            '<div class="year-picker-label" style="text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5em;">📅 What year was this song released?</div>',
+            f"""
+            <div style="display: flex; flex-direction: column; align-items: center; padding: 1em 0;">
+                <div style="color: #666; text-transform: uppercase; letter-spacing: 3px; font-size: 0.75em; margin-bottom: 0.5em;">
+                    📅 What year was this released?
+                </div>
+                
+                <div style="
+                    position: relative;
+                    height: 160px;
+                    width: 220px;
+                    overflow: hidden;
+                    background: linear-gradient(180deg, 
+                        rgba(13,13,26,0.95) 0%, 
+                        transparent 35%, 
+                        transparent 65%, 
+                        rgba(13,13,26,0.95) 100%);
+                    border-radius: 15px;
+                    border: 2px solid rgba(139, 92, 246, 0.3);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                ">
+                    <div style="font-size: 1.4em; color: #555; font-family: monospace; height: 40px; display: flex; align-items: center;">
+                        {prev_year}
+                    </div>
+                    <div style="
+                        font-size: 4em;
+                        font-weight: 900;
+                        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+                        color: #22d3ee;
+                        text-shadow: 0 0 40px rgba(34, 211, 238, 0.5);
+                        height: 80px;
+                        display: flex;
+                        align-items: center;
+                        border-top: 2px solid rgba(139, 92, 246, 0.4);
+                        border-bottom: 2px solid rgba(139, 92, 246, 0.4);
+                        padding: 0 20px;
+                    ">
+                        {current_guess}
+                    </div>
+                    <div style="font-size: 1.4em; color: #555; font-family: monospace; height: 40px; display: flex; align-items: center;">
+                        {next_year}
+                    </div>
+                </div>
+                
+                <div style="color: #555; font-size: 0.8em; margin-top: 0.5em;">
+                    {start_year} — {end_year}
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        
-        # Year picker with +/- buttons
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+
+        # Streamlit buttons for year control
+        col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 1, 1, 1, 1])
         
         with col1:
-            if st.button("-5", key="year_minus_5", use_container_width=True):
-                st.session_state.current_guess = max(st.session_state.start_year, st.session_state.current_guess - 5)
+            if st.button("−10", key="year_minus_10", use_container_width=True):
+                st.session_state.current_guess = max(start_year, current_guess - 10)
                 st.rerun()
         
         with col2:
-            if st.button("-1", key="year_minus_1", use_container_width=True):
-                st.session_state.current_guess = max(st.session_state.start_year, st.session_state.current_guess - 1)
+            if st.button("−5", key="year_minus_5", use_container_width=True):
+                st.session_state.current_guess = max(start_year, current_guess - 5)
                 st.rerun()
         
         with col3:
-            # Large year display
-            st.markdown(
-                f'<div style="text-align: center; font-size: 3.5em; font-weight: 800; color: #22d3ee; text-shadow: 0 0 30px rgba(34, 211, 238, 0.4); font-family: monospace;">{st.session_state.current_guess}</div>',
-                unsafe_allow_html=True,
-            )
+            if st.button("−1", key="year_minus_1", use_container_width=True):
+                st.session_state.current_guess = max(start_year, current_guess - 1)
+                st.rerun()
         
         with col4:
             if st.button("+1", key="year_plus_1", use_container_width=True):
-                st.session_state.current_guess = min(st.session_state.end_year, st.session_state.current_guess + 1)
+                st.session_state.current_guess = min(end_year, current_guess + 1)
                 st.rerun()
         
         with col5:
             if st.button("+5", key="year_plus_5", use_container_width=True):
-                st.session_state.current_guess = min(st.session_state.end_year, st.session_state.current_guess + 5)
+                st.session_state.current_guess = min(end_year, current_guess + 5)
                 st.rerun()
         
-        # Year range indicator
-        st.markdown(
-            f'<div style="text-align: center; color: #555; font-size: 0.85em; margin-top: 0.5em;">{st.session_state.start_year} — {st.session_state.end_year}</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.write("")
-        
-        # Submit button - using HTML for maximum responsiveness
-        guess_year = st.session_state.current_guess
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button(
-                f"✔️  Submit {guess_year}",
-                type="primary",
-                use_container_width=True,
-                key="submit_guess",
-            ):
-                make_guess(guess_year)
+        with col6:
+            if st.button("+10", key="year_plus_10", use_container_width=True):
+                st.session_state.current_guess = min(end_year, current_guess + 10)
                 st.rerun()
 
     # Game over display
@@ -1355,77 +1445,78 @@ def render_game_interface():
 
         st.markdown('<div class="game-over">', unsafe_allow_html=True)
 
-        if st.session_state.timed_out:
-            st.markdown(
-                '<div style="text-align: center;"><span style="font-size: 4em;">⏰</span></div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #ff4444;">TIME\'S UP!</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                '<div style="text-align: center; color: #a0a0a0;">You ran out of time!</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            guess_val = last_score["guess"]
-            if isinstance(guess_val, int):
-                year_diff = abs(guess_val - last_score["actual"])
+        # Show results - even for timeout, we now have a guess
+        guess_val = last_score["guess"]
+        if isinstance(guess_val, int):
+            year_diff = abs(guess_val - last_score["actual"])
 
-                if year_diff == 0:
-                    st.balloons()
-                    st.markdown(
-                        '<div style="text-align: center;"><span style="font-size: 4em;">🎉</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00ff88;">PERFECT!</div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        '<div style="text-align: center; color: #a0a0a0;">You got it exactly right!</div>',
-                        unsafe_allow_html=True,
-                    )
-                elif year_diff <= 2:
-                    st.markdown(
-                        '<div style="text-align: center;"><span style="font-size: 4em;">🎵</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #22d3ee;">Excellent!</div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        f'<div style="text-align: center; color: #a0a0a0;">Off by only {year_diff} year{"s" if year_diff > 1 else ""}!</div>',
-                        unsafe_allow_html=True,
-                    )
-                elif year_diff <= 5:
-                    st.markdown(
-                        '<div style="text-align: center;"><span style="font-size: 4em;">🎶</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #a78bfa;">Good job!</div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        f'<div style="text-align: center; color: #a0a0a0;">Close! Off by {year_diff} years.</div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown(
-                        '<div style="text-align: center;"><span style="font-size: 4em;">🎸</span></div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #8b5cf6;">Nice try!</div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        f'<div style="text-align: center; color: #a0a0a0;">Off by {year_diff} years.</div>',
-                        unsafe_allow_html=True,
-                    )
+            if st.session_state.timed_out:
+                # Time's up but we submitted their current selection
+                st.markdown(
+                    '<div style="text-align: center;"><span style="font-size: 4em;">⏰</span></div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #f59e0b;">TIME\'S UP!</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f'<div style="text-align: center; color: #a0a0a0;">Your guess of {guess_val} was submitted.</div>',
+                    unsafe_allow_html=True,
+                )
+            elif year_diff == 0:
+                st.balloons()
+                st.markdown(
+                    '<div style="text-align: center;"><span style="font-size: 4em;">🎉</span></div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00ff88;">PERFECT!</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="text-align: center; color: #a0a0a0;">You got it exactly right!</div>',
+                    unsafe_allow_html=True,
+                )
+            elif year_diff <= 2:
+                st.markdown(
+                    '<div style="text-align: center;"><span style="font-size: 4em;">🎵</span></div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #22d3ee;">Excellent!</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f'<div style="text-align: center; color: #a0a0a0;">Off by only {year_diff} year{"s" if year_diff > 1 else ""}!</div>',
+                    unsafe_allow_html=True,
+                )
+            elif year_diff <= 5:
+                st.markdown(
+                    '<div style="text-align: center;"><span style="font-size: 4em;">🎶</span></div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #a78bfa;">Good job!</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f'<div style="text-align: center; color: #a0a0a0;">Close! Off by {year_diff} years.</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div style="text-align: center;"><span style="font-size: 4em;">🎸</span></div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #8b5cf6;">Nice try!</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f'<div style="text-align: center; color: #a0a0a0;">Off by {year_diff} years.</div>',
+                    unsafe_allow_html=True,
+                )
 
         st.markdown(
             f'<div class="correct-answer">The answer was {song["year"]}</div>',
