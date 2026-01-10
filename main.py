@@ -1107,7 +1107,6 @@ def render_settings_panel():
             "Genre",
             options=genre_options,
             index=current_idx,
-            label_visibility="collapsed",
         )
 
         # Extract genre name (remove icon)
@@ -1133,7 +1132,6 @@ def render_settings_panel():
             "Player Name",
             value=st.session_state.current_player,
             max_chars=15,
-            label_visibility="collapsed",
             placeholder="Enter your name",
         )
         st.session_state.current_player = player_name
