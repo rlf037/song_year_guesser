@@ -27,9 +27,9 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Dark game theme */
+    /* Dark game theme - deep purple/blue */
     .stApp {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #0f0f23 100%);
     }
     
     /* Main header styling */
@@ -37,13 +37,12 @@ st.markdown(
         text-align: center;
         font-size: 3.5em;
         font-weight: 800;
-        background: linear-gradient(90deg, #e94560 0%, #f39c12 50%, #e94560 100%);
+        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%);
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         animation: shimmer 3s linear infinite;
         margin-bottom: 0.3em;
-        text-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
     }
     
     @keyframes shimmer {
@@ -56,13 +55,13 @@ st.markdown(
         text-align: center;
         font-size: 1.2em;
         font-weight: 600;
-        color: #e94560;
-        background: rgba(233, 69, 96, 0.15);
+        color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.15);
         padding: 0.5em 1.5em;
         border-radius: 25px;
         display: inline-block;
         margin: 0 auto 1em auto;
-        border: 2px solid rgba(233, 69, 96, 0.3);
+        border: 2px solid rgba(139, 92, 246, 0.3);
     }
     
     /* Center container */
@@ -77,7 +76,7 @@ st.markdown(
     
     /* Score card */
     .score-card {
-        background: linear-gradient(135deg, #e94560 0%, #f39c12 100%);
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
         padding: 1.5em 3em;
         border-radius: 20px;
         text-align: center;
@@ -85,21 +84,25 @@ st.markdown(
         font-size: 1.8em;
         font-weight: 700;
         margin: 1em auto;
-        box-shadow: 0 8px 32px rgba(233, 69, 96, 0.4);
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
         max-width: 400px;
     }
     
-    /* Hint box */
-    .hint-box {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        padding: 1em 1.5em;
-        border-radius: 12px;
-        margin: 0.5em auto;
-        border-left: 4px solid #e94560;
+    /* Blurred hint text */
+    .hint-text {
+        text-align: center;
+        font-size: 1.1em;
         color: #ffffff;
-        max-width: 500px;
-        text-align: left;
+        padding: 0.6em 1em;
+        margin: 0.3em auto;
+        max-width: 450px;
+        transition: filter 0.3s ease;
+    }
+    
+    .hint-label {
+        color: #8b5cf6;
+        font-weight: 600;
+        margin-right: 0.5em;
     }
     
     /* Timer */
@@ -107,20 +110,20 @@ st.markdown(
         font-size: 2.5em;
         font-weight: bold;
         text-align: center;
-        color: #00d9ff;
+        color: #22d3ee;
         margin: 0.3em 0;
-        text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
     }
     
     /* Leaderboard */
     .leaderboard {
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         padding: 1em 1.5em;
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
     
     /* Game over styling */
@@ -130,34 +133,17 @@ st.markdown(
         margin: 0.5em 0;
     }
     
-    .game-over h1 {
-        font-size: 3em !important;
-        margin-bottom: 0 !important;
-    }
-    
-    .game-over h2 {
-        font-size: 1.3em !important;
-        color: #a0a0a0 !important;
-        font-weight: 400 !important;
-    }
-    
     /* Status line */
     .status-line {
         text-align: center;
         padding: 0.8em 1.5em;
-        background: rgba(0, 217, 255, 0.15);
+        background: rgba(34, 211, 238, 0.1);
         border-radius: 25px;
         margin: 0.5em auto;
         font-size: 1em;
-        color: #00d9ff;
-        animation: pulse 2s infinite;
+        color: #22d3ee;
         max-width: 400px;
-        border: 1px solid rgba(0, 217, 255, 0.3);
-    }
-    
-    @keyframes pulse {
-        0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(0, 217, 255, 0.3); }
-        50% { opacity: 0.8; box-shadow: 0 0 20px rgba(0, 217, 255, 0.5); }
+        border: 1px solid rgba(34, 211, 238, 0.2);
     }
     
     /* Album artwork container */
@@ -169,44 +155,35 @@ st.markdown(
     }
     
     .album-art {
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 60px rgba(233, 69, 96, 0.2);
-        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 60px rgba(139, 92, 246, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.08);
     }
     
     /* Audio player styling */
     .audio-container {
         margin: 1em auto;
-        max-width: 400px;
-        padding: 15px;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 15px;
-        backdrop-filter: blur(10px);
-    }
-    
-    /* Year question */
-    .year-question {
-        text-align: center;
-        font-size: 1.5em;
-        font-weight: 600;
-        color: #ffffff;
-        margin: 1em 0 0.5em 0;
+        max-width: 380px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
     
     /* How to play box */
     .how-to-play {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border-radius: 20px;
         padding: 2em;
         margin: 1em auto;
         max-width: 600px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         color: #ffffff;
     }
     
     .how-to-play h3 {
-        color: #e94560;
+        color: #8b5cf6;
         margin-bottom: 1em;
     }
     
@@ -217,13 +194,13 @@ st.markdown(
     
     /* Song details card */
     .song-details {
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         border-radius: 15px;
         padding: 1.5em;
         margin: 1em auto;
         max-width: 500px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         color: #ffffff;
     }
     
@@ -231,44 +208,38 @@ st.markdown(
     .correct-answer {
         font-size: 2em;
         font-weight: 700;
-        color: #00d9ff;
+        color: #22d3ee;
         text-align: center;
         margin: 0.5em 0;
-        text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
     }
     
     /* Button styling overrides */
     .stButton > button {
-        background: linear-gradient(135deg, #e94560 0%, #f39c12 100%);
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
         color: white;
         border: none;
-        border-radius: 25px;
+        border-radius: 12px;
         padding: 0.6em 2em;
         font-weight: 600;
         font-size: 1.1em;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        transition: all 0.15s ease;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(233, 69, 96, 0.6);
+        box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
     }
     
-    .stButton > button[kind="secondary"] {
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    /* Slider styling */
-    .stSlider > div > div {
-        background: linear-gradient(90deg, #e94560, #f39c12) !important;
+    .stButton > button:active {
+        transform: translateY(0px);
+        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
     }
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background: rgba(15, 52, 96, 0.95);
-        backdrop-filter: blur(10px);
+        background: rgba(13, 13, 26, 0.98);
     }
     
     [data-testid="stSidebar"] .stMarkdown {
@@ -277,69 +248,143 @@ st.markdown(
     
     /* Input fields */
     .stTextInput input {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         color: #ffffff;
-        border-radius: 10px;
+        border-radius: 8px;
     }
     
     /* Metrics */
     [data-testid="stMetricValue"] {
-        color: #00d9ff;
+        color: #22d3ee;
     }
     
-    /* Info box */
-    .stAlert {
-        background: rgba(0, 217, 255, 0.1);
-        border: 1px solid rgba(0, 217, 255, 0.3);
-        color: #ffffff;
-    }
-    
-    /* Year picker container */
-    .year-picker-container {
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(10px);
+    /* Year picker - completely custom */
+    .year-picker {
+        background: rgba(255, 255, 255, 0.03);
         border-radius: 20px;
-        padding: 1.5em 2em;
+        padding: 1.5em;
         margin: 1em auto;
-        max-width: 500px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        max-width: 400px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         text-align: center;
     }
     
-    .year-display {
-        font-size: 4em;
-        font-weight: 800;
-        color: #00d9ff;
-        text-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
-        margin: 0.2em 0;
-        font-family: 'Courier New', monospace;
-    }
-    
-    .year-label {
-        font-size: 1.2em;
-        color: #a0a0a0;
+    .year-picker-label {
+        font-size: 1em;
+        color: #888;
         text-transform: uppercase;
-        letter-spacing: 3px;
-        margin-bottom: 0.5em;
+        letter-spacing: 2px;
+        margin-bottom: 0.8em;
     }
     
-    .year-range-indicator {
+    .year-picker-display {
+        font-size: 5em;
+        font-weight: 800;
+        color: #22d3ee;
+        text-shadow: 0 0 40px rgba(34, 211, 238, 0.4);
+        margin: 0.1em 0;
+        font-family: 'SF Mono', 'Courier New', monospace;
+        letter-spacing: -3px;
+        user-select: none;
+    }
+    
+    .year-picker-controls {
         display: flex;
-        justify-content: space-between;
-        color: #666;
-        font-size: 0.9em;
-        margin-top: 0.5em;
-        padding: 0 0.5em;
-    }
-    
-    /* Custom slider track */
-    .stSlider [data-baseweb="slider"] {
+        justify-content: center;
+        align-items: center;
+        gap: 1em;
         margin-top: 1em;
     }
     
-    .stSlider [data-testid="stTickBar"] {
-        background: rgba(255, 255, 255, 0.1);
+    .year-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px solid rgba(139, 92, 246, 0.5);
+        background: rgba(139, 92, 246, 0.15);
+        color: #8b5cf6;
+        font-size: 1.5em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .year-btn:hover {
+        background: rgba(139, 92, 246, 0.3);
+        border-color: #8b5cf6;
+        transform: scale(1.1);
+    }
+    
+    .year-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .year-btn-big {
+        width: 60px;
+        height: 60px;
+        font-size: 1.8em;
+    }
+    
+    .year-range-hint {
+        color: #555;
+        font-size: 0.85em;
+        margin-top: 1em;
+    }
+    
+    /* Submit button special styling */
+    .submit-btn-container {
+        margin: 1.5em auto;
+        max-width: 300px;
+    }
+    
+    .submit-btn {
+        width: 100%;
+        padding: 1em 2em;
+        font-size: 1.3em;
+        font-weight: 700;
+        color: white;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.1s ease;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+    
+    .submit-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5);
+    }
+    
+    .submit-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    
+    /* Number input styling */
+    .stNumberInput input {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 2px solid rgba(139, 92, 246, 0.3) !important;
+        color: #22d3ee !important;
+        font-size: 2em !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        border-radius: 12px !important;
+        padding: 0.5em !important;
+    }
+    
+    .stNumberInput button {
+        background: rgba(139, 92, 246, 0.2) !important;
+        border: none !important;
+        color: #8b5cf6 !important;
+    }
+    
+    .stNumberInput button:hover {
+        background: rgba(139, 92, 246, 0.4) !important;
     }
 </style>
 """,
@@ -1104,14 +1149,14 @@ def render_game_interface():
                     
                     // Update color based on time
                     if (secs >= 50) {{
-                        containerEl.style.color = '#ff4444';
-                        containerEl.style.textShadow = '0 0 20px rgba(255, 68, 68, 0.8)';
+                        containerEl.style.color = '#ef4444';
+                        containerEl.style.textShadow = '0 0 20px rgba(239, 68, 68, 0.8)';
                     }} else if (secs >= 40) {{
-                        containerEl.style.color = '#ff8844';
-                        containerEl.style.textShadow = '0 0 20px rgba(255, 136, 68, 0.6)';
+                        containerEl.style.color = '#f59e0b';
+                        containerEl.style.textShadow = '0 0 20px rgba(245, 158, 11, 0.6)';
                     }} else {{
-                        containerEl.style.color = '#00d9ff';
-                        containerEl.style.textShadow = '0 0 20px rgba(0, 217, 255, 0.5)';
+                        containerEl.style.color = '#22d3ee';
+                        containerEl.style.textShadow = '0 0 20px rgba(34, 211, 238, 0.5)';
                     }}
                 }}
                 
@@ -1205,7 +1250,7 @@ def render_game_interface():
         else:
             # After guess - styled player without autoplay
             audio_html = f'''
-            <div class="audio-container" style="background: linear-gradient(135deg, #e94560 0%, #f39c12 100%);">
+            <div class="audio-container" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
                 <audio id="gameAudio" controls style="width: 100%; border-radius: 8px;">
                     <source src="{song["preview_url"]}" type="audio/mpeg">
                     Your browser does not support the audio element.
@@ -1217,51 +1262,27 @@ def render_game_interface():
         st.warning("No audio preview available for this song")
         st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
 
-    st.write("")
-
-    # Progressive hints
-    if st.session_state.hints_revealed > 0:
-        hints_container = st.container()
-        with hints_container:
-            if st.session_state.hints_revealed >= 1:
-                st.markdown(
-                    f'<div class="hint-box">🎵 <strong>Album:</strong> {song["album"]}</div>',
-                    unsafe_allow_html=True,
-                )
-
-            if st.session_state.hints_revealed >= 2:
-                st.markdown(
-                    f'<div class="hint-box">🎤 <strong>Artist:</strong> {song["artist"]}</div>',
-                    unsafe_allow_html=True,
-                )
-
-            if st.session_state.hints_revealed >= 3:
-                st.markdown(
-                    f'<div class="hint-box">🎸 <strong>Song:</strong> {song["name"]}</div>',
-                    unsafe_allow_html=True,
-                )
-
-    # Hint button (show during active gameplay)
-    if not st.session_state.game_over and st.session_state.audio_started:
-        st.write("")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.session_state.hints_revealed < 3:
-                hint_labels = ["Album", "Artist", "Song Title"]
-                next_hint = hint_labels[st.session_state.hints_revealed]
-                # Use stable key based on round number, not hint count
-                if st.button(
-                    f"💡 Reveal {next_hint} ({st.session_state.hints_revealed}/3 hints used)",
-                    use_container_width=True,
-                    key=f"hint_btn_round_{st.session_state.current_round}",
-                ):
-                    reveal_hint()
-                    st.session_state.status_message = f"💡 {next_hint} revealed! (-100 points)"
-                    st.rerun()
-            else:
-                st.markdown(
-                    '<div class="status-line">All hints revealed!</div>', unsafe_allow_html=True
-                )
+    # Progressive blur hints - reveal over 30 seconds (no button needed)
+    if st.session_state.audio_started and not st.session_state.game_over:
+        # Calculate blur amount based on elapsed time (30 seconds to fully reveal)
+        hint_blur = max(0, 8 - (elapsed * 8 / 30))  # Starts at 8px blur, reaches 0 at 30s
+        
+        st.markdown(
+            f'''
+            <div style="margin: 1em auto; max-width: 450px;">
+                <div class="hint-text" style="filter: blur({hint_blur:.1f}px);">
+                    <span class="hint-label">💿 Album:</span> {song["album"]}
+                </div>
+                <div class="hint-text" style="filter: blur({hint_blur:.1f}px);">
+                    <span class="hint-label">🎤 Artist:</span> {song["artist"]}
+                </div>
+                <div class="hint-text" style="filter: blur({hint_blur:.1f}px);">
+                    <span class="hint-label">🎵 Song:</span> {song["name"]}
+                </div>
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
 
     st.write("")
 
@@ -1270,46 +1291,60 @@ def render_game_interface():
         # Initialize guess_year in session state if not present
         if "current_guess" not in st.session_state:
             st.session_state.current_guess = st.session_state.start_year
-        
-        # Create the year picker container
+
         st.markdown(
-            f'''
-            <div class="year-picker-container">
-                <div class="year-label">📅 What year was this song released?</div>
-                <div class="year-display" id="year-display">{st.session_state.current_guess}</div>
-                <div class="year-range-indicator">
-                    <span>{st.session_state.start_year}</span>
-                    <span>← Slide to guess →</span>
-                    <span>{st.session_state.end_year}</span>
-                </div>
-            </div>
-            ''',
+            '<div class="year-picker-label" style="text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5em;">📅 What year was this song released?</div>',
             unsafe_allow_html=True,
         )
         
-        # Centered slider
-        col1, col2, col3 = st.columns([1, 4, 1])
+        # Year picker with +/- buttons
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+        
+        with col1:
+            if st.button("-5", key="year_minus_5", use_container_width=True):
+                st.session_state.current_guess = max(st.session_state.start_year, st.session_state.current_guess - 5)
+                st.rerun()
+        
         with col2:
-            guess_year = st.slider(
-                "Select Year",
-                min_value=st.session_state.start_year,
-                max_value=st.session_state.end_year,
-                value=st.session_state.start_year,
-                step=1,
-                key="guess_slider",
-                label_visibility="collapsed",
-                on_change=lambda: setattr(st.session_state, 'current_guess', st.session_state.guess_slider),
+            if st.button("-1", key="year_minus_1", use_container_width=True):
+                st.session_state.current_guess = max(st.session_state.start_year, st.session_state.current_guess - 1)
+                st.rerun()
+        
+        with col3:
+            # Large year display
+            st.markdown(
+                f'<div style="text-align: center; font-size: 3.5em; font-weight: 800; color: #22d3ee; text-shadow: 0 0 30px rgba(34, 211, 238, 0.4); font-family: monospace;">{st.session_state.current_guess}</div>',
+                unsafe_allow_html=True,
             )
-            # Update display value
-            st.session_state.current_guess = guess_year
+        
+        with col4:
+            if st.button("+1", key="year_plus_1", use_container_width=True):
+                st.session_state.current_guess = min(st.session_state.end_year, st.session_state.current_guess + 1)
+                st.rerun()
+        
+        with col5:
+            if st.button("+5", key="year_plus_5", use_container_width=True):
+                st.session_state.current_guess = min(st.session_state.end_year, st.session_state.current_guess + 5)
+                st.rerun()
+        
+        # Year range indicator
+        st.markdown(
+            f'<div style="text-align: center; color: #555; font-size: 0.85em; margin-top: 0.5em;">{st.session_state.start_year} — {st.session_state.end_year}</div>',
+            unsafe_allow_html=True,
+        )
 
         st.write("")
         
-        # Submit button
+        # Submit button - using HTML for maximum responsiveness
+        guess_year = st.session_state.current_guess
+        
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button(
-                f"🎯 Submit: {guess_year}", type="primary", use_container_width=True, key="submit_guess"
+                f"✔️  Submit {guess_year}",
+                type="primary",
+                use_container_width=True,
+                key="submit_guess",
             ):
                 make_guess(guess_year)
                 st.rerun()
@@ -1358,7 +1393,7 @@ def render_game_interface():
                         unsafe_allow_html=True,
                     )
                     st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #00d9ff;">Excellent!</div>',
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #22d3ee;">Excellent!</div>',
                         unsafe_allow_html=True,
                     )
                     st.markdown(
@@ -1371,7 +1406,7 @@ def render_game_interface():
                         unsafe_allow_html=True,
                     )
                     st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #f39c12;">Good job!</div>',
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #a78bfa;">Good job!</div>',
                         unsafe_allow_html=True,
                     )
                     st.markdown(
@@ -1384,7 +1419,7 @@ def render_game_interface():
                         unsafe_allow_html=True,
                     )
                     st.markdown(
-                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #e94560;">Nice try!</div>',
+                        '<div style="text-align: center; font-size: 2.5em; font-weight: 700; color: #8b5cf6;">Nice try!</div>',
                         unsafe_allow_html=True,
                     )
                     st.markdown(
@@ -1408,15 +1443,15 @@ def render_game_interface():
         st.markdown(
             f'''
             <div class="song-details">
-                <div style="text-align: center; margin-bottom: 1em; font-size: 1.2em; font-weight: 600; color: #e94560;">Song Details</div>
+                <div style="text-align: center; margin-bottom: 1em; font-size: 1.2em; font-weight: 600; color: #8b5cf6;">Song Details</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em;">
-                    <div><strong style="color: #00d9ff;">🎵 Song:</strong> {song["name"]}</div>
-                    <div><strong style="color: #00d9ff;">💿 Album:</strong> {song["album"]}</div>
-                    <div><strong style="color: #00d9ff;">🎤 Artist:</strong> {song["artist"]}</div>
-                    <div><strong style="color: #00d9ff;">📅 Year:</strong> {song["year"]}</div>
+                    <div><strong style="color: #22d3ee;">🎵 Song:</strong> {song["name"]}</div>
+                    <div><strong style="color: #22d3ee;">💿 Album:</strong> {song["album"]}</div>
+                    <div><strong style="color: #22d3ee;">🎤 Artist:</strong> {song["artist"]}</div>
+                    <div><strong style="color: #22d3ee;">📅 Year:</strong> {song["year"]}</div>
                 </div>
                 <div style="text-align: center; margin-top: 1em;">
-                    <a href="{song["deezer_url"]}" target="_blank" style="color: #00d9ff;">🎧 Listen on Spotify</a>
+                    <a href="{song["deezer_url"]}" target="_blank" style="color: #22d3ee;">🎧 Listen on Spotify</a>
                 </div>
             </div>
             ''',
@@ -1460,7 +1495,7 @@ def render_leaderboard():
         return
 
     st.markdown(
-        '<div style="text-align: center; font-size: 1.5em; font-weight: 700; color: #f39c12; margin-bottom: 1em;">🏆 Leaderboard</div>',
+        '<div style="text-align: center; font-size: 1.5em; font-weight: 700; color: #a78bfa; margin-bottom: 1em;">🏆 Leaderboard</div>',
         unsafe_allow_html=True,
     )
 
@@ -1476,9 +1511,9 @@ def render_leaderboard():
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <span style="font-size: 1.3em;">{medal}</span>
-                        <strong style="color: #e94560;">{score["player"]}</strong>
+                        <strong style="color: #8b5cf6;">{score["player"]}</strong>
                     </div>
-                    <div style="font-size: 1.2em; font-weight: 700; color: #00d9ff;">{score["score"]} pts</div>
+                    <div style="font-size: 1.2em; font-weight: 700; color: #22d3ee;">{score["score"]} pts</div>
                 </div>
                 <div style="font-size: 0.85em; color: #a0a0a0; margin-top: 0.3em;">
                     {score["song"]} • Guessed: {guess_display} • Actual: {score["actual"]} • {score["time"]}s
