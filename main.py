@@ -814,7 +814,7 @@ def render_game_interface():
         # Currently paused - don't count time since pause started
         current_pause_duration = time.time() - st.session_state.pause_start_time
         effective_elapsed = elapsed_float - current_pause_duration
-    
+
     # Calculate blur amount - only decrease when NOT paused
     if not st.session_state.game_over:
         if st.session_state.audio_started:
@@ -830,7 +830,9 @@ def render_game_interface():
         current_blur = 0
 
     hint_blur = (
-        max(0, 8 - (effective_elapsed * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started and not st.session_state.is_paused else 8
+        max(0, 8 - (effective_elapsed * 8 / HINT_REVEAL_TIME))
+        if st.session_state.audio_started and not st.session_state.is_paused
+        else 8
     )
 
     # === MAIN GAME LAYOUT - CENTERED ===
@@ -853,14 +855,20 @@ def render_game_interface():
             # Audio player directly under album (wider)
             if song["preview_url"]:
                 components.html(
-                    audio_player(song["preview_url"], song["id"], autoplay=True, time_locked=st.session_state.time_locked), height=70
+                    audio_player(
+                        song["preview_url"],
+                        song["id"],
+                        autoplay=True,
+                        time_locked=st.session_state.time_locked,
+                    ),
+                    height=70,
                 )
                 # Mark as started after minimal delay - timer is self-contained JS
                 if not st.session_state.audio_started and st.session_state.song_loaded_time:
                     st.session_state.audio_started = True
                     st.session_state.start_time = time.time()
                     st.rerun()
-                
+
                 # Check pause state from JavaScript
                 # This is a workaround - we detect pause via the autorefresh cycle
                 # by checking if enough time has passed without blur changes

@@ -1654,7 +1654,9 @@ def leaderboard_entry(idx: int, entry: dict) -> str:
     """
 
 
-def audio_player(preview_url: str, song_id: str, autoplay: bool = True, time_locked: bool = False) -> str:
+def audio_player(
+    preview_url: str, song_id: str, autoplay: bool = True, time_locked: bool = False
+) -> str:
     """Generate an audio player with visualizer sync and timer pause control"""
     autoplay_attr = "autoplay" if autoplay else ""
     return f"""
