@@ -88,61 +88,61 @@ MIN_SPOTIFY_POPULARITY = 80  # Lowered slightly for more variety
 MAX_GUESS_TIME = 30
 HINT_REVEAL_TIME = 25
 
-# Genre configuration with best 15-year ranges (golden eras)
+# Genre configuration - all default to 1995-2020
 GENRE_CONFIG = {
     "All Genres": {
         "query": "",  # Empty means no genre filter
-        "best_years": (1980, 2010),  # General popular music era
+        "best_years": (1995, 2020),
         "icon": "🎵",
     },
     "Pop": {
         "query": "pop",
-        "best_years": (1985, 2010),  # Peak pop era: Madonna to Lady Gaga
+        "best_years": (1995, 2020),
         "icon": "🎤",
     },
     "Rock": {
         "query": "rock",
-        "best_years": (1970, 1995),  # Classic rock through grunge
+        "best_years": (1995, 2020),
         "icon": "🎸",
     },
     "Hip-Hop": {
         "query": "hip hop rap",
-        "best_years": (1990, 2010),  # Golden age through 2000s
+        "best_years": (1995, 2020),
         "icon": "🎧",
     },
     "R&B": {
         "query": "r&b soul",
-        "best_years": (1985, 2005),  # New Jack Swing through neo-soul
+        "best_years": (1995, 2020),
         "icon": "💜",
     },
     "Electronic": {
         "query": "electronic dance edm",
-        "best_years": (1995, 2015),  # Rise of EDM
+        "best_years": (1995, 2020),
         "icon": "🎹",
     },
     "Country": {
         "query": "country",
-        "best_years": (1990, 2010),  # Modern country era
+        "best_years": (1995, 2020),
         "icon": "🤠",
     },
     "Alternative": {
         "query": "alternative indie",
-        "best_years": (1990, 2010),  # Alt rock golden era
+        "best_years": (1995, 2020),
         "icon": "🎪",
     },
     "Metal": {
         "query": "metal heavy",
-        "best_years": (1980, 2000),  # Thrash through nu-metal
+        "best_years": (1995, 2020),
         "icon": "🤘",
     },
     "Disco/Funk": {
         "query": "disco funk",
-        "best_years": (1975, 1990),  # Disco era through funk
+        "best_years": (1995, 2020),
         "icon": "🕺",
     },
     "80s": {
         "query": "80s hits",
-        "best_years": (1980, 1989),  # The 80s decade
+        "best_years": (1995, 2020),
         "icon": "📼",
     },
 }
@@ -209,8 +209,8 @@ def get_deezer_preview(artist: str, track: str) -> str | None:
 
     try:
         query = f"{artist} {track}"
-        search_url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=5"
-        response = requests.get(search_url, timeout=3)
+        search_url = f"https://api.deezer.com/search?q={requests.utils.quote(query)}&limit=3"
+        response = requests.get(search_url, timeout=2)  # Faster timeout
 
         if response.status_code == 200:
             data = response.json()
@@ -287,14 +287,12 @@ def is_likely_english(track_name: str, artist_name: str) -> bool:
     if non_latin_pattern.search(text):
         return False
     accented_count = len(re.findall(r"[àáâãäåèéêëìíîïòóôõöùúûüñçøæœßðþ]", text.lower()))
-    if len(text) > 0 and accented_count > len(text) * 0.1:
-        return False
-    return True
+    return not (len(text) > 0 and accented_count > len(text) * 0.1)
 
 
 def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
     """Get top chart songs from a specific year using Spotify.
-    
+
     Args:
         year: The year to search for songs
         genre_query: Optional genre search terms (e.g., "rock", "pop")
@@ -312,7 +310,10 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
     headers = {"Authorization": f"Bearer {token}"}
     tracks = []
 
-    playlist_id = search_top_hits_playlist(year, token)
+    # Only use playlist for "All Genres" - otherwise go straight to genre search
+    playlist_id = None
+    if not genre_query:
+        playlist_id = search_top_hits_playlist(year, token)
 
     if playlist_id:
         try:
@@ -375,9 +376,7 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
         try:
             # Include genre in search if specified
             if genre_query:
-                search_url = (
-                    f"https://api.spotify.com/v1/search?q={requests.utils.quote(genre_query)}+year:{year}&type=track&limit=50&market=US"
-                )
+                search_url = f"https://api.spotify.com/v1/search?q={requests.utils.quote(genre_query)}+year:{year}&type=track&limit=50&market=US"
             else:
                 search_url = (
                     f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
@@ -458,7 +457,11 @@ def _fetch_deezer_preview(track: dict) -> tuple[dict, str | None]:
 
 
 def get_random_song(
-    start_year: int, end_year: int, played_ids: set | None = None, played_keys: set | None = None, genre_query: str = ""
+    start_year: int,
+    end_year: int,
+    played_ids: set | None = None,
+    played_keys: set | None = None,
+    genre_query: str = "",
 ) -> dict | None:
     """Get a random popular song from the specified year range."""
     if played_ids is None:
@@ -486,11 +489,11 @@ def get_random_song(
         if not available_tracks:
             continue
 
-        # More aggressive shuffling
+        # Shuffle and take fewer candidates for speed
         random.shuffle(available_tracks)
-        candidates = available_tracks[:15]
+        candidates = available_tracks[:10]  # Reduced from 15 for faster response
 
-        with ThreadPoolExecutor(max_workers=6) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:  # Increased parallelism
             futures = {executor.submit(_fetch_deezer_preview, t): t for t in candidates}
 
             for future in as_completed(futures):
@@ -585,8 +588,8 @@ def initialize_game_state():
         "current_player": "Player 1",
         "blur_level": 25,
         "year_options": [],
-        "start_year": 1990,
-        "end_year": 2015,
+        "start_year": 1995,
+        "end_year": 2020,
         "selected_genre": "All Genres",
         "current_round": 0,
         "played_song_ids": set(),
@@ -710,6 +713,8 @@ def render_game_interface():
 
     # Header with game info
     total_score = get_total_score()
+    current_genre = st.session_state.selected_genre
+    genre_icon = GENRE_CONFIG[current_genre]["icon"]
     st.markdown(
         game_header(
             st.session_state.current_player,
@@ -717,16 +722,15 @@ def render_game_interface():
             st.session_state.start_year,
             st.session_state.end_year,
             total_score,
+            current_genre,
+            genre_icon,
         ),
         unsafe_allow_html=True,
     )
 
-    # Auto-refresh for game state updates
-    if not st.session_state.game_over:
-        if st.session_state.audio_started:
-            st_autorefresh(interval=1000, key="game_timer")
-        else:
-            st_autorefresh(interval=500, key="audio_start_check")
+    # Auto-refresh only when waiting for audio to start - timer handles itself via JS
+    if not st.session_state.game_over and not st.session_state.audio_started:
+        st_autorefresh(interval=1000, key="audio_start_check")
 
     # Calculate elapsed time
     if st.session_state.start_time is not None:
@@ -784,14 +788,11 @@ def render_game_interface():
                 components.html(
                     audio_player(song["preview_url"], song["id"], autoplay=True), height=70
                 )
-                if not st.session_state.audio_started:
-                    if (
-                        st.session_state.song_loaded_time
-                        and (time.time() - st.session_state.song_loaded_time) > 1.0
-                    ):
-                        st.session_state.audio_started = True
-                        st.session_state.start_time = time.time()
-                        st.rerun()
+                # Mark as started after minimal delay - timer is self-contained JS
+                if not st.session_state.audio_started and st.session_state.song_loaded_time:
+                    st.session_state.audio_started = True
+                    st.session_state.start_time = time.time()
+                    st.rerun()
 
             # Song info card below audio
             st.markdown(
@@ -1012,17 +1013,19 @@ def render_settings_panel():
         # Genre selection with icons
         genre_options = [f"{GENRE_CONFIG[g]['icon']} {g}" for g in GENRE_LIST]
         current_idx = GENRE_LIST.index(st.session_state.selected_genre)
-        
+
         selected_display = st.selectbox(
             "Genre",
             options=genre_options,
             index=current_idx,
             label_visibility="collapsed",
         )
-        
+
         # Extract genre name (remove icon)
-        selected_genre = selected_display.split(" ", 1)[1] if " " in selected_display else selected_display
-        
+        selected_genre = (
+            selected_display.split(" ", 1)[1] if " " in selected_display else selected_display
+        )
+
         # If genre changed, update year range to genre's best years
         if selected_genre != st.session_state.selected_genre:
             st.session_state.selected_genre = selected_genre
@@ -1070,7 +1073,7 @@ def render_settings_panel():
     genre_icon = GENRE_CONFIG[st.session_state.selected_genre]["icon"]
     st.markdown(
         f'<div style="text-align: center; color: #22d3ee; font-size: 0.9em; margin-top: -0.5em;">'
-        f'{genre_icon} {st.session_state.selected_genre} • {year_range[0]} — {year_range[1]}</div>',
+        f"{genre_icon} {st.session_state.selected_genre} • {year_range[0]} — {year_range[1]}</div>",
         unsafe_allow_html=True,
     )
 

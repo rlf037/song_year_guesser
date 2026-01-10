@@ -936,7 +936,13 @@ MAIN_CSS = """
 
 
 def game_header(
-    player_name: str, round_num: int, start_year: int, end_year: int, total_score: int = 0
+    player_name: str,
+    round_num: int,
+    start_year: int,
+    end_year: int,
+    total_score: int = 0,
+    genre: str = "All Genres",
+    genre_icon: str = "🎵",
 ) -> str:
     """Generate the game header with controls"""
     return f"""
@@ -948,6 +954,10 @@ def game_header(
             <div class="header-item">
                 <span class="header-item-label">Player</span>
                 <span class="header-item-value">{player_name}</span>
+            </div>
+            <div class="header-item">
+                <span class="header-item-label">Genre</span>
+                <span class="header-item-value">{genre_icon} {genre}</span>
             </div>
             <div class="header-item">
                 <span class="header-item-label">Years</span>
@@ -1333,7 +1343,7 @@ def scroll_wheel_year_picker(
 
 
 def timer_html(start_timestamp: float, max_time: int) -> str:
-    """Generate the countdown timer with animation - includes inline styles for iframe"""
+    """Generate the countdown timer - self-contained, detects audio directly"""
     return f"""
     <style>
         body {{ margin: 0; padding: 0; background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
@@ -1341,13 +1351,16 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
         .timer-ring {{ position: relative; width: 200px; height: 200px; filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.4)); transition: filter 0.3s ease; }}
         .timer-ring.warning {{ filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.5)); }}
         .timer-ring.danger {{ filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.6)); animation: pulse 0.5s ease-in-out infinite; }}
+        .timer-ring.paused {{ filter: drop-shadow(0 0 15px rgba(100, 100, 100, 0.4)); opacity: 0.7; }}
+        .timer-ring.waiting {{ filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.3)); opacity: 0.6; }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
         .timer-seconds {{ font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1; text-shadow: 0 0 30px currentColor; transition: color 0.3s ease, text-shadow 0.3s ease; }}
         .timer-label {{ font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; }}
+        .timer-status {{ font-size: 0.8em; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.5em; }}
         @keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.05); }} }}
     </style>
     <div class="timer-container">
-        <div class="timer-ring" id="timer-ring">
+        <div class="timer-ring waiting" id="timer-ring">
             <svg width="200" height="200" viewBox="0 0 200 200" style="transform: rotate(-90deg);">
                 <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
                 <circle id="timer-circle" cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10"
@@ -1355,35 +1368,97 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                     style="transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease; filter: drop-shadow(0 0 8px currentColor);"/>
             </svg>
             <div class="timer-text">
-                <div id="timer-seconds" class="timer-seconds">30</div>
+                <div id="timer-seconds" class="timer-seconds">{max_time}</div>
                 <div class="timer-label">sec</div>
+                <div id="timer-status" class="timer-status" style="display: none;"></div>
             </div>
         </div>
     </div>
     <script>
         (function() {{
-            var startTime = {start_timestamp};
             var maxTime = {max_time};
             var circle = document.getElementById('timer-circle');
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
+            var statusEl = document.getElementById('timer-status');
             var circumference = 2 * Math.PI * 90;
             
+            // Timer state
+            var timerStarted = false;
+            var actualStartTime = null;
+            var totalPausedTime = 0;
+            var pauseStartTime = null;
+            var wasPlaying = false;
+            
+            // Find audio element in parent document
+            function findAudio() {{
+                try {{
+                    var iframes = window.parent.document.querySelectorAll('iframe');
+                    for (var i = 0; i < iframes.length; i++) {{
+                        try {{
+                            var audio = iframes[i].contentDocument.getElementById('gameAudio');
+                            if (audio) return audio;
+                        }} catch(e) {{}}
+                    }}
+                }} catch(e) {{}}
+                return null;
+            }}
+            
             function updateTimer() {{
+                var audio = findAudio();
+                var isPlaying = audio && !audio.paused && audio.currentTime > 0;
+                
+                // Start timer on first play
+                if (!timerStarted && isPlaying) {{
+                    timerStarted = true;
+                    actualStartTime = Date.now();
+                    ring.classList.remove('waiting');
+                    statusEl.style.display = 'none';
+                }}
+                
+                // Still waiting for playback
+                if (!timerStarted) {{
+                    secondsEl.textContent = maxTime;
+                    statusEl.textContent = '▶ PRESS PLAY';
+                    statusEl.style.display = 'block';
+                    return;
+                }}
+                
+                // Handle pause/resume
+                if (wasPlaying && !isPlaying) {{
+                    pauseStartTime = Date.now();
+                    ring.classList.add('paused');
+                    statusEl.textContent = '⏸ PAUSED';
+                    statusEl.style.display = 'block';
+                }} else if (!wasPlaying && isPlaying) {{
+                    if (pauseStartTime) {{
+                        totalPausedTime += Date.now() - pauseStartTime;
+                        pauseStartTime = null;
+                    }}
+                    ring.classList.remove('paused');
+                    statusEl.style.display = 'none';
+                }}
+                wasPlaying = isPlaying;
+                
+                // Calculate elapsed (excluding pause time)
                 var now = Date.now();
-                var elapsed = (now - startTime) / 1000;
+                var currentPause = pauseStartTime ? (now - pauseStartTime) : 0;
+                var elapsed = (now - actualStartTime - totalPausedTime - currentPause) / 1000;
+                
                 if (elapsed < 0) elapsed = 0;
                 if (elapsed > maxTime) elapsed = maxTime;
                 
                 var remaining = Math.ceil(maxTime - elapsed);
                 var progress = elapsed / maxTime;
-                var offset = circumference * progress;
                 
-                circle.style.strokeDashoffset = offset;
+                circle.style.strokeDashoffset = circumference * progress;
                 secondsEl.textContent = remaining;
                 
+                // Update colors
                 ring.classList.remove('warning', 'danger');
-                if (remaining <= 5) {{
+                if (!isPlaying && timerStarted) {{
+                    ring.classList.add('paused');
+                }} else if (remaining <= 5) {{
                     circle.style.stroke = '#ef4444';
                     secondsEl.style.color = '#ef4444';
                     secondsEl.style.textShadow = '0 0 40px #ef4444';
@@ -1400,8 +1475,8 @@ def timer_html(start_timestamp: float, max_time: int) -> str:
                 }}
             }}
             
-            updateTimer();
             setInterval(updateTimer, 100);
+            updateTimer();
         }})();
     </script>
     """
@@ -1545,7 +1620,7 @@ def leaderboard_entry(idx: int, score: dict) -> str:
 
 
 def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
-    """Generate an audio player with visualizer sync"""
+    """Generate an audio player with visualizer sync and timer pause control"""
     autoplay_attr = "autoplay" if autoplay else ""
     return f"""
     <div class="audio-container">
@@ -1568,6 +1643,18 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 }}
             }}
             
+            // Set audio playing state in parent for timer sync
+            function setAudioPlaying(playing) {{
+                try {{
+                    window.parent.__audioPlaying = playing;
+                    // Signal that audio has started at least once (for timer start)
+                    if (playing && !window.parent.__audioEverStarted) {{
+                        window.parent.__audioEverStarted = true;
+                        window.parent.__audioStartTime = Date.now();
+                    }}
+                }} catch(e) {{}}
+            }}
+            
             function updateViz(playing) {{
                 var viz = getVizContainer();
                 if (viz) {{
@@ -1579,9 +1666,18 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 }}
             }}
             
-            audio.addEventListener('play', function() {{ updateViz(true); }});
-            audio.addEventListener('pause', function() {{ updateViz(false); }});
-            audio.addEventListener('ended', function() {{ updateViz(false); }});
+            audio.addEventListener('play', function() {{ 
+                updateViz(true); 
+                setAudioPlaying(true);
+            }});
+            audio.addEventListener('pause', function() {{ 
+                updateViz(false); 
+                setAudioPlaying(false);
+            }});
+            audio.addEventListener('ended', function() {{ 
+                updateViz(false); 
+                setAudioPlaying(false);
+            }});
             
             {'audio.volume = 1.0; audio.play().catch(function(e) { console.log("Autoplay prevented:", e); });' if autoplay else ""}
         }})();
