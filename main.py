@@ -1,10 +1,12 @@
 import base64
 import io
+import json
 import random
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 
 import requests
 import streamlit as st
@@ -230,12 +232,54 @@ _tracks_cache: dict[int, tuple[float, list[dict]]] = {}
 _image_cache: dict[str, str] = {}
 CACHE_EXPIRY_SECONDS = 300  # 5 minutes - shorter for more variety
 
+# Persistent leaderboard file
+LEADERBOARD_FILE = Path(__file__).parent / "leaderboard.json"
+MAX_LEADERBOARD_ENTRIES = 20
+
 
 def clear_song_cache():
     """Clear all cached songs to get fresh selections"""
     global _tracks_cache, _playlist_cache
     _tracks_cache.clear()
     _playlist_cache.clear()
+
+
+def load_leaderboard() -> list[dict]:
+    """Load leaderboard from persistent storage"""
+    try:
+        if LEADERBOARD_FILE.exists():
+            with open(LEADERBOARD_FILE) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+
+def save_leaderboard(leaderboard: list[dict]):
+    """Save leaderboard to persistent storage"""
+    try:
+        # Sort by score and keep top entries
+        sorted_lb = sorted(leaderboard, key=lambda x: x["total_score"], reverse=True)
+        sorted_lb = sorted_lb[:MAX_LEADERBOARD_ENTRIES]
+        with open(LEADERBOARD_FILE, "w") as f:
+            json.dump(sorted_lb, f, indent=2)
+    except Exception:
+        pass
+
+
+def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str):
+    """Add a game session to the leaderboard"""
+    leaderboard = load_leaderboard()
+    entry = {
+        "player": player,
+        "total_score": total_score,
+        "songs_played": songs_played,
+        "avg_score": round(total_score / songs_played) if songs_played > 0 else 0,
+        "genre": genre,
+        "date": datetime.now().strftime("%b %d"),
+    }
+    leaderboard.append(entry)
+    save_leaderboard(leaderboard)
 
 
 def search_top_hits_playlist(year: int, token: str) -> str | None:
@@ -953,9 +997,24 @@ def render_game_interface():
                 st.rerun()
 
             if st.button("🏁 End Game", use_container_width=True, key="end_game"):
+                # Save to persistent leaderboard
+                total_score = get_total_score()
+                songs_played = len(
+                    [s for s in st.session_state.player_scores
+                     if s["player"] == st.session_state.current_player]
+                )
+                if songs_played > 0:
+                    add_to_leaderboard(
+                        st.session_state.current_player,
+                        total_score,
+                        songs_played,
+                        st.session_state.selected_genre
+                    )
+                # Reset game state
                 st.session_state.game_active = False
                 st.session_state.game_over = False
                 st.session_state.current_round = 0
+                st.session_state.player_scores = []  # Clear session scores
                 st.session_state.played_song_ids = set()
                 st.session_state.played_song_keys = set()
                 st.session_state.next_song_cache = None
@@ -963,15 +1022,17 @@ def render_game_interface():
 
 
 def render_leaderboard():
-    """Display the leaderboard"""
-    if not st.session_state.player_scores:
+    """Display the persistent leaderboard (round-based)"""
+    leaderboard = load_leaderboard()
+    
+    if not leaderboard:
         st.markdown(empty_leaderboard(), unsafe_allow_html=True)
         return
 
     st.markdown(leaderboard_header(), unsafe_allow_html=True)
-    sorted_scores = sorted(st.session_state.player_scores, key=lambda x: x["score"], reverse=True)
-    for idx, score in enumerate(sorted_scores[:10], 1):
-        st.markdown(leaderboard_entry(idx, score), unsafe_allow_html=True)
+    sorted_lb = sorted(leaderboard, key=lambda x: x["total_score"], reverse=True)
+    for idx, entry in enumerate(sorted_lb[:10], 1):
+        st.markdown(leaderboard_entry(idx, entry), unsafe_allow_html=True)
 
 
 def render_song_history():
