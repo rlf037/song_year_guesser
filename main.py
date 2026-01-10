@@ -788,7 +788,7 @@ def render_game_interface():
     # Calculate elapsed time
     if st.session_state.start_time is not None:
         # Use actual playing time (excludes paused time) if available
-        if st.session_state.audio_started and st.session_state.elapsed_playing_time > 0:
+        if st.session_state.elapsed_playing_time > 0:
             elapsed_float = st.session_state.elapsed_playing_time
         else:
             elapsed_float = time.time() - st.session_state.start_time
@@ -811,7 +811,7 @@ def render_game_interface():
 
     # Calculate blur amount
     if not st.session_state.game_over:
-        if st.session_state.audio_started:
+        if st.session_state.audio_started and (st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0):
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
         else:
@@ -820,7 +820,7 @@ def render_game_interface():
         current_blur = 0
 
     hint_blur = (
-        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started else 8
+        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME)) if st.session_state.audio_started and (st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0) else 8
     )
 
     # === MAIN GAME LAYOUT - CENTERED ===
