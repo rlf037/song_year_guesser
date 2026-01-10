@@ -1535,6 +1535,30 @@ def static_timer(seconds: int = 30) -> str:
     """
 
 
+def get_selected_year_js() -> str:
+    """Component that reads selected year from localStorage and returns it"""
+    return """
+    <script>
+        (function() {
+            function sendYear() {
+                try {
+                    var year = localStorage.getItem('selectedYear');
+                    if (year) {
+                        window.parent.postMessage({
+                            type: 'streamlit:setComponentValue',
+                            value: parseInt(year)
+                        }, '*');
+                    }
+                } catch(e) {}
+            }
+            // Send immediately and periodically
+            sendYear();
+            setInterval(sendYear, 200);
+        })();
+    </script>
+    """
+
+
 def year_scroll_wheel(
     min_year: int, max_year: int, initial_year: int, disabled: bool = False
 ) -> str:

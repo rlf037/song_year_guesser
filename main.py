@@ -25,6 +25,7 @@ from ui_components import (
     empty_leaderboard,
     game_header,
     get_elapsed_time_js,
+    get_selected_year_js,
     how_to_play,
     leaderboard_entry,
     leaderboard_header,
@@ -880,7 +881,7 @@ def render_game_interface():
             )
 
             # Scroll wheel for year selection
-            selected_year = components.html(
+            components.html(
                 year_scroll_wheel(
                     start_year,
                     end_year,
@@ -890,7 +891,10 @@ def render_game_interface():
                 height=190,
             )
 
-            # Update current_guess if wheel returned a valid year value
+            # Hidden component to continuously read selected year from localStorage
+            selected_year = components.html(get_selected_year_js(), height=0)
+
+            # Update current_guess if year reader returned a valid value
             if selected_year is not None and selected_year != 0 and not is_locked:
                 try:
                     year_value = int(selected_year)
