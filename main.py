@@ -772,9 +772,14 @@ def render_game_interface():
         unsafe_allow_html=True,
     )
 
-    # Auto-refresh only when waiting for audio to start - timer handles itself via JS
-    if not st.session_state.game_over and not st.session_state.audio_started:
-        st_autorefresh(interval=1000, key="audio_start_check")
+    # Auto-refresh during active gameplay for blur updates and timeout detection
+    if not st.session_state.game_over:
+        if not st.session_state.audio_started:
+            # Fast refresh while waiting for audio to start
+            st_autorefresh(interval=500, key="audio_start_check")
+        elif not st.session_state.time_locked:
+            # Slower refresh during gameplay for blur/timeout updates
+            st_autorefresh(interval=1000, key="gameplay_refresh")
 
     # Calculate elapsed time
     if st.session_state.start_time is not None:
