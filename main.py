@@ -647,6 +647,8 @@ def initialize_game_state():
         "time_locked": False,
         "elapsed_playing_time": 0,
         "loading_game": False,
+        "submitting_guess": False,
+        "guess_timed_out": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -771,6 +773,8 @@ def render_game_interface():
             st.session_state.start_year,
             st.session_state.end_year,
             total_score,
+            current_genre,
+            genre_icon,
         ),
         unsafe_allow_html=True,
     )
@@ -932,7 +936,8 @@ def render_game_interface():
                 use_container_width=True,
                 key="submit_guess",
             ):
-                make_guess(st.session_state.current_guess, timed_out=is_locked)
+                st.session_state.submitting_guess = True
+                st.session_state.guess_timed_out = is_locked
                 st.rerun()
 
             # Show time bonus hint when not locked
@@ -1175,6 +1180,15 @@ def main():
             genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
             start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
             st.session_state.loading_game = False
+            st.rerun()
+        return
+
+    # Handle guess submission with spinner
+    if st.session_state.submitting_guess:
+        st.markdown(main_title(), unsafe_allow_html=True)
+        with st.spinner("🎯 Calculating your score..."):
+            make_guess(st.session_state.current_guess, timed_out=st.session_state.guess_timed_out)
+            st.session_state.submitting_guess = False
             st.rerun()
         return
 

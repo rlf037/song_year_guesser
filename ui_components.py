@@ -936,9 +936,16 @@ MAIN_CSS = """
 
 
 def game_header(
-    player_name: str, round_num: int, start_year: int, end_year: int, total_score: int = 0
+    player_name: str,
+    round_num: int,
+    start_year: int,
+    end_year: int,
+    total_score: int = 0,
+    genre: str = "",
+    genre_icon: str = "",
 ) -> str:
     """Generate the game header with controls"""
+    genre_display = f"{genre_icon} {genre}" if genre else ""
     return f"""
     <div class="game-header">
         <div class="header-title">
@@ -948,6 +955,10 @@ def game_header(
             <div class="header-item">
                 <span class="header-item-label">Player</span>
                 <span class="header-item-value">{player_name}</span>
+            </div>
+            <div class="header-item">
+                <span class="header-item-label">Genre</span>
+                <span class="header-item-value">{genre_display}</span>
             </div>
             <div class="header-item">
                 <span class="header-item-label">Years</span>
@@ -1343,7 +1354,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
         .timer-ring.danger {{ animation: pulse 0.5s ease-in-out infinite; }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
         .timer-seconds {{ font-size: 4em; font-weight: 800; line-height: 1; transition: color 0.15s ease; }}
-        .timer-label {{ font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; }}
+        .timer-label {{ font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; transition: color 0.2s ease; }}
+        .timer-label.paused {{ color: #f97316; font-weight: 600; }}
         @keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.03); }} }}
     </style>
     <div class="timer-container">
@@ -1356,7 +1368,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
             </svg>
             <div class="timer-text">
                 <div id="timer-seconds" class="timer-seconds" style="color: #22d3ee;">{max_time}</div>
-                <div class="timer-label">sec</div>
+                <div id="timer-label" class="timer-label">sec</div>
             </div>
         </div>
     </div>
@@ -1368,6 +1380,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
             var circle = document.getElementById('timer-circle');
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
+            var labelEl = document.getElementById('timer-label');
             var circumference = 2 * Math.PI * 90;
 
             // Pause tracking
@@ -1380,6 +1393,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     isPaused = true;
                     pausedAt = Date.now();
                     ring.classList.add('paused');
+                    labelEl.textContent = '⏸ paused';
+                    labelEl.classList.add('paused');
                 }}
             }}
 
@@ -1389,6 +1404,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     isPaused = false;
                     pausedAt = null;
                     ring.classList.remove('paused');
+                    labelEl.textContent = 'sec';
+                    labelEl.classList.remove('paused');
                 }}
             }}
 
