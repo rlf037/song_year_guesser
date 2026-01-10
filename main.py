@@ -27,6 +27,12 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
+    /* Consistent button styling */
+    .stButton > button {
+        min-height: 3em;
+        font-weight: 600;
+    }
+    
     /* Dark game theme - deep purple/blue */
     .stApp {
         background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #0f0f23 100%);
@@ -927,7 +933,7 @@ def generate_year_options(actual_year: int) -> list[int]:
     while len(years) < 4:
         offset = random.randint(-10, 10)
         year = actual_year + offset
-        if 1950 <= year <= datetime.now().year:
+        if 1960 <= year <= datetime.now().year:
             years.add(year)
 
     return sorted(list(years))
@@ -956,7 +962,7 @@ def initialize_game_state():
     if "start_year" not in st.session_state:
         st.session_state.start_year = 1995
     if "end_year" not in st.session_state:
-        st.session_state.end_year = 2010
+        st.session_state.end_year = 2015
     if "current_round" not in st.session_state:
         st.session_state.current_round = 0
     if "played_song_ids" not in st.session_state:
@@ -1323,7 +1329,29 @@ def render_game_interface():
             components.html(audio_html, height=80)
     else:
         st.warning("No audio preview available for this song")
-        st.markdown(f"[Listen on Spotify]({song['deezer_url']})")
+        st.markdown(
+            f'''
+            <div style="text-align: center;">
+                <a href="{song['deezer_url']}" target="_blank" style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5em;
+                    background: #1DB954;
+                    color: white;
+                    padding: 0.6em 1.2em;
+                    border-radius: 25px;
+                    text-decoration: none;
+                    font-weight: 600;
+                ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                    </svg>
+                    Listen on Spotify
+                </a>
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
 
     # Progressive blur hints - reveal by 25 seconds (no button needed)
     if st.session_state.audio_started and not st.session_state.game_over:
@@ -1548,8 +1576,25 @@ def render_game_interface():
                     <div><strong style="color: #22d3ee;">🎤 Artist:</strong> {song["artist"]}</div>
                     <div><strong style="color: #22d3ee;">📅 Year:</strong> {song["year"]}</div>
                 </div>
-                <div style="text-align: center; margin-top: 1em;">
-                    <a href="{song["deezer_url"]}" target="_blank" style="color: #22d3ee;">🎧 Listen on Spotify</a>
+                <div style="text-align: center; margin-top: 1.2em;">
+                    <a href="{song["deezer_url"]}" target="_blank" style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.5em;
+                        background: #1DB954;
+                        color: white;
+                        padding: 0.6em 1.2em;
+                        border-radius: 25px;
+                        text-decoration: none;
+                        font-weight: 600;
+                        font-size: 0.95em;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='#1ed760'; this.style.transform='scale(1.05)';" onmouseout="this.style.background='#1DB954'; this.style.transform='scale(1)';">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                        </svg>
+                        Listen on Spotify
+                    </a>
                 </div>
             </div>
             ''',
@@ -1558,29 +1603,41 @@ def render_game_interface():
 
         st.write("")
 
-        # Next song and end game buttons
-        col1, col2, col3 = st.columns([1, 2, 1])
+        # Next song and end game buttons - consistent sizing
+        st.markdown(
+            '''
+            <style>
+            div[data-testid="column"] > div > div > div > button {
+                height: 3em;
+            }
+            </style>
+            ''',
+            unsafe_allow_html=True,
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button(
+                "▶️ Next Song",
+                type="primary",
+                use_container_width=True,
+                key="next_song",
+            ):
+                start_new_game(st.session_state.start_year, st.session_state.end_year)
+                st.rerun()
         with col2:
-            col_a, col_b = st.columns(2)
-            with col_a:
-                played_count = len(st.session_state.get("played_song_ids", set()))
-                if st.button(
-                    "▶️ Next Song",
-                    type="primary",
-                    use_container_width=True,
-                    key="next_song",
-                ):
-                    start_new_game(st.session_state.start_year, st.session_state.end_year)
-                    st.rerun()
-            with col_b:
-                if st.button("🏁 End Game", use_container_width=True, key="end_game"):
-                    st.session_state.game_active = False
-                    st.session_state.game_over = False
-                    st.session_state.current_round = 0
-                    st.session_state.played_song_ids = set()
-                    st.session_state.played_song_keys = set()
-                    st.session_state.next_song_cache = None
-                    st.rerun()
+            if st.button(
+                "🏁 End Game",
+                type="secondary",
+                use_container_width=True,
+                key="end_game",
+            ):
+                st.session_state.game_active = False
+                st.session_state.game_over = False
+                st.session_state.current_round = 0
+                st.session_state.played_song_ids = set()
+                st.session_state.played_song_keys = set()
+                st.session_state.next_song_cache = None
+                st.rerun()
 
 
 def render_leaderboard():
@@ -1644,7 +1701,7 @@ def main():
 
         start_year = st.slider(
             "Start Year",
-            min_value=1950,
+            min_value=1960,
             max_value=datetime.now().year - 1,
             value=st.session_state.start_year,
         )
