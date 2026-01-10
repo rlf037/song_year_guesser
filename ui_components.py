@@ -1564,8 +1564,7 @@ def how_to_play() -> str:
 
 
 def leaderboard_entry(idx: int, score: dict) -> str:
-    """Generate a single leaderboard entry"""
-    guess_display = score["guess"] if isinstance(score["guess"], int) else "TIMEOUT"
+    """Generate a single leaderboard entry for cumulative leaderboard"""
     medal = (
         "&#x1F947;"
         if idx == 1
@@ -1575,6 +1574,10 @@ def leaderboard_entry(idx: int, score: dict) -> str:
         if idx == 3
         else f"#{idx}"
     )
+    genre = score.get("genre", "All Genres")
+    songs_played = score.get("songs_played", 0)
+    avg_score = score.get("avg_score", 0)
+    date = score.get("date", "")
     return f"""
     <div class="leaderboard">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1582,10 +1585,10 @@ def leaderboard_entry(idx: int, score: dict) -> str:
                 <span style="font-size: 1.3em;">{medal}</span>
                 <strong style="color: #8b5cf6;">{score["player"]}</strong>
             </div>
-            <div style="font-size: 1.2em; font-weight: 700; color: #22d3ee;">{score["score"]} pts</div>
+            <div style="font-size: 1.2em; font-weight: 700; color: #22d3ee;">{score["total_score"]} pts</div>
         </div>
         <div style="font-size: 0.85em; color: #a0a0a0; margin-top: 0.3em;">
-            {score["song"]} - Guessed: {guess_display} - Actual: {score["actual"]} - {score["time"]}s
+            {genre} • {songs_played} songs • Avg: {avg_score} pts • {date}
         </div>
     </div>
     """
