@@ -18,6 +18,8 @@ from ui_components import (
     album_image,
     audio_player,
     audio_visualizer,
+    autoplay_status_receiver,
+    autoplay_warning,
     correct_answer_with_diff,
     elapsed_time_receiver,
     empty_leaderboard,
@@ -722,6 +724,39 @@ def render_game_interface():
             # Audio visualizer bars - stop when time is up
             is_playing = st.session_state.audio_started and not st.session_state.time_locked
             st.markdown(audio_visualizer(is_playing=is_playing), unsafe_allow_html=True)
+
+            # Autoplay status receiver (hidden)
+            components.html(autoplay_status_receiver(), height=0)
+
+            # Check autoplay status and show warning if blocked
+            autoplay_check = components.html("""
+                <script>
+                    (function() {
+                        try {
+                            var blocked = localStorage.getItem('autoplayBlocked');
+                            if (blocked === 'true') {
+                                window.parent.postMessage({
+                                    type: 'streamlit:setComponentValue',
+                                    value: true
+                                }, '*');
+                            } else {
+                                window.parent.postMessage({
+                                    type: 'streamlit:setComponentValue',
+                                    value: false
+                                }, '*');
+                            }
+                        } catch(e) {
+                            window.parent.postMessage({
+                                type: 'streamlit:setComponentValue',
+                                value: false
+                            }, '*');
+                        }
+                    })();
+                </script>
+            """, height=0)
+
+            if autoplay_check:
+                st.markdown(autoplay_warning(), unsafe_allow_html=True)
 
             # Audio player directly under album (wider)
             if song["preview_url"]:

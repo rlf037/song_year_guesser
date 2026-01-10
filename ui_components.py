@@ -1630,6 +1630,17 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 return null;
             }}
 
+            function notifyAutoplayStatus(blocked) {{
+                try {{
+                    window.parent.postMessage({{
+                        type: 'audio:autoplay',
+                        blocked: blocked
+                    }}, '*');
+                }} catch(e) {{
+                    console.log('Could not notify autoplay status:', e);
+                }}
+            }}
+
             function updateViz(playing) {{
                 var viz = getVizContainer();
                 if (viz) {{
@@ -1655,6 +1666,7 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
             audio.addEventListener('play', function() {{
                 updateViz(true);
                 updateTimer(true);
+                notifyAutoplayStatus(false);
             }});
             audio.addEventListener('pause', function() {{
                 updateViz(false);
@@ -1665,7 +1677,7 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 updateTimer(false);
             }});
 
-            {'audio.volume = 1.0; audio.play().catch(function(e) { console.log("Autoplay prevented:", e); });' if autoplay else ""}
+            {'audio.volume = 1.0; audio.play().then(function() { notifyAutoplayStatus(false); }).catch(function(e) { console.log("Autoplay prevented:", e); notifyAutoplayStatus(true); });' if autoplay else ""}
         }})();
     </script>
     """
@@ -1765,6 +1777,70 @@ def get_elapsed_time_js() -> str:
             getElapsedTime();
         })();
     </script>
+    """
+
+
+def autoplay_status_receiver() -> str:
+    """Component that receives autoplay status from audio player"""
+    return """
+    <script>
+        (function() {
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'audio:autoplay') {
+                    try {
+                        if (event.data.blocked) {
+                            localStorage.setItem('autoplayBlocked', 'true');
+                        } else {
+                            localStorage.setItem('autoplayBlocked', 'false');
+                        }
+                    } catch(e) {}
+                }
+            });
+        })();
+    </script>
+    """
+
+
+def autoplay_warning() -> str:
+    """Warning message when autoplay is blocked"""
+    return """
+    <div style="
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%);
+        border: 2px solid rgba(239, 68, 68, 0.5);
+        border-radius: 12px;
+        padding: 1.2em;
+        margin: 1em 0;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+    ">
+        <div style="font-size: 2em; margin-bottom: 0.3em;">🔇</div>
+        <div style="font-size: 1.1em; font-weight: 700; color: #ef4444; margin-bottom: 0.5em;">
+            Autoplay is Blocked
+        </div>
+        <div style="font-size: 0.95em; color: #fca5a5; line-height: 1.5; margin-bottom: 0.8em;">
+            Your browser has prevented the audio from playing automatically.<br>
+            <strong>Please click the play button (▶) below to start the song!</strong>
+        </div>
+        <details style="margin-top: 0.8em; padding: 0.8em; background: rgba(0, 0, 0, 0.2); border-radius: 8px; cursor: pointer;">
+            <summary style="color: #fca5a5; font-weight: 600; font-size: 0.9em;">How to enable autoplay in your browser</summary>
+            <div style="margin-top: 0.8em; text-align: left; font-size: 0.85em; color: #fecaca; line-height: 1.6;">
+                <strong style="color: #f87171;">Chrome/Edge:</strong><br>
+                • Click the lock/info icon in the address bar<br>
+                • Find "Sound" and change it to "Allow"<br>
+                • Refresh the page<br><br>
+
+                <strong style="color: #f87171;">Firefox:</strong><br>
+                • Click the settings icon in the address bar<br>
+                • Find "Autoplay" and set to "Allow Audio and Video"<br>
+                • Refresh the page<br><br>
+
+                <strong style="color: #f87171;">Safari:</strong><br>
+                • Go to Settings for This Website<br>
+                • Set "Auto-Play" to "Allow All Auto-Play"<br>
+                • Refresh the page
+            </div>
+        </details>
+    </div>
     """
 
 
