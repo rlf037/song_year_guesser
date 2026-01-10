@@ -773,8 +773,6 @@ def render_game_interface():
             st.session_state.start_year,
             st.session_state.end_year,
             total_score,
-            current_genre,
-            genre_icon,
         ),
         unsafe_allow_html=True,
     )
