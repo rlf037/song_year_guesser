@@ -20,9 +20,6 @@ from ui_components import (
     album_image,
     audio_player,
     audio_visualizer,
-    autoplay_status_receiver,
-    autoplay_warning,
-    check_autoplay_blocked,
     correct_answer_with_diff,
     elapsed_time_receiver,
     empty_leaderboard,
@@ -844,13 +841,6 @@ def render_game_interface():
             # Audio visualizer bars - stop when time is up
             is_playing = st.session_state.audio_started and not st.session_state.time_locked
             st.markdown(audio_visualizer(is_playing=is_playing), unsafe_allow_html=True)
-
-            # Check autoplay status (using song-specific key)
-            components.html(autoplay_status_receiver(), height=0)
-            autoplay_blocked = components.html(check_autoplay_blocked(song["id"]), height=0)
-
-            if autoplay_blocked:
-                st.markdown(autoplay_warning(), unsafe_allow_html=True)
 
             # Audio player directly under album (wider)
             if song["preview_url"]:
