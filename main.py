@@ -1351,7 +1351,7 @@ def render_game_interface():
 
     st.write("")
 
-    # Year guessing interface - JavaScript scroll wheel picker
+    # Year guessing interface - Streamlit slider with prominent display
     if not st.session_state.game_over:
         # Initialize guess_year in session state if not present
         if "current_guess" not in st.session_state:
@@ -1359,264 +1359,92 @@ def render_game_interface():
 
         start_year = st.session_state.start_year
         end_year = st.session_state.end_year
-        current_guess = st.session_state.current_guess
 
-        # JavaScript scroll wheel year picker with immediate visual feedback
-        scroll_picker_html = f"""
-        <div id="year-picker-wrapper" style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 0.5em 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        ">
-            <div style="color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 0.7em; margin-bottom: 0.8em;">
-                🎯 Scroll to select year
-            </div>
-            
-            <div id="scroll-container" style="
-                position: relative;
-                height: 200px;
-                width: 280px;
-                overflow: hidden;
-                cursor: ns-resize;
-                background: linear-gradient(180deg,
-                    rgba(10,10,20,1) 0%,
-                    rgba(10,10,20,0.8) 15%,
-                    transparent 35%,
-                    transparent 65%,
-                    rgba(10,10,20,0.8) 85%,
-                    rgba(10,10,20,1) 100%);
-                border-radius: 16px;
-                border: 2px solid rgba(139, 92, 246, 0.4);
-                touch-action: none;
-                user-select: none;
-                -webkit-user-select: none;
+        # Header
+        st.markdown(
+            '<div style="text-align: center; color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 0.75em; margin-bottom: 0.5em;">📅 What year was this released?</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Use Streamlit slider - this ACTUALLY updates session state
+        selected_year = st.slider(
+            "Select Year",
+            min_value=start_year,
+            max_value=end_year,
+            value=st.session_state.current_guess,
+            key="year_slider",
+            label_visibility="collapsed",
+        )
+
+        # Update session state immediately when slider changes
+        st.session_state.current_guess = selected_year
+
+        # Display the selected year prominently
+        st.markdown(
+            f"""
+            <div style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0.5em 0;
             ">
-                <div id="year-track" style="
-                    position: absolute;
-                    width: 100%;
-                    text-align: center;
-                    transition: transform 0.08s ease-out;
-                "></div>
-                
                 <div style="
-                    position: absolute;
-                    top: 50%;
-                    left: 10px;
-                    right: 10px;
-                    height: 56px;
-                    transform: translateY(-50%);
-                    border: 2px solid rgba(34, 211, 238, 0.6);
-                    border-radius: 10px;
-                    pointer-events: none;
-                    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
-                "></div>
-            </div>
-            
-            <div style="color: #666; font-size: 0.75em; margin-top: 0.6em; letter-spacing: 1px;">
-                {start_year} — {end_year}
-            </div>
-        </div>
-        
-        <script>
-        (function() {{
-            const minYear = {start_year};
-            const maxYear = {end_year};
-            let currentYear = {current_guess};
-            let velocity = 0;
-            let lastY = 0;
-            let isDragging = false;
-            let animationId = null;
-            
-            const container = document.getElementById('scroll-container');
-            const track = document.getElementById('year-track');
-            const itemHeight = 52;
-            const visibleItems = 5;
-            
-            function buildYearTrack() {{
-                track.innerHTML = '';
-                for (let year = minYear; year <= maxYear; year++) {{
-                    const div = document.createElement('div');
-                    div.className = 'year-item';
-                    div.dataset.year = year;
-                    div.style.cssText = `
-                        height: ${{itemHeight}}px;
-                        line-height: ${{itemHeight}}px;
-                        font-size: 2.2em;
-                        font-weight: 700;
+                    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+                    border: 3px solid rgba(34, 211, 238, 0.6);
+                    border-radius: 16px;
+                    padding: 0.5em 2em;
+                    box-shadow: 0 0 30px rgba(34, 211, 238, 0.3);
+                ">
+                    <div style="
+                        font-size: 4em;
+                        font-weight: 900;
                         font-family: 'SF Mono', Monaco, Consolas, monospace;
-                        color: #444;
-                        transition: color 0.1s, transform 0.1s, text-shadow 0.1s;
-                    `;
-                    div.textContent = year;
-                    track.appendChild(div);
-                }}
-                updatePosition(false);
-            }}
-            
-            function updatePosition(animate = true) {{
-                const offset = (currentYear - minYear) * itemHeight;
-                const containerHeight = 200;
-                const centerOffset = (containerHeight / 2) - (itemHeight / 2);
-                track.style.transform = `translateY(${{centerOffset - offset}}px)`;
-                if (!animate) track.style.transition = 'none';
-                else track.style.transition = 'transform 0.08s ease-out';
-                
-                // Update styles for all items
-                document.querySelectorAll('.year-item').forEach(item => {{
-                    const year = parseInt(item.dataset.year);
-                    const distance = Math.abs(year - currentYear);
-                    if (distance === 0) {{
-                        item.style.color = '#22d3ee';
-                        item.style.transform = 'scale(1.15)';
-                        item.style.textShadow = '0 0 30px rgba(34, 211, 238, 0.6)';
-                    }} else if (distance === 1) {{
-                        item.style.color = '#666';
-                        item.style.transform = 'scale(0.9)';
-                        item.style.textShadow = 'none';
-                    }} else {{
-                        item.style.color = '#444';
-                        item.style.transform = 'scale(0.8)';
-                        item.style.textShadow = 'none';
-                    }}
-                }});
-            }}
-            
-            function setYear(year, sendToStreamlit = true) {{
-                const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
-                if (newYear !== currentYear) {{
-                    currentYear = newYear;
-                    updatePosition();
-                    if (sendToStreamlit) {{
-                        // Send to Streamlit
-                        window.parent.postMessage({{
-                            type: 'streamlit:setComponentValue',
-                            value: currentYear
-                        }}, '*');
-                    }}
-                }}
-            }}
-            
-            // Mouse wheel scrolling
-            container.addEventListener('wheel', (e) => {{
-                e.preventDefault();
-                const delta = Math.sign(e.deltaY);
-                setYear(currentYear + delta);
-            }}, {{ passive: false }});
-            
-            // Touch and mouse drag
-            container.addEventListener('mousedown', (e) => {{
-                isDragging = true;
-                lastY = e.clientY;
-                velocity = 0;
-                if (animationId) cancelAnimationFrame(animationId);
-                e.preventDefault();
-            }});
-            
-            container.addEventListener('touchstart', (e) => {{
-                isDragging = true;
-                lastY = e.touches[0].clientY;
-                velocity = 0;
-                if (animationId) cancelAnimationFrame(animationId);
-            }}, {{ passive: true }});
-            
-            document.addEventListener('mousemove', (e) => {{
-                if (!isDragging) return;
-                const deltaY = lastY - e.clientY;
-                velocity = deltaY;
-                const yearDelta = deltaY / (itemHeight / 2);
-                if (Math.abs(yearDelta) >= 0.5) {{
-                    setYear(currentYear + Math.sign(yearDelta));
-                    lastY = e.clientY;
-                }}
-            }});
-            
-            document.addEventListener('touchmove', (e) => {{
-                if (!isDragging) return;
-                const deltaY = lastY - e.touches[0].clientY;
-                velocity = deltaY;
-                const yearDelta = deltaY / (itemHeight / 2);
-                if (Math.abs(yearDelta) >= 0.5) {{
-                    setYear(currentYear + Math.sign(yearDelta));
-                    lastY = e.touches[0].clientY;
-                }}
-            }}, {{ passive: true }});
-            
-            document.addEventListener('mouseup', () => {{
-                if (isDragging) {{
-                    isDragging = false;
-                    // Momentum scrolling
-                    if (Math.abs(velocity) > 5) {{
-                        let momentum = velocity * 0.3;
-                        function animate() {{
-                            if (Math.abs(momentum) > 0.5) {{
-                                setYear(currentYear + Math.sign(momentum));
-                                momentum *= 0.85;
-                                animationId = requestAnimationFrame(animate);
-                            }}
-                        }}
-                        animate();
-                    }}
-                }}
-            }});
-            
-            document.addEventListener('touchend', () => {{
-                if (isDragging) {{
-                    isDragging = false;
-                    if (Math.abs(velocity) > 5) {{
-                        let momentum = velocity * 0.3;
-                        function animate() {{
-                            if (Math.abs(momentum) > 0.5) {{
-                                setYear(currentYear + Math.sign(momentum));
-                                momentum *= 0.85;
-                                animationId = requestAnimationFrame(animate);
-                            }}
-                        }}
-                        animate();
-                    }}
-                }}
-            }});
-            
-            // Click on year to select
-            container.addEventListener('click', (e) => {{
-                if (Math.abs(velocity) > 2) return; // Ignore if dragging
-                const rect = container.getBoundingClientRect();
-                const clickY = e.clientY - rect.top;
-                const centerY = rect.height / 2;
-                const diff = Math.round((clickY - centerY) / itemHeight);
-                if (diff !== 0) setYear(currentYear + diff);
-            }});
-            
-            // Keyboard support
-            container.setAttribute('tabindex', '0');
-            container.addEventListener('keydown', (e) => {{
-                if (e.key === 'ArrowUp') {{ setYear(currentYear - 1); e.preventDefault(); }}
-                if (e.key === 'ArrowDown') {{ setYear(currentYear + 1); e.preventDefault(); }}
-                if (e.key === 'PageUp') {{ setYear(currentYear - 5); e.preventDefault(); }}
-                if (e.key === 'PageDown') {{ setYear(currentYear + 5); e.preventDefault(); }}
-            }});
-            
-            // Initialize
-            buildYearTrack();
-            
-            // Also set initial value to Streamlit
-            window.parent.postMessage({{
-                type: 'streamlit:setComponentValue',
-                value: currentYear
-            }}, '*');
-        }})();
-        </script>
-        """
+                        color: #22d3ee;
+                        text-shadow: 0 0 40px rgba(34, 211, 238, 0.6);
+                        text-align: center;
+                        line-height: 1.1;
+                    ">{selected_year}</div>
+                    <div style="
+                        text-align: center;
+                        color: #666;
+                        font-size: 0.8em;
+                        text-transform: uppercase;
+                        letter-spacing: 2px;
+                    ">Your Guess</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-        # Render the scroll picker and capture returned value
-        returned_value = components.html(scroll_picker_html, height=280)
-
-        # Update session state if we got a value back
-        if returned_value is not None and isinstance(returned_value, (int, float)):
-            new_guess = int(returned_value)
-            if new_guess != st.session_state.current_guess:
-                st.session_state.current_guess = new_guess
+        # Quick jump buttons for faster navigation
+        st.markdown('<div style="text-align: center; margin-top: 0.5em;">', unsafe_allow_html=True)
+        cols = st.columns([1, 1, 1, 1, 1, 1])
+        with cols[0]:
+            if st.button("−10", key="y_m10", use_container_width=True):
+                st.session_state.current_guess = max(start_year, selected_year - 10)
+                st.rerun()
+        with cols[1]:
+            if st.button("−5", key="y_m5", use_container_width=True):
+                st.session_state.current_guess = max(start_year, selected_year - 5)
+                st.rerun()
+        with cols[2]:
+            if st.button("−1", key="y_m1", use_container_width=True):
+                st.session_state.current_guess = max(start_year, selected_year - 1)
+                st.rerun()
+        with cols[3]:
+            if st.button("+1", key="y_p1", use_container_width=True):
+                st.session_state.current_guess = min(end_year, selected_year + 1)
+                st.rerun()
+        with cols[4]:
+            if st.button("+5", key="y_p5", use_container_width=True):
+                st.session_state.current_guess = min(end_year, selected_year + 5)
+                st.rerun()
+        with cols[5]:
+            if st.button("+10", key="y_p10", use_container_width=True):
+                st.session_state.current_guess = min(end_year, selected_year + 10)
+                st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # Game over display
     if st.session_state.game_over:
@@ -1851,9 +1679,11 @@ def main():
                 st.metric("Average Score", avg_score)
 
         st.markdown("---")
-        
+
         # Refresh options
-        if st.button("🔄 Refresh Song Pool", use_container_width=True, help="Get fresh songs from Spotify"):
+        if st.button(
+            "🔄 Refresh Song Pool", use_container_width=True, help="Get fresh songs from Spotify"
+        ):
             clear_song_cache()
             st.session_state.played_song_ids = set()
             st.session_state.played_song_keys = set()
