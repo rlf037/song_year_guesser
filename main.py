@@ -527,10 +527,19 @@ def get_deezer_preview(artist: str, track: str) -> str | None:
 
 # Cache for playlist IDs (year -> playlist_id)
 _playlist_cache: dict[int, str | None] = {}
-# Cache for tracks by year
-_tracks_cache: dict[int, list[dict]] = {}
+# Cache for tracks by year with timestamp (year -> (timestamp, tracks))
+_tracks_cache: dict[int, tuple[float, list[dict]]] = {}
 # Cache for blurred images (url + blur_amount -> base64)
 _image_cache: dict[str, str] = {}
+# Cache expiry time in seconds (10 minutes)
+CACHE_EXPIRY_SECONDS = 600
+
+
+def clear_song_cache():
+    """Clear all cached songs to get fresh selections"""
+    global _tracks_cache, _playlist_cache
+    _tracks_cache.clear()
+    _playlist_cache.clear()
 
 
 def search_top_hits_playlist(year: int, token: str) -> str | None:
@@ -614,9 +623,12 @@ def get_songs_from_spotify(year: int) -> list[dict]:
     Get top 100 chart songs from a specific year using Spotify's Top Hits playlists.
     Returns songs that actually charted that year. Uses cache.
     """
-    # Check cache first
+    # Check cache first (with expiry)
     if year in _tracks_cache:
-        return _tracks_cache[year]
+        cache_time, cached_tracks = _tracks_cache[year]
+        if time.time() - cache_time < CACHE_EXPIRY_SECONDS:
+            return cached_tracks
+        # Cache expired, will refetch
 
     token = get_spotify_token()
     if not token:
@@ -764,8 +776,8 @@ def get_songs_from_spotify(year: int) -> list[dict]:
     # Sort by popularity
     tracks.sort(key=lambda x: x.get("popularity", 0), reverse=True)
 
-    result = tracks[:50]  # Return top 50 for variety
-    _tracks_cache[year] = result
+    result = tracks[:100]  # Return top 100 for more variety
+    _tracks_cache[year] = (time.time(), result)  # Store with timestamp
     return result
 
 
@@ -1826,7 +1838,7 @@ def main():
         # Session stats
         played_count = len(st.session_state.get("played_song_ids", set()))
         year_range = end_year - start_year + 1
-        estimated_pool = year_range * 50  # ~50 songs per year
+        estimated_pool = year_range * 100  # ~100 songs per year
         st.metric("Songs Played (Session)", f"{played_count} / ~{estimated_pool}")
 
         if st.session_state.player_scores:
@@ -1839,6 +1851,15 @@ def main():
                 st.metric("Average Score", avg_score)
 
         st.markdown("---")
+        
+        # Refresh options
+        if st.button("🔄 Refresh Song Pool", use_container_width=True, help="Get fresh songs from Spotify"):
+            clear_song_cache()
+            st.session_state.played_song_ids = set()
+            st.session_state.played_song_keys = set()
+            st.session_state.next_song_cache = None
+            st.toast("Song pool refreshed! 🎵")
+            st.rerun()
 
         if st.button("🗑️ Clear Leaderboard", use_container_width=True):
             st.session_state.player_scores = []
