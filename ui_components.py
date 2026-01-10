@@ -1782,23 +1782,12 @@ def get_elapsed_time_js() -> str:
 
 def autoplay_status_receiver() -> str:
     """Component that receives autoplay status from audio player"""
-    return """
-    <script>
-        (function() {
-            window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'audio:autoplay') {
-                    try {
-                        if (event.data.blocked) {
-                            localStorage.setItem('autoplayBlocked', 'true');
-                        } else {
-                            localStorage.setItem('autoplayBlocked', 'false');
-                        }
-                    } catch(e) {}
-                }
-            });
-        })();
-    </script>
-    """
+    return """<script>(function(){window.addEventListener('message',function(e){if(e.data&&e.data.type==='audio:autoplay'){try{localStorage.setItem('autoplayBlocked',e.data.blocked?'true':'false')}catch(err){}}})})();</script>"""
+
+
+def check_autoplay_blocked() -> str:
+    """Check if autoplay is blocked in localStorage"""
+    return """<script>(function(){try{var b=localStorage.getItem('autoplayBlocked');window.parent.postMessage({type:'streamlit:setComponentValue',value:b==='true'},'*')}catch(e){window.parent.postMessage({type:'streamlit:setComponentValue',value:false},'*')}})();</script>"""
 
 
 def autoplay_warning() -> str:

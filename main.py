@@ -20,6 +20,7 @@ from ui_components import (
     audio_visualizer,
     autoplay_status_receiver,
     autoplay_warning,
+    check_autoplay_blocked,
     correct_answer_with_diff,
     elapsed_time_receiver,
     empty_leaderboard,
@@ -481,7 +482,7 @@ def blur_image(image_url: str, blur_amount: int) -> str:
         return ""
 
 
-def calculate_score(guess: int, actual: int, time_taken: int, hints_used: int = 0) -> int:
+def calculate_score(guess: int, actual: int, time_taken: int) -> int:
     """Calculate score based on accuracy and time"""
     year_diff = abs(guess - actual)
 
@@ -509,12 +510,10 @@ def initialize_game_state():
         "game_active": False,
         "current_song": None,
         "start_time": None,
-        "hints_revealed": 0,
         "game_over": False,
         "player_scores": [],
         "current_player": "Player 1",
         "blur_level": 25,
-        "year_options": [],
         "start_year": 1990,
         "end_year": 2015,
         "current_round": 0,
@@ -526,8 +525,8 @@ def initialize_game_state():
         "timed_out": False,
         "status_message": "",
         "current_guess": 2000,
-        "time_locked": False,  # New: tracks if timer expired
-        "elapsed_playing_time": 0,  # Tracks actual playing time (excludes paused time)
+        "time_locked": False,
+        "elapsed_playing_time": 0,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -582,7 +581,6 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.current_song = song
     st.session_state.game_active = True
     st.session_state.start_time = None
-    st.session_state.hints_revealed = 0
     st.session_state.game_over = False
     st.session_state.timed_out = False
     st.session_state.time_locked = False
@@ -590,8 +588,8 @@ def start_new_game(start_year: int, end_year: int):
     st.session_state.audio_started = False
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Press play to start!"
-    st.session_state.current_guess = (start_year + end_year) // 2  # Start in middle
-    st.session_state.elapsed_playing_time = 0  # Reset playing time tracker
+    st.session_state.current_guess = (start_year + end_year) // 2
+    st.session_state.elapsed_playing_time = 0
 
     prefetch_next_song(start_year, end_year)
 
@@ -655,18 +653,13 @@ def render_game_interface():
         unsafe_allow_html=True,
     )
 
-    # Auto-refresh for game state updates
+    # Auto-refresh for game state updates (reduced frequency for better performance)
     if not st.session_state.game_over:
-        if st.session_state.audio_started:
-            st_autorefresh(interval=1000, key="game_timer")
-        else:
-            st_autorefresh(interval=500, key="audio_start_check")
+        st_autorefresh(interval=1000, key="game_timer")
 
-    # Add elapsed time receiver component (hidden)
+    # Add elapsed time receiver component (hidden) - consolidated
     if st.session_state.audio_started and not st.session_state.game_over:
-        components.html(elapsed_time_receiver(), height=0)
-        # Get current elapsed playing time from timer
-        elapsed_from_timer = components.html(get_elapsed_time_js(), height=0)
+        elapsed_from_timer = components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
         if elapsed_from_timer is not None and elapsed_from_timer > 0:
             st.session_state.elapsed_playing_time = elapsed_from_timer
 
@@ -725,37 +718,11 @@ def render_game_interface():
             is_playing = st.session_state.audio_started and not st.session_state.time_locked
             st.markdown(audio_visualizer(is_playing=is_playing), unsafe_allow_html=True)
 
-            # Autoplay status receiver (hidden)
+            # Check autoplay status (consolidated components)
             components.html(autoplay_status_receiver(), height=0)
+            autoplay_blocked = components.html(check_autoplay_blocked(), height=0)
 
-            # Check autoplay status and show warning if blocked
-            autoplay_check = components.html("""
-                <script>
-                    (function() {
-                        try {
-                            var blocked = localStorage.getItem('autoplayBlocked');
-                            if (blocked === 'true') {
-                                window.parent.postMessage({
-                                    type: 'streamlit:setComponentValue',
-                                    value: true
-                                }, '*');
-                            } else {
-                                window.parent.postMessage({
-                                    type: 'streamlit:setComponentValue',
-                                    value: false
-                                }, '*');
-                            }
-                        } catch(e) {
-                            window.parent.postMessage({
-                                type: 'streamlit:setComponentValue',
-                                value: false
-                            }, '*');
-                        }
-                    })();
-                </script>
-            """, height=0)
-
-            if autoplay_check:
+            if autoplay_blocked:
                 st.markdown(autoplay_warning(), unsafe_allow_html=True)
 
             # Audio player directly under album (wider)
