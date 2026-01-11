@@ -109,7 +109,7 @@ MAIN_CSS = """
     /* ===== MAIN TITLE (Welcome Screen) ===== */
     .main-title {
         text-align: center;
-        margin: 4em 0 2.5em 0;
+        margin: 6.5em 0 3.5em 0;
     }
 
     .main-title h1 {

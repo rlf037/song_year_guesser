@@ -1586,10 +1586,14 @@ def main():
         # Settings panel
         render_settings_panel()
 
+        # Add extra vertical space below settings
+        st.markdown("<div style='height:2.5em;'></div>", unsafe_allow_html=True)
+
         # How to play
         st.markdown(how_to_play(), unsafe_allow_html=True)
 
-        st.write("")
+        # Add extra vertical space below how-to-play
+        st.markdown("<div style='height:2.2em;'></div>", unsafe_allow_html=True)
 
         # Start button - centered
         col1, col2, col3 = st.columns([1, 2, 1])
