@@ -937,10 +937,10 @@ def render_game_interface():
             scroll_wheel_html = scroll_wheel_year_picker(
                 st.session_state.current_guess, start_year, end_year, is_locked
             )
-            # Add hidden round marker to force component refresh
+            # Add hidden round marker to force component refresh (content change forces re-render)
             scroll_wheel_html += f"<!-- round:{st.session_state.current_round} locked:{is_locked} -->"
-            # Use unique key to force re-render when lock state or round changes
-            components.html(scroll_wheel_html, height=220, key=f"year_picker_{st.session_state.current_round}_{is_locked}")
+            # Note: components.html doesn't support key parameter, but content changes force re-render
+            components.html(scroll_wheel_html, height=220)
 
             # Submit button with selected year
             button_text = f"Submit {st.session_state.current_guess}"
