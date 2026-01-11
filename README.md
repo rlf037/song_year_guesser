@@ -26,8 +26,9 @@ A multiplayer web game where players listen to song previews and guess the relea
 
 ### Multiplayer
 - Custom player names
-- Persistent leaderboard tracking top scores
+- Persistent leaderboard with Supabase (optional)
 - Per-session score history
+- Graceful fallback to session storage
 
 ## Quick Start
 
@@ -40,8 +41,12 @@ A multiplayer web game where players listen to song previews and guess the relea
 git clone https://github.com/rlf037/song_year_guesser.git
 cd song_year_guesser
 pip install -r requirements.txt
+# Optional: Install system dependencies for image processing
+# sudo apt-get install $(cat packages.txt)  # On Ubuntu/Debian
 streamlit run main.py
 ```
+
+**Note**: Requires Python 3.13. The app will work without Supabase but leaderboard data won't persist between sessions.
 
 ## How to Play
 
@@ -55,24 +60,29 @@ streamlit run main.py
 
 ## Tech Stack
 
-- **Framework**: Streamlit 1.41.1
+- **Framework**: Streamlit 1.52.2
 - **Music API**: Spotify (via Deezer fallback)
 - **Image Processing**: Pillow
+- **Database**: Supabase (optional, falls back to session state)
 - **Deployment**: Streamlit Cloud
-- **Python**: 3.11+
+- **Python**: 3.13
 
 ## Project Structure
 
 ```
 song_year_guesser/
-├── main.py              # Main application
-├── ui_components.py     # UI components and HTML templates
-├── requirements.txt     # Python dependencies
-├── pyproject.toml       # Project configuration
-├── packages.txt         # System dependencies
-├── .python-version      # Python version (3.11)
-├── CLAUDE.md            # AI assistant instructions
-└── README.md            # This file
+├── main.py                    # Main application
+├── ui_components.py           # UI components and HTML templates
+├── requirements.txt           # Python dependencies
+├── pyproject.toml             # Project configuration
+├── packages.txt               # System dependencies
+├── .python-version            # Python version (3.13)
+├── .cursorrules               # Cursor IDE instructions
+├── CLAUDE.md                  # Claude AI assistant instructions
+├── .github/copilot-instructions.md  # GitHub Copilot instructions
+├── LICENSE                    # Apache License 2.0
+├── .gitignore                 # Git ignore patterns
+└── README.md                  # This file
 ```
 
 ## Troubleshooting
@@ -81,7 +91,9 @@ song_year_guesser/
 
 **No songs found**: Try expanding the year range or selecting a different genre.
 
-**Timer keeps running when paused**: The visual timer pauses, but ensure you're using the latest version.
+**Leaderboard not saving**: The app requires Supabase credentials for persistent leaderboards. Without them, scores are stored in session state only. Check Streamlit Cloud secrets configuration.
+
+**Image blurring not working**: Ensure system dependencies are installed (see Quick Start section).
 
 ## License
 

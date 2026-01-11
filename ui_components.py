@@ -133,7 +133,7 @@ MAIN_CSS = """
         margin: 0 0.2em;
         opacity: 0.7;
     }
-    
+
     /* ===== GAME LAYOUT - CENTERED STACK ===== */
     .game-main {
         display: flex;
@@ -143,7 +143,7 @@ MAIN_CSS = """
         margin: 0 auto;
         padding: 0 1em;
     }
-    
+
     .game-row {
         display: flex;
         justify-content: center;
@@ -152,14 +152,14 @@ MAIN_CSS = """
         width: 100%;
         margin: 1em 0;
     }
-    
+
     @media (max-width: 600px) {
         .game-row {
             flex-direction: column;
             align-items: center;
         }
     }
-    
+
     /* ===== SONG INFO CARD ===== */
     .song-info-card {
         background: rgba(15, 23, 42, 0.8);
@@ -318,12 +318,12 @@ MAIN_CSS = """
         max-width: 260px;
         margin: 0 auto;
     }
-    
+
     .year-wheel-container.locked {
         border-color: rgba(239, 68, 68, 0.5);
         background: rgba(239, 68, 68, 0.05);
     }
-    
+
     .year-wheel-label {
         font-size: 0.75em;
         color: #666;
@@ -331,7 +331,7 @@ MAIN_CSS = """
         letter-spacing: 2px;
         margin-bottom: 0.8em;
     }
-    
+
     .year-wheel {
         height: 150px;
         overflow: hidden;
@@ -340,14 +340,14 @@ MAIN_CSS = """
         -webkit-user-select: none;
         user-select: none;
     }
-    
+
     .year-wheel-inner {
         display: flex;
         flex-direction: column;
         align-items: center;
         transition: transform 0.1s ease-out;
     }
-    
+
     .year-wheel-item {
         height: 50px;
         display: flex;
@@ -358,13 +358,13 @@ MAIN_CSS = """
         transition: all 0.15s ease;
         width: 100%;
     }
-    
+
     .year-wheel-item.adjacent {
         font-size: 1.2em;
         color: #444;
         opacity: 0.4;
     }
-    
+
     .year-wheel-item.selected {
         font-size: 2.8em;
         color: #e6edf3;
@@ -375,19 +375,19 @@ MAIN_CSS = """
         color: #8b949e;
         text-shadow: none;
     }
-    
+
     .year-range-label {
         font-size: 0.75em;
         color: #555;
         margin-top: 0.8em;
     }
-    
+
     .year-wheel-hint {
         font-size: 0.7em;
         color: #666;
         margin-top: 0.5em;
     }
-    
+
     .locked-indicator {
         font-size: 0.8em;
         color: #8b949e;
@@ -396,7 +396,7 @@ MAIN_CSS = """
         background: rgba(139, 148, 158, 0.1);
         border-radius: 8px;
     }
-    
+
     /* ===== TIMER ===== */
     .timer-container {
         display: flex;
@@ -406,13 +406,13 @@ MAIN_CSS = """
         padding: 0.5em;
         width: 100%;
     }
-    
+
     .timer-ring {
         position: relative;
         width: 200px;
         height: 200px;
     }
-    
+
     .timer-text {
         position: absolute;
         top: 50%;
@@ -420,7 +420,7 @@ MAIN_CSS = """
         transform: translate(-50%, -50%);
         text-align: center;
     }
-    
+
     .timer-seconds {
         font-size: 4em;
         font-weight: 800;
@@ -437,7 +437,7 @@ MAIN_CSS = """
         font-weight: 500;
         margin-top: 0.3em;
     }
-    
+
     /* ===== BUTTONS ===== */
     .stButton > button {
         min-height: 3em;
@@ -718,12 +718,12 @@ MAIN_CSS = """
     .history-item.close { border-left-color: #58a6ff; }
     .history-item.ok { border-left-color: #8b949e; }
     .history-item.far { border-left-color: #484f58; }
-    
+
     .history-accuracy {
         width: 20px;
         text-align: center;
     }
-    
+
     .history-song {
         flex: 1;
         color: #ccc;
@@ -731,26 +731,26 @@ MAIN_CSS = """
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    
+
     .history-years {
         color: #888;
         font-family: 'SF Mono', Monaco, Consolas, monospace;
         font-size: 0.9em;
     }
-    
+
     .history-score {
         color: #a78bfa;
         font-weight: 600;
         min-width: 45px;
         text-align: right;
     }
-    
+
     /* ===== LISTEN BUTTON ===== */
     .listen-btn-container {
         text-align: center;
         margin: 1em 0;
     }
-    
+
     .listen-btn {
         display: inline-flex;
         align-items: center;
@@ -764,32 +764,32 @@ MAIN_CSS = """
         text-decoration: none;
         transition: all 0.2s ease;
     }
-    
+
     .listen-btn:hover {
         background: rgba(139, 92, 246, 0.15);
         border-color: rgba(139, 92, 246, 0.6);
         color: #c4b5fd;
         transform: scale(1.02);
     }
-    
+
     .listen-btn.spotify-btn {
         background: rgba(30, 215, 96, 0.1);
         border-color: rgba(30, 215, 96, 0.5);
         color: #1DB954;
     }
-    
+
     .listen-btn.spotify-btn:hover {
         background: rgba(30, 215, 96, 0.2);
         border-color: rgba(30, 215, 96, 0.8);
         color: #1ed760;
     }
-    
+
     .listen-btn .spotify-icon {
         width: 20px;
         height: 20px;
         flex-shrink: 0;
     }
-    
+
     /* ===== LEADERBOARD ===== */
     .leaderboard {
         background: rgba(15, 23, 42, 0.8);
@@ -812,14 +812,14 @@ MAIN_CSS = """
         margin-bottom: 1.2em;
         letter-spacing: -0.02em;
     }
-    
+
     /* ===== CONTENT CONTAINER ===== */
     .content-container {
         max-width: 800px;
         margin: 0 auto;
         padding: 0 1em;
     }
-    
+
     /* ===== COMPACT SETTINGS ===== */
     .compact-settings {
         display: flex;
@@ -834,33 +834,33 @@ MAIN_CSS = """
         margin: 0 auto 1em auto;
         max-width: 600px;
     }
-    
+
     .setting-item {
         display: flex;
         align-items: center;
         gap: 0.4em;
         font-size: 0.85em;
     }
-    
+
     .setting-label {
         color: #666;
         font-size: 0.75em;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
+
     .setting-value {
         color: #7b9ae0;
         font-weight: 500;
     }
-    
+
     /* Small inputs */
     .compact-settings .stTextInput > div > div > input {
         padding: 0.3em 0.5em !important;
         font-size: 0.85em !important;
         max-width: 120px !important;
     }
-    
+
     .compact-settings .stNumberInput > div > div > input {
         padding: 0.3em 0.5em !important;
         font-size: 0.85em !important;
@@ -869,20 +869,20 @@ MAIN_CSS = """
         max-width: 80px !important;
         text-align: center !important;
     }
-    
+
     .compact-settings .stNumberInput {
         max-width: 100px !important;
     }
-    
+
     .compact-settings .stNumberInput label {
         font-size: 0.7em !important;
         color: #888 !important;
     }
-    
+
     .compact-settings .stNumberInput [data-baseweb="input"] button {
         display: none !important;
     }
-    
+
     /* ===== HOW TO PLAY ===== */
     .how-to-play {
         background: rgba(22, 27, 34, 0.6);
@@ -926,7 +926,7 @@ MAIN_CSS = """
         font-size: 0.85em;
         font-weight: 500;
     }
-    
+
     /* ===== SETTINGS PANEL ===== */
     .settings-panel {
         background: rgba(255, 255, 255, 0.03);
@@ -935,20 +935,20 @@ MAIN_CSS = """
         padding: 1em;
         margin: 1em 0;
     }
-    
+
     .settings-row {
         display: flex;
         align-items: center;
         gap: 1em;
         flex-wrap: wrap;
     }
-    
+
     .settings-item {
         display: flex;
         align-items: center;
         gap: 0.5em;
     }
-    
+
     /* ===== STATUS LINE ===== */
     .status-line {
         text-align: center;
@@ -961,7 +961,7 @@ MAIN_CSS = """
         max-width: 350px;
         border: 1px solid rgba(34, 211, 238, 0.2);
     }
-    
+
     /* ===== SPOTIFY BUTTON ===== */
     .spotify-btn {
         display: inline-flex;
@@ -976,12 +976,12 @@ MAIN_CSS = """
         font-size: 0.95em;
         transition: all 0.2s ease;
     }
-    
+
     .spotify-btn:hover {
         background: #1ed760;
         transform: scale(1.05);
     }
-    
+
     /* ===== LOCKED STATE INDICATOR ===== */
     .locked-indicator {
         background: rgba(245, 158, 11, 0.2);
@@ -994,25 +994,25 @@ MAIN_CSS = """
         text-align: center;
         margin: 0.5em 0;
     }
-    
+
     /* ===== SCROLLBAR STYLING ===== */
     ::-webkit-scrollbar {
         width: 8px;
     }
-    
+
     ::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.05);
     }
-    
+
     ::-webkit-scrollbar-thumb {
         background: rgba(139, 92, 246, 0.3);
         border-radius: 4px;
     }
-    
+
     ::-webkit-scrollbar-thumb:hover {
         background: rgba(139, 92, 246, 0.5);
     }
-    
+
     /* ===== SLIDER STYLING ===== */
     .stSlider > div > div > div > div {
         background: linear-gradient(90deg, #30363d, #6e7681) !important;
@@ -1029,7 +1029,7 @@ MAIN_CSS = """
         border: 3px solid #fff !important;
         box-shadow: 0 0 8px rgba(0, 0, 0, 0.3) !important;
     }
-    
+
     .stSlider [data-baseweb="slider"] [data-testid="stTickBar"] {
         display: none !important;
     }
@@ -1044,22 +1044,22 @@ MAIN_CSS = """
         padding: 0.3em !important;
         height: auto !important;
     }
-    
+
     .stNumberInput input:focus {
         border-color: #6b8dd6 !important;
         box-shadow: 0 0 20px rgba(139, 92, 246, 0.3) !important;
     }
-    
+
     .stNumberInput button {
         display: none !important;
     }
-    
+
     .stNumberInput input:disabled {
         color: #f59e0b !important;
         border-color: rgba(245, 158, 11, 0.5) !important;
         background: rgba(245, 158, 11, 0.1) !important;
     }
-    
+
     /* Hide +/- buttons on number input */
     .stNumberInput [data-baseweb="input"] button {
         display: none !important;
@@ -1225,11 +1225,6 @@ def scroll_wheel_year_picker(
     Works with mouse wheel, trackpad, drag, click, keyboard."""
     locked_style = "opacity: 0.6; pointer-events: none;" if locked else ""
     locked_border = "rgba(248, 81, 73, 0.4)" if locked else "rgba(48, 54, 61, 0.8)"
-    locked_indicator = (
-        '<div style="color: #d29922; font-size: 0.75em; margin-top: 0.5em; font-weight: 500;">Submit your guess now</div>'
-        if locked
-        else ""
-    )
 
     return f"""
     <div id="year-picker-wrapper" style="
@@ -1495,13 +1490,13 @@ def scroll_wheel_year_picker(
                     if (e.key === 'PageDown') {{ setYear(currentYear + 5); e.preventDefault(); }}
                 }});
             }}
-            
+
             buildYearTrack();
-            
+
             // Initial sync to URL
             syncToUrl();
         }}
-        
+
         // Initialize when DOM is ready - use multiple strategies for iframe context
         function tryInit() {{
             if (document.getElementById('scroll-container') && document.getElementById('year-track')) {{
@@ -1511,7 +1506,7 @@ def scroll_wheel_year_picker(
                 setTimeout(tryInit, 50);
             }}
         }}
-        
+
         if (document.readyState === 'loading') {{
             document.addEventListener('DOMContentLoaded', tryInit);
         }} else {{
@@ -2073,17 +2068,13 @@ def correct_answer(year: int) -> str:
 def correct_answer_with_diff(actual_year: int, guessed_year: int) -> str:
     """Generate the correct answer display with year difference"""
     diff = guessed_year - actual_year
-    abs_diff = abs(diff)
 
     if diff == 0:
         diff_text = '<span style="color: #00ff88;">Perfect match!</span>'
-        diff_class = "perfect"
     elif diff > 0:
         diff_text = f'<span style="color: #ef4444;">+{diff} years (too recent)</span>'
-        diff_class = "off"
     else:
         diff_text = f'<span style="color: #3b82f6;">{diff} years (too early)</span>'
-        diff_class = "off"
 
     return f"""
     <div class="answer-comparison">

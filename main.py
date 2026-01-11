@@ -1,11 +1,11 @@
 import base64
+import contextlib
 import io
-import json
 import random
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import requests
 import streamlit as st
@@ -15,7 +15,7 @@ from streamlit_autorefresh import st_autorefresh
 
 # Supabase for persistent leaderboard
 try:
-    from supabase import create_client, Client
+    from supabase import Client, create_client
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
@@ -44,6 +44,13 @@ from ui_components import (
     static_timer,
     timer_html,
 )
+
+# Pre-compiled regex patterns for performance
+_NUMBERS_PATTERN = re.compile(r'\d+')
+_NON_LATIN_PATTERN = re.compile(
+    r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\u0400-\u04ff\u0600-\u06ff\u0e00-\u0e7f\uac00-\ud7af\u0590-\u05ff]"
+)
+_ACCENTED_CHARS_PATTERN = re.compile(r"[àáâãäåèéêëìíîïòóôõöùúûüñçøæœßðþ]")
 
 # Page configuration - centered layout for cleaner look
 st.set_page_config(
@@ -169,7 +176,7 @@ def is_compilation_or_remaster(text: str) -> bool:
 
 def strip_numbers_from_title(title: str) -> str:
     """Remove all numbers from song title to prevent year leaks"""
-    return re.sub(r"\d+", "", title)
+    return _NUMBERS_PATTERN.sub("", title)
 
 
 def get_spotify_token() -> str | None:
@@ -279,11 +286,8 @@ def get_supabase_client() -> "Client | None":
         client = create_client(url, key)
 
         # Quick connection test (silent)
-        try:
+        with contextlib.suppress(Exception):
             client.table("leaderboard").select("count", count="exact").execute()
-        except Exception:
-            # Still return client - table might not exist yet
-            pass
 
         return client
 
@@ -327,11 +331,14 @@ def save_leaderboard(leaderboard: list[dict]):
     st.session_state.leaderboard = sorted_lb
 
 
-def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str) -> tuple[bool, str]:
+def add_to_leaderboard(
+    player: str, total_score: int, songs_played: int, genre: str
+) -> tuple[bool, str]:
     """Add a game session to the leaderboard
-    
+
     Returns:
-        tuple[bool, str]: (success, message) - success indicates if saved to Supabase, message describes the result
+        tuple[bool, str]: (success, message) - success indicates if saved to
+        Supabase, message describes the result
     """
     # Use AEDT timezone (UTC+11)
     aedt = timezone(timedelta(hours=11))
@@ -367,13 +374,13 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
                     error_details.append("No [supabase] section in secrets")
             except Exception as e:
                 error_details.append(f"Error checking secrets: {e}")
-        
+
         print(f"WARNING: No Supabase client - {', '.join(error_details)}")
         leaderboard = load_leaderboard()
         leaderboard.append(entry)
         save_leaderboard(leaderboard)
         return (False, f"⚠️ Database not configured - {', '.join(error_details)}")
-    
+
     try:
         # Try the insert
         response = client.table("leaderboard").insert(entry).execute()
@@ -397,20 +404,24 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
         print(f"ERROR full details: {repr(e)}")
         import traceback
         traceback.print_exc()
-        
+
         # Fall back to session state
         leaderboard = load_leaderboard()
         leaderboard.append(entry)
         save_leaderboard(leaderboard)
-        
+
         # Provide user-friendly error message with more details
-        if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
+        error_msg_lower = error_msg.lower()
+        if "duplicate" in error_msg_lower or "unique" in error_msg_lower:
             return (False, "⚠️ Score already exists in database")
-        elif "permission" in error_msg.lower() or "policy" in error_msg.lower() or "RLS" in error_msg or "row-level security" in error_msg.lower():
+        elif ("permission" in error_msg_lower or "policy" in error_msg_lower or
+              "RLS" in error_msg or "row-level security" in error_msg_lower):
             return (False, "⚠️ Database permission denied - check RLS policies in Supabase")
-        elif "relation" in error_msg.lower() or "does not exist" in error_msg.lower() or "table" in error_msg.lower():
+        elif ("relation" in error_msg_lower or "does not exist" in error_msg_lower or
+              "table" in error_msg_lower):
             return (False, "⚠️ Table 'leaderboard' doesn't exist - run supabase_setup.sql in SQL Editor")
-        elif "connection" in error_msg.lower() or "network" in error_msg.lower() or "timeout" in error_msg.lower():
+        elif ("connection" in error_msg_lower or "network" in error_msg_lower or
+              "timeout" in error_msg_lower):
             return (False, "⚠️ Database connection failed - check network/Supabase status")
         else:
             return (False, f"⚠️ Database error ({error_type}): {error_msg[:100]}")
@@ -459,12 +470,9 @@ def search_top_hits_playlist(year: int, token: str) -> str | None:
 def is_likely_english(track_name: str, artist_name: str) -> bool:
     """Check if track is likely English based on character analysis"""
     text = f"{track_name} {artist_name}"
-    non_latin_pattern = re.compile(
-        r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\u0400-\u04ff\u0600-\u06ff\u0e00-\u0e7f\uac00-\ud7af\u0590-\u05ff]"
-    )
-    if non_latin_pattern.search(text):
+    if _NON_LATIN_PATTERN.search(text):
         return False
-    accented_count = len(re.findall(r"[àáâãäåèéêëìíîïòóôõöùúûüñçøæœßðþ]", text.lower()))
+    accented_count = len(_ACCENTED_CHARS_PATTERN.findall(text.lower()))
     return not (len(text) > 0 and accented_count > len(text) * 0.1)
 
 
@@ -535,7 +543,10 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
                     release_date = album.get("release_date", "")
                     album_year = int(release_date[:4]) if len(release_date) >= 4 else year
 
-                    song_key = f"{artist_name.lower()}|{track_name.lower()}"
+                    # Pre-compute lowercased strings for song key
+                    artist_lower = artist_name.lower()
+                    track_lower = track_name.lower()
+                    song_key = f"{artist_lower}|{track_lower}"
 
                     tracks.append(
                         {
@@ -595,7 +606,10 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
                     images = album.get("images", [])
                     image_url = images[0]["url"] if images else None
 
-                    song_key = f"{artist_name.lower()}|{track_name.lower()}"
+                    # Pre-compute lowercased strings for song key
+                    artist_lower = artist_name.lower()
+                    track_lower = track_name.lower()
+                    song_key = f"{artist_lower}|{track_lower}"
 
                     tracks.append(
                         {
@@ -968,7 +982,9 @@ def render_game_interface():
         hint_blur = 8
 
         # Only reduce blur after audio has been playing for at least 1 second
-        if st.session_state.audio_started and st.session_state.elapsed_playing_time > 0 and elapsed_float >= 1.0:
+        if (st.session_state.audio_started and
+            st.session_state.elapsed_playing_time > 0 and
+            elapsed_float >= 1.0):
             # Audio has been playing for at least 1 second, gradually reduce blur
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
@@ -1006,11 +1022,9 @@ def render_game_interface():
                 components.html(
                     audio_player(song["preview_url"], song["id"], autoplay=True), height=70
                 )
-                if not st.session_state.audio_started:
-                    if (
-                        st.session_state.song_loaded_time
-                        and (time.time() - st.session_state.song_loaded_time) > 1.0
-                    ):
+                if (not st.session_state.audio_started and
+                    st.session_state.song_loaded_time and
+                    (time.time() - st.session_state.song_loaded_time) > 1.0):
                         st.session_state.audio_started = True
                         st.session_state.start_time = time.time()
                         st.rerun()
@@ -1039,10 +1053,8 @@ def render_game_interface():
             # Read elapsed time from query params (set by timer JS)
             elapsed_from_url = st.query_params.get("et")
             if elapsed_from_url:
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     st.session_state.elapsed_playing_time = float(elapsed_from_url)
-                except (ValueError, TypeError):
-                    pass
 
             # Scroll wheel year picker - include round number to force re-render with new lock state
             scroll_wheel_html = scroll_wheel_year_picker(
@@ -1083,12 +1095,12 @@ def render_game_interface():
                                 0%, 100% {{
                                     opacity: 1;
                                     transform: scale(1);
-                                    box-shadow: 0 12px 32px rgba(34, 211, 238, 0.5);
+                                    box-shadow:0 12px 32px rgba(34, 211, 238, 0.5);
                                 }}
                                 50% {{
                                     opacity: 0.95;
                                     transform: scale(1.03);
-                                    box-shadow: 0 16px 40px rgba(34, 211, 238, 0.7);
+                                    box-shadow:0 16px 40px rgba(34, 211, 238, 0.7);
                                 }}
                             }}
                             @keyframes spin {{
@@ -1106,7 +1118,7 @@ def render_game_interface():
 
                 if button_clicked:
                     # Immediately show processing feedback
-                    st.markdown(f'''
+                    st.markdown('''
                         <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 12px; color: #ef4444; font-weight: 600;">
                             🚨 Time's up! Processing your final guess...
                         </div>
@@ -1117,32 +1129,32 @@ def render_game_interface():
                     st.rerun()
 
                 # Add moderate pulsing animation
-                st.markdown(f'''
+                st.markdown('''
                         <style>
-                            button[key="submit_guess_urgent"] {{
+                            button[key="submit_guess_urgent"] {
                                 animation: urgentPulse 1s ease-in-out infinite !important;
                                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
                                 font-size: 1.35em !important;
                                 font-weight: 800 !important;
-                                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4) !important;
-                            }}
-                            @keyframes urgentPulse {{
-                                0%, 100% {{
+                                box-shadow:0 8px 24px rgba(239, 68, 68, 0.4) !important;
+                            }
+                            @keyframes urgentPulse {
+                                0%, 100% {
                                     transform: scale(1);
-                                    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
-                                }}
-                                50% {{
+                                    box-shadow:0 8px 24px rgba(239, 68, 68, 0.4);
+                                }
+                                50% {
                                     transform: scale(1.03);
-                                    box-shadow: 0 12px 32px rgba(239, 68, 68, 0.6);
-                                }}
-                            }}
-                            button[key="submit_guess_urgent"]:disabled {{
+                                    box-shadow:0 12px 32px rgba(239, 68, 68, 0.6);
+                                }
+                            }
+                            button[key="submit_guess_urgent"]:disabled {
                                 opacity: 0.6 !important;
                                 cursor: not-allowed !important;
                                 animation: none !important;
                                 transform: none !important;
-                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-                            }}
+                                box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                            }
                         </style>
                     ''', unsafe_allow_html=True)
             else:
@@ -1163,9 +1175,9 @@ def render_game_interface():
 
                     # Force immediate re-render to show processing status
                     st.rerun()
-                
+
                 # Enhanced button styling - happy medium between bland and flashy
-                st.markdown(f'''
+                st.markdown('''
                         <style>
                             button[key="submit_guess"] {{
                                 background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
@@ -1175,7 +1187,7 @@ def render_game_interface():
                                 padding: 0.95em 2em !important;
                                 border-radius: 16px !important;
                                 border: none !important;
-                                box-shadow: 
+                                box-shadow:
                                     0 6px 20px rgba(34, 211, 238, 0.35),
                                     0 2px 8px rgba(0, 0, 0, 0.2),
                                     inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
@@ -1184,7 +1196,7 @@ def render_game_interface():
                             }}
                             button[key="submit_guess"]:hover:not(:disabled) {{
                                 background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%) !important;
-                                box-shadow: 
+                                box-shadow:
                                     0 10px 28px rgba(34, 211, 238, 0.45),
                                     0 4px 12px rgba(0, 0, 0, 0.25),
                                     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
@@ -1200,7 +1212,7 @@ def render_game_interface():
                                 opacity: 0.6 !important;
                                 cursor: not-allowed !important;
                                 transform: none !important;
-                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                                box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
                             }}
                         </style>
                     ''', unsafe_allow_html=True)
@@ -1288,7 +1300,9 @@ def render_game_interface():
             # Action buttons - horizontally aligned
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
-                if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
+                if st.button(
+                    "▶️ Next Song", type="primary", use_container_width=True, key="next_song"
+                ):
                     # Reset time lock immediately before loading new song
                     st.session_state.time_locked = False
                     st.session_state.submitting_guess = False
@@ -1436,28 +1450,35 @@ def main():
     # Handle saving to leaderboard
     if st.session_state.saving_to_leaderboard:
         st.markdown(main_title(), unsafe_allow_html=True)
-        
+
         # Show saving status
         status_placeholder = st.empty()
         status_placeholder.info("💾 Connecting to database...")
-        
+
         # Test database connection first
         test_client = get_supabase_client()
         if test_client:
             try:
                 # Try a simple select to verify connection and table exists
-                test_result = test_client.table("leaderboard").select("id").limit(1).execute()
+                test_client.table("leaderboard").select("id").limit(1).execute()
                 status_placeholder.info("💾 Database connected - saving score...")
             except Exception as test_e:
                 error_msg = str(test_e)
-                status_placeholder.error(f"⚠️ Database connection failed: {error_msg[:150]}")
+                status_placeholder.error(
+                    f"⚠️ Database connection failed: {error_msg[:150]}"
+                )
                 if "relation" in error_msg.lower() or "does not exist" in error_msg.lower():
-                    status_placeholder.error("⚠️ Table 'leaderboard' doesn't exist. Run supabase_setup.sql in Supabase SQL Editor.")
+                    status_placeholder.error(
+                        "⚠️ Table 'leaderboard' doesn't exist. Run supabase_setup.sql in "
+                        "Supabase SQL Editor."
+                    )
                 time.sleep(3)
         else:
-            status_placeholder.error("⚠️ Database not available - check Streamlit Cloud secrets configuration")
+            status_placeholder.error(
+                "⚠️ Database not available - check Streamlit Cloud secrets configuration"
+            )
             time.sleep(2)
-        
+
         total_score = get_total_score()
         songs_played = len(
             [
@@ -1466,11 +1487,11 @@ def main():
                 if s["player"] == st.session_state.current_player
             ]
         )
-        
+
         if songs_played > 0:
             # Update status
             status_placeholder.info("💾 Saving your score to the leaderboard...")
-            
+
             # Save to leaderboard and get result
             success, message = add_to_leaderboard(
                 st.session_state.current_player,
@@ -1478,20 +1499,22 @@ def main():
                 songs_played,
                 st.session_state.selected_genre,
             )
-            
+
             # Show result with detailed error if failed
             if success:
                 status_placeholder.success(message)
             else:
                 # Show error with more details
-                status_placeholder.error(f"{message}\n\nCheck Streamlit Cloud logs (Manage app → Logs) for full error details.")
-            
+                status_placeholder.error(
+                    f"{message}\n\nCheck Streamlit Cloud logs (Manage app → Logs) for full error details."
+                )
+
             # Small delay to show the message
             time.sleep(2)
         else:
             status_placeholder.warning("⚠️ No songs played - nothing to save")
             time.sleep(1)
-        
+
         # Reset game state
         st.session_state.game_active = False
         st.session_state.game_over = False
