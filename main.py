@@ -239,7 +239,7 @@ def get_deezer_preview(artist: str, track: str) -> str | None:
 _playlist_cache: dict[int, str | None] = {}
 _tracks_cache: dict[int, tuple[float, list[dict]]] = {}
 _image_cache: dict[str, str] = {}
-CACHE_EXPIRY_SECONDS = 300  # 5 minutes - shorter for more variety
+CACHE_EXPIRY_SECONDS = 60  # 1 minute - short cache for more song variety
 
 # Leaderboard storage - uses Supabase if configured, falls back to session state
 MAX_LEADERBOARD_ENTRIES = 20
@@ -384,7 +384,10 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
     if cache_key in _tracks_cache:
         cache_time, cached_tracks = _tracks_cache[cache_key]
         if time.time() - cache_time < CACHE_EXPIRY_SECONDS:
-            return cached_tracks
+            # IMPORTANT: Shuffle on every retrieval to avoid repeating songs
+            shuffled = cached_tracks.copy()
+            random.shuffle(shuffled)
+            return shuffled
 
     token = get_spotify_token()
     if not token:
@@ -572,9 +575,9 @@ def get_random_song(
         if not available_tracks:
             continue
 
-        # Shuffle and take fewer candidates for speed
+        # Shuffle and take candidates - more for better variety
         random.shuffle(available_tracks)
-        candidates = available_tracks[:10]  # Reduced from 15 for faster response
+        candidates = available_tracks[:20]  # Try more candidates for better variety
 
         with ThreadPoolExecutor(max_workers=8) as executor:  # Increased parallelism
             futures = {executor.submit(_fetch_deezer_preview, t): t for t in candidates}
