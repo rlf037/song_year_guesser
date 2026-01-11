@@ -969,85 +969,37 @@ def render_game_interface():
                 # Submit button with selected year
                 button_text = f"Submit {st.session_state.current_guess}"
 
-                # Custom urgent button HTML when time is up
+                # Custom urgent button when time is up
                 if is_locked:
-                    # Use form to trigger submission
-                    with st.form(key="urgent_submit_form", clear_on_submit=False):
-                        submitted = st.form_submit_button("HIDDEN", type="primary")
-                        if submitted:
-                            st.session_state.submitting_guess = True
-                            st.session_state.guess_timed_out = True
-                            st.rerun()
+                    button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
 
-                    # Overlay urgent animated button
+                    if st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent"):
+                        st.session_state.submitting_guess = True
+                        st.session_state.guess_timed_out = True
+                        st.rerun()
+
+                    # Add subtle pulsing animation to draw attention
                     st.markdown(f'''
-                        <div class="urgent-button-container">
-                            <div class="urgent-button" id="urgent-submit-btn">
-                                <span class="urgent-icon">⚠️</span>
-                                SUBMIT {st.session_state.current_guess}
-                                <span class="urgent-icon">⚠️</span>
-                            </div>
-                        </div>
                         <style>
-                            .urgent-button-container {{
-                                margin-top: -7em;
-                                position: relative;
-                                z-index: 1000;
-                                margin-bottom: 3em;
+                            button[key="submit_guess_urgent"] {{
+                                animation: subtlePulse 1.5s ease-in-out infinite !important;
+                                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+                                font-size: 1.3em !important;
+                                font-weight: 700 !important;
                             }}
-                            .urgent-button {{
-                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
-                                color: white;
-                                font-size: 1.5em;
-                                font-weight: 900;
-                                padding: 0.7em 1.5em;
-                                border-radius: 16px;
-                                text-align: center;
-                                box-shadow:
-                                    0 0 60px rgba(239, 68, 68, 0.8),
-                                    0 8px 30px rgba(220, 38, 38, 0.6),
-                                    inset 0 2px 0 rgba(255, 255, 255, 0.3);
-                                animation: urgentPulseButton 0.6s ease-in-out infinite;
-                                border: 2px solid rgba(255, 255, 255, 0.2);
-                                letter-spacing: 1px;
-                                cursor: pointer;
-                            }}
-                            .urgent-icon {{
-                                display: inline-block;
-                                animation: urgentShake 0.3s ease-in-out infinite;
-                                font-size: 1.2em;
-                            }}
-                            @keyframes urgentPulseButton {{
+                            @keyframes subtlePulse {{
                                 0%, 100% {{
-                                    transform: scale(1);
-                                    box-shadow: 0 0 50px rgba(239, 68, 68, 0.7),
-                                               0 8px 30px rgba(220, 38, 38, 0.5),
-                                               inset 0 2px 0 rgba(255, 255, 255, 0.3);
+                                    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4),
+                                               0 2px 8px rgba(0, 0, 0, 0.2),
+                                               inset 0 1px 0 rgba(255, 255, 255, 0.3);
                                 }}
                                 50% {{
-                                    transform: scale(1.08);
-                                    box-shadow: 0 0 80px rgba(239, 68, 68, 1),
-                                               0 12px 40px rgba(220, 38, 38, 0.8),
-                                               inset 0 2px 0 rgba(255, 255, 255, 0.4);
+                                    box-shadow: 0 10px 28px rgba(245, 158, 11, 0.5),
+                                               0 4px 12px rgba(0, 0, 0, 0.25),
+                                               inset 0 1px 0 rgba(255, 255, 255, 0.4);
                                 }}
-                            }}
-                            @keyframes urgentShake {{
-                                0%, 100% {{ transform: rotate(0deg); }}
-                                25% {{ transform: rotate(-10deg); }}
-                                75% {{ transform: rotate(10deg); }}
                             }}
                         </style>
-                        <script>
-                            (function() {{
-                                const urgentBtn = document.getElementById('urgent-submit-btn');
-                                const formButton = document.querySelector('button[kind="primary"]');
-                                if (urgentBtn && formButton) {{
-                                    urgentBtn.onclick = function() {{
-                                        formButton.click();
-                                    }};
-                                }}
-                            }})();
-                        </script>
                     ''', unsafe_allow_html=True)
                 else:
                     if st.button(button_text, type="primary", use_container_width=True, key="submit_guess"):
