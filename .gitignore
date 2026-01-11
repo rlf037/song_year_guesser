@@ -15,13 +15,20 @@ env/
 .vscode/
 .idea/
 
+# Linting
+.ruff_cache/
+
 # macOS
 .DS_Store
 
 # Streamlit
 .streamlit/secrets.toml
 
+# Claude Code
+.claude/
+
 # Local development
+.devcontainer/
 .github/
 .cache
 
