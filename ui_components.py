@@ -1343,22 +1343,22 @@ def scroll_wheel_year_picker(
         function init() {{
             container = document.getElementById('scroll-container');
             track = document.getElementById('year-track');
-            if (!container || !track) { setTimeout(init, 100); return; }
+            if (!container || !track) {{ setTimeout(init, 100); return; }}
             buildYearTrack();
             updatePosition();
-            if (!isLocked) {
+            if (!isLocked) {{
                 let scrollVelocity = 0;
                 let lastScrollTime = 0;
                 let inertiaFrame = null;
                 const SCROLL_SENSITIVITY = 5; // Lower = much faster
                 const INERTIA_DECAY = 0.85;
-                function applyInertia() {
-                    if (Math.abs(scrollVelocity) < 0.01) { scrollVelocity = 0; inertiaFrame = null; return; }
+                function applyInertia() {{
+                    if (Math.abs(scrollVelocity) < 0.01) {{ scrollVelocity = 0; inertiaFrame = null; return; }}
                     setYear(currentYear + scrollVelocity);
                     scrollVelocity *= INERTIA_DECAY;
                     inertiaFrame = requestAnimationFrame(applyInertia);
-                }
-                container.addEventListener('wheel', function(e) {
+                }}
+                container.addEventListener('wheel', function(e) {{
                     e.preventDefault();
                     let now = Date.now();
                     let delta = e.deltaY / SCROLL_SENSITIVITY;
@@ -1368,13 +1368,13 @@ def scroll_wheel_year_picker(
                     setYear(currentYear + delta);
                     if (!inertiaFrame) inertiaFrame = requestAnimationFrame(applyInertia);
                     lastScrollTime = now;
-                }, { passive: false });
-                container.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('year-item')) {
+                }}, {{ passive: false }});
+                container.addEventListener('click', function(e) {{
+                    if (e.target.classList.contains('year-item')) {{
                         setYear(parseInt(e.target.dataset.year));
-                    }
-                });
-            }
+                    }}
+                }});
+            }}
         }}
         setTimeout(init, 0);
     }})();
