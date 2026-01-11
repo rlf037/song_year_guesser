@@ -37,10 +37,8 @@ MAIN_CSS = """
         padding: 1em 2em;
         margin: -1em -1em 2em -1em;
         display: flex;
-        justify-content: center;
+        flex-direction: column;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 2em;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
@@ -56,28 +54,33 @@ MAIN_CSS = """
 
     .header-controls {
         display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
-        gap: 2em;
-        flex-wrap: nowrap;
+        gap: 1.2em;
         width: 100%;
-        overflow-x: auto;
+        margin: 0 auto;
+        max-width: 900px;
     }
 
     .header-item {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5em;
         color: #94a3b8;
-        font-size: 0.9em;
-        padding: 0.5em 1em;
+        font-size: 0.95em;
+        padding: 0.5em 1.2em;
         background: rgba(30, 41, 59, 0.6);
         border-radius: 8px;
         border: 1px solid rgba(71, 85, 105, 0.3);
         backdrop-filter: blur(10px);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
+        min-width: 90px;
+        max-width: 100%;
+        word-break: break-word;
+        white-space: normal;
+        text-align: center;
+        flex: 1 1 120px;
     }
 
     .header-item-label {
