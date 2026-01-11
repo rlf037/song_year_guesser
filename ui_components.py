@@ -58,7 +58,9 @@ MAIN_CSS = """
         display: flex;
         align-items: center;
         gap: 2em;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        width: 100%;
+        overflow-x: auto;
     }
 
     .header-item {
