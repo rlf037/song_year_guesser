@@ -752,6 +752,8 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     st.session_state.status_message = "🎵 Press play to start!"
     st.session_state.current_guess = (start_year + end_year) // 2
     st.session_state.elapsed_playing_time = 0
+    st.session_state.submitting_guess = False
+    st.session_state.guess_timed_out = False
 
     prefetch_next_song(start_year, end_year, genre_query)
 
