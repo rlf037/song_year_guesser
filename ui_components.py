@@ -1289,7 +1289,7 @@ def scroll_wheel_year_picker(
     </div>
 
     <script>
-    (function() {{
+    (function() {
         const minYear = {start_year};
         const maxYear = {end_year};
         const isLocked = {"true" if locked else "false"};
@@ -1303,52 +1303,52 @@ def scroll_wheel_year_picker(
         const itemHeight = 46;
 
         // Wait for DOM to be ready
-        function init() {{
+        function init() {
             container = document.getElementById('scroll-container');
             track = document.getElementById('year-track');
-            if (!container || !track) {{
+            if (!container || !track) {
                 console.error('Scroll wheel elements not found, retrying...');
                 setTimeout(init, 100);
                 return;
-            }}
+            }
 
             // Set cursor and pointer-events based ONLY on the isLocked parameter from Python
             // This ensures proper unlocking when time_locked changes
-            if (isLocked) {{
+            if (isLocked) {
                 container.style.cursor = 'not-allowed';
                 container.style.pointerEvents = 'none';
-            }} else {{
+            } else {
                 container.style.cursor = 'ns-resize';
                 container.style.pointerEvents = 'auto';
-            }}
+            }
 
-            function buildYearTrack() {{
-                if (!track) {{
+            function buildYearTrack() {
+                if (!track) {
                     console.error('Track element not found in buildYearTrack');
                     return;
-                }}
-                if (!container) {{
+                }
+                if (!container) {
                     console.error('Container element not found in buildYearTrack');
                     return;
-                }}
+                }
                 track.innerHTML = '';
                 console.log('Building year track from ' + minYear + ' to ' + maxYear + ', current: ' + currentYear);
                 const yearCount = maxYear - minYear + 1;
-                for (let year = minYear; year <= maxYear; year++) {{
+                for (let year = minYear; year <= maxYear; year++) {
                     const div = document.createElement('div');
                     div.className = 'year-item';
                     div.dataset.year = year;
                     div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; transition: color 0.1s, transform 0.1s; display: flex; align-items: center; justify-content: center; width: 100%; position: relative;';
                     div.textContent = year.toString();
                     track.appendChild(div);
-                }}
+                }
                 console.log('Built ' + yearCount + ' year items, track children: ' + track.children.length);
                 // Force a reflow to ensure rendering
                 track.offsetHeight;
                 updatePosition(false);
-            }}
+            }
 
-            function updatePosition(animate = true) {{
+            function updatePosition(animate = true) {
                 if (!track) return;
                 const offset = (currentYear - minYear) * itemHeight;
                 const containerHeight = 180;
@@ -1359,49 +1359,49 @@ def scroll_wheel_year_picker(
 
                 // Update year item colors based on lock state
                 const yearItems = track.querySelectorAll('.year-item');
-                yearItems.forEach(item => {{
+                yearItems.forEach(item => {
                     const year = parseInt(item.dataset.year);
                     const distance = Math.abs(year - currentYear);
-                    if (distance === 0) {{
+                    if (distance === 0) {
                         item.style.color = isLocked ? '#f59e0b' : '#818cf8';
                         item.style.transform = 'scale(1.1)';
                         item.style.opacity = '1';
-                    }} else if (distance === 1) {{
+                    } else if (distance === 1) {
                         item.style.color = '#64748b';
                         item.style.transform = 'scale(0.9)';
                         item.style.opacity = '0.6';
-                    }} else {{
+                    } else {
                         item.style.color = '#30363d';
                         item.style.transform = 'scale(0.8)';
                         item.style.opacity = '0.3';
-                    }}
-                }});
-            }}
+                    }
+                });
+            }
 
-            function syncToUrl() {{
+            function syncToUrl() {
                 // Update URL query param so Streamlit can read it
-                try {{
+                try {
                     const url = new URL(window.parent.location.href);
                     url.searchParams.set('yr', currentYear.toString());
                     window.parent.history.replaceState(null, '', url.toString());
-                }} catch(e) {{
+                } catch(e) {
                     console.log('Could not update URL:', e);
-                }}
-            }}
+                }
+            }
 
-            function setYear(year) {{
+            function setYear(year) {
                 // Only check isLocked parameter from Python
                 if (isLocked) return;
                 const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
-                if (newYear !== currentYear) {{
+                if (newYear !== currentYear) {
                     currentYear = newYear;
                     updatePosition();
                     syncToUrl();
-                }}
-            }}
+                }
+            }
 
             // Only add event listeners if not locked
-            if (!isLocked) {{
+            if (!isLocked) {
                 container.addEventListener('wheel', function(e) {
                     e.preventDefault();
                     // Require a larger scroll to change year (slower)
@@ -1413,119 +1413,119 @@ def scroll_wheel_year_picker(
                     }
                 }, { passive: false });
 
-            container.addEventListener('mousedown', (e) => {{
-                isDragging = true;
-                lastY = e.clientY;
-                velocity = 0;
-                if (animationId) cancelAnimationFrame(animationId);
-                e.preventDefault();
-            }});
-
-            container.addEventListener('touchstart', (e) => {{
-                isDragging = true;
-                lastY = e.touches[0].clientY;
-                velocity = 0;
-                if (animationId) cancelAnimationFrame(animationId);
-            }}, {{ passive: true }});
-
-            document.addEventListener('mousemove', (e) => {{
-                if (!isDragging) return;
-                const deltaY = lastY - e.clientY;
-                velocity = deltaY;
-                const yearDelta = deltaY / (itemHeight / 2);
-                if (Math.abs(yearDelta) >= 0.5) {{
-                    setYear(currentYear + Math.sign(yearDelta));
+                container.addEventListener('mousedown', function(e) {
+                    isDragging = true;
                     lastY = e.clientY;
-                }}
-            }});
+                    velocity = 0;
+                    if (animationId) cancelAnimationFrame(animationId);
+                    e.preventDefault();
+                });
 
-            document.addEventListener('touchmove', (e) => {{
-                if (!isDragging) return;
-                const deltaY = lastY - e.touches[0].clientY;
-                velocity = deltaY;
-                const yearDelta = deltaY / (itemHeight / 2);
-                if (Math.abs(yearDelta) >= 0.5) {{
-                    setYear(currentYear + Math.sign(yearDelta));
+                container.addEventListener('touchstart', function(e) {
+                    isDragging = true;
                     lastY = e.touches[0].clientY;
-                }}
-            }}, {{ passive: true }});
+                    velocity = 0;
+                    if (animationId) cancelAnimationFrame(animationId);
+                }, { passive: true });
 
-            document.addEventListener('mouseup', () => {{
-                if (isDragging) {{
-                    isDragging = false;
-                    if (Math.abs(velocity) > 5) {{
-                        let momentum = velocity * 0.3;
-                        function animate() {{
-                            if (Math.abs(momentum) > 0.5) {{
-                                setYear(currentYear + Math.sign(momentum));
-                                momentum *= 0.85;
-                                animationId = requestAnimationFrame(animate);
-                            }}
-                        }}
-                        animate();
-                    }}
-                }}
-            }});
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    const deltaY = lastY - e.clientY;
+                    velocity = deltaY;
+                    const yearDelta = deltaY / (itemHeight / 2);
+                    if (Math.abs(yearDelta) >= 0.5) {
+                        setYear(currentYear + Math.sign(yearDelta));
+                        lastY = e.clientY;
+                    }
+                });
 
-            document.addEventListener('touchend', () => {{
-                if (isDragging) {{
-                    isDragging = false;
-                    if (Math.abs(velocity) > 5) {{
-                        let momentum = velocity * 0.3;
-                        function animate() {{
-                            if (Math.abs(momentum) > 0.5) {{
-                                setYear(currentYear + Math.sign(momentum));
-                                momentum *= 0.85;
-                                animationId = requestAnimationFrame(animate);
-                            }}
-                        }}
-                        animate();
-                    }}
-                }}
-            }});
+                document.addEventListener('touchmove', function(e) {
+                    if (!isDragging) return;
+                    const deltaY = lastY - e.touches[0].clientY;
+                    velocity = deltaY;
+                    const yearDelta = deltaY / (itemHeight / 2);
+                    if (Math.abs(yearDelta) >= 0.5) {
+                        setYear(currentYear + Math.sign(yearDelta));
+                        lastY = e.touches[0].clientY;
+                    }
+                }, { passive: true });
 
-                container.addEventListener('click', (e) => {{
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        if (Math.abs(velocity) > 5) {
+                            let momentum = velocity * 0.3;
+                            function animate() {
+                                if (Math.abs(momentum) > 0.5) {
+                                    setYear(currentYear + Math.sign(momentum));
+                                    momentum *= 0.85;
+                                    animationId = requestAnimationFrame(animate);
+                                }
+                            }
+                            animate();
+                        }
+                    }
+                });
+
+                document.addEventListener('touchend', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        if (Math.abs(velocity) > 5) {
+                            let momentum = velocity * 0.3;
+                            function animate() {
+                                if (Math.abs(momentum) > 0.5) {
+                                    setYear(currentYear + Math.sign(momentum));
+                                    momentum *= 0.85;
+                                    animationId = requestAnimationFrame(animate);
+                                }
+                            }
+                            animate();
+                        }
+                    }
+                });
+
+                container.addEventListener('click', function(e) {
                     if (Math.abs(velocity) > 2) return;
                     const rect = container.getBoundingClientRect();
                     const clickY = e.clientY - rect.top;
                     const centerY = rect.height / 2;
                     const diff = Math.round((clickY - centerY) / itemHeight);
                     if (diff !== 0) setYear(currentYear + diff);
-                }});
+                });
 
                 container.setAttribute('tabindex', '0');
-                container.addEventListener('keydown', (e) => {{
-                    if (e.key === 'ArrowUp') {{ setYear(currentYear - 1); e.preventDefault(); }}
-                    if (e.key === 'ArrowDown') {{ setYear(currentYear + 1); e.preventDefault(); }}
-                    if (e.key === 'PageUp') {{ setYear(currentYear - 5); e.preventDefault(); }}
-                    if (e.key === 'PageDown') {{ setYear(currentYear + 5); e.preventDefault(); }}
-                }});
-            }}
+                container.addEventListener('keydown', function(e) {
+                    if (e.key === 'ArrowUp') { setYear(currentYear - 1); e.preventDefault(); }
+                    if (e.key === 'ArrowDown') { setYear(currentYear + 1); e.preventDefault(); }
+                    if (e.key === 'PageUp') { setYear(currentYear - 5); e.preventDefault(); }
+                    if (e.key === 'PageDown') { setYear(currentYear + 5); e.preventDefault(); }
+                });
+            }
 
             buildYearTrack();
 
             // Initial sync to URL
             syncToUrl();
-        }}
+        }
 
         // Initialize when DOM is ready - use multiple strategies for iframe context
-        function tryInit() {{
-            if (document.getElementById('scroll-container') && document.getElementById('year-track')) {{
+        function tryInit() {
+            if (document.getElementById('scroll-container') && document.getElementById('year-track')) {
                 init();
-            }} else {{
+            } else {
                 // Retry if elements not found yet
                 setTimeout(tryInit, 50);
-            }}
-        }}
+            }
+        }
 
-        if (document.readyState === 'loading') {{
+        if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', tryInit);
-        }} else {{
+        } else {
             // Try immediately, but also set a timeout fallback
             tryInit();
             setTimeout(tryInit, 100);
-        }}
-    }})();
+        }
+    })();
     </script>
     """
 
