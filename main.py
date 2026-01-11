@@ -974,8 +974,7 @@ def render_game_interface():
         components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
 
         # Start timer immediately when game begins (simplified approach)
-        # Auto-refresh for game state updates (optimized frequency)
-        st_autorefresh(interval=1000, key="game_timer")
+        # Note: `st_autorefresh` is already called above; avoid duplicate keys to prevent StreamlitDuplicateElementKey.
 
     # Calculate elapsed time
     if st.session_state.start_time is not None:
