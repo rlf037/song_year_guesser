@@ -1113,22 +1113,18 @@ def render_game_interface():
                 # Time's up - urgent button with immediate feedback
                 button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
 
-                # Check if button was just clicked (before showing it)
-                button_clicked = st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent", disabled=st.session_state.get("submitting_guess", False))
-
+                button_clicked = st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent")
                 if button_clicked:
-                    # Immediately show processing feedback
                     st.markdown('''
                         <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 12px; color: #ef4444; font-weight: 600;">
                             🚨 Time's up! Processing your final guess...
                         </div>
                     ''', unsafe_allow_html=True)
-                    # Set processing state
-                    st.session_state.submitting_guess = True
-                    st.session_state.guess_timed_out = True
+                    make_guess(st.session_state.current_guess, timed_out=True)
+                    st.session_state.submitting_guess = False
+                    st.session_state.guess_timed_out = False
                     st.rerun()
 
-                # Add moderate pulsing animation
                 st.markdown('''
                         <style>
                             button[key="submit_guess_urgent"] {
@@ -1159,21 +1155,16 @@ def render_game_interface():
                     ''', unsafe_allow_html=True)
             else:
                 # Normal button with immediate feedback
-                button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess", disabled=st.session_state.get("submitting_guess", False))
-
+                button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess")
                 if button_clicked:
-                    # Show immediate processing feedback BEFORE processing
                     st.markdown(f'''
                         <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 2px solid #6366f1; border-radius: 16px; color: #6366f1; font-weight: 700; font-size: 1.1em;">
                             ⚡ Processing your guess of {st.session_state.current_guess}...
                         </div>
                     ''', unsafe_allow_html=True)
-
-                    # Set processing state immediately
-                    st.session_state.submitting_guess = True
-                    st.session_state.guess_timed_out = is_locked
-
-                    # Force immediate re-render to show processing status
+                    make_guess(st.session_state.current_guess, timed_out=False)
+                    st.session_state.submitting_guess = False
+                    st.session_state.guess_timed_out = False
                     st.rerun()
 
                 # Enhanced button styling - happy medium between bland and flashy
