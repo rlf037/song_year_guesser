@@ -110,11 +110,32 @@ MAIN_CSS = """
     }
 
     .main-title h1 {
-        font-size: 4em;
+        font-size: clamp(2.2em, 7vw, 4em);
         font-weight: 800;
-        margin: 0;
+        margin: 0 auto;
         padding: 0;
         line-height: 1.1;
+        max-width: 95vw;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        text-overflow: ellipsis;
+    }
+    @media (max-width: 600px) {
+        .main-title {
+            margin: 2em 0 1.2em 0;
+        }
+        .main-title h1 {
+            font-size: clamp(1.3em, 9vw, 2.5em);
+            padding: 0 0.2em;
+        }
+        .game-header {
+            padding: 0.7em 0.5em;
+            gap: 1em;
+        }
+        .header-title {
+            font-size: 1.1em;
+        }
     }
 
     .main-title .gradient-text {
@@ -1143,18 +1164,6 @@ def main_title() -> str:
             <span class="gradient-text">Song Year Guesser</span>
         </h1>
         <div class="subtitle">Test your music knowledge</div>
-        <div class="how-to-play fade-in" style="max-width: 520px; margin: 3em auto 0 auto; background: rgba(30,41,59,0.7); border-radius: 14px; border: 1.5px solid #6366f1; box-shadow: 0 4px 24px rgba(99,102,241,0.08); padding: 2em 2em 1.5em 2em; color: #e0e7ef; font-size: 1.1em;">
-            <h2 style="font-size:1.3em; color:#a5b4fc; margin-bottom:0.7em; font-weight:700; letter-spacing:0.04em;">How to Play</h2>
-            <ol style="margin:0 0 0.5em 1.2em; padding:0; line-height:1.7;">
-                <li>Listen to the 30-second song preview.</li>
-                <li>Use the scroll wheel or arrows to pick the year you think the song was released.</li>
-                <li>Submit your guess before time runs out! The faster and more accurate, the higher your score.</li>
-                <li>Album art will un-blur as a hint. Compete for the top spot on the leaderboard!</li>
-            </ol>
-            <div style="margin-top:1.2em; color:#818cf8; font-size:0.98em;">
-                <b>Tip:</b> Try different genres and challenge your friends!
-            </div>
-        </div>
     </div>
     """
 
@@ -1337,10 +1346,11 @@ def scroll_wheel_year_picker(
             if (!isLocked) {{
                 container.addEventListener('wheel', function(e) {{
                     e.preventDefault();
-                    const SCROLL_SENSITIVITY = 40;
+                    const SCROLL_SENSITIVITY = 15; // Lower = faster
                     let scrollDelta = e.deltaY / SCROLL_SENSITIVITY;
                     if (Math.abs(scrollDelta) >= 1) {{
-                        const delta = Math.sign(scrollDelta);
+                        // Allow multi-year jumps for fast scrolls
+                        const delta = Math.round(scrollDelta);
                         setYear(currentYear + delta);
                     }}
                 }}, {{ passive: false }});
@@ -1960,13 +1970,13 @@ def how_to_play() -> str:
     <div class="how-to-play">
         <h3>How to Play</h3>
         <ol>
-            <li>Listen to the 30-second song preview.</li>
-            <li>Use the scroll wheel or arrows to pick the year you think the song was released.</li>
-            <li>Submit your guess before time runs out! The faster and more accurate, the higher your score.</li>
-            <li>Album art will un-blur as a hint. Compete for the top spot on the leaderboard!</li>
+            <li>Listen to a 30-second preview of a mystery song.</li>
+            <li>Use the scroll wheel or arrows to select the year you think the song was released.</li>
+            <li>Submit your guess before time runs out! The faster and more accurate you are, the higher your score.</li>
+            <li>Watch as the album art gradually becomes clearer, giving you a visual hint as time passes.</li>
         </ol>
         <div class="how-to-play-tip">
-            Earn up to 300 bonus points by submitting quickly
+            <b>Tip:</b> The album cover starts fully blurred and sharpens as the timer counts down. Try to guess early for a speed bonus!
         </div>
     </div>
     """

@@ -938,6 +938,11 @@ def get_total_score() -> int:
 
 def render_game_interface():
     """Render the main game interface"""
+
+    # Always unlock scroll wheel at the start of a new round
+    if st.session_state.game_active and not st.session_state.game_over:
+        st.session_state.time_locked = False
+
     song = st.session_state.current_song
     if not song:
         return
@@ -1197,14 +1202,17 @@ def render_game_interface():
                 )
             else:
                 # Normal button with immediate feedback
+                import streamlit as st
+                import time
                 button_clicked = st.button(
                     button_text, type="primary", use_container_width=True, key="submit_guess"
                 )
                 if button_clicked:
+                    st.session_state.submitting_guess = True
                     st.markdown(
                         f"""
-                        <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 2px solid #6366f1; border-radius: 16px; color: #6366f1; font-weight: 700; font-size: 1.1em;">
-                            ⚡ Processing your guess of {st.session_state.current_guess}...
+                        <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: 2px solid #0ea5e9; border-radius: 16px; color: #fff; font-weight: 700; font-size: 1.1em;">
+                            <span style='font-size:1.3em;'>✅</span> Guess submitted!
                         </div>
                     """,
                         unsafe_allow_html=True,
@@ -1212,13 +1220,13 @@ def render_game_interface():
                     make_guess(st.session_state.current_guess, timed_out=False)
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
-                    st.rerun()
+                    st.experimental_rerun()
 
-                # Enhanced button styling - happy medium between bland and flashy
+                # Enhanced button styling with clear pressed indicator
                 st.markdown(
                     """
                         <style>
-                            button[key="submit_guess"] {{
+                            button[key="submit_guess"] {
                                 background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
                                 color: white !important;
                                 font-size: 1.25em !important;
@@ -1231,28 +1239,29 @@ def render_game_interface():
                                     0 2px 8px rgba(0, 0, 0, 0.2),
                                     inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
                                 text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-                                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                            }}
-                            button[key="submit_guess"]:hover:not(:disabled) {{
+                                transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                            }
+                            button[key="submit_guess"]:hover:not(:disabled) {
                                 background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%) !important;
                                 box-shadow:
                                     0 10px 28px rgba(34, 211, 238, 0.45),
                                     0 4px 12px rgba(0, 0, 0, 0.25),
                                     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-                                transform: translateY(-2px) scale(1.02) !important;
-                            }}
-                            button[key="submit_guess"]:active:not(:disabled) {{
-                                transform: translateY(0) scale(0.98) !important;
+                                transform: translateY(-2px) scale(1.04) !important;
+                            }
+                            button[key="submit_guess"]:active:not(:disabled) {
+                                background: linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%) !important;
+                                transform: scale(0.96) !important;
                                 box-shadow:
-                                    0 4px 12px rgba(34, 211, 238, 0.3),
-                                    0 1px 4px rgba(0, 0, 0, 0.2) !important;
-                            }}
-                            button[key="submit_guess"]:disabled {{
+                                    0 2px 8px rgba(34, 211, 238, 0.18),
+                                    0 1px 4px rgba(0, 0, 0, 0.15) !important;
+                            }
+                            button[key="submit_guess"]:disabled {
                                 opacity: 0.6 !important;
                                 cursor: not-allowed !important;
                                 transform: none !important;
                                 box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
-                            }}
+                            }
                         </style>
                     """,
                     unsafe_allow_html=True,
@@ -1352,7 +1361,7 @@ def render_game_interface():
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
                     st.session_state.loading_game = True
-                    st.rerun()
+                    # Removed extra st.rerun() to prevent double refresh
 
             with btn_col2:
                 if st.button("🏁 End Game", use_container_width=True, key="end_game"):
@@ -1592,7 +1601,7 @@ def main():
                 st.session_state.played_song_keys = set()
                 st.session_state.next_song_cache = None
                 st.session_state.loading_game = True
-                st.rerun()
+                # Removed extra st.rerun() to prevent double refresh
 
         st.write("")
         st.write("")
