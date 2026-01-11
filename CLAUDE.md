@@ -1,103 +1,105 @@
-# Claude Instructions for Song Year Guesser
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-A **multiplayer web game** built with Streamlit where players listen to song previews and guess the release year. Features audio playback, progressive album art reveal, hints system, and competitive scoring.
 
-## Architecture & Key Components
+A multiplayer web game built with Streamlit where players listen to 30-second song previews and guess the release year. Features progressive album art reveal, genre selection with "golden age" presets, scroll wheel year picker, and a persistent leaderboard.
 
-### Tech Stack
-- **Framework**: Streamlit 1.41.1
-- **Music API**: Deezer (free, no auth required)
-- **Image Processing**: Pillow for album art blur effects
-- **Language**: Python 3.11+
-- **Deployment**: Streamlit Cloud
+## Development Commands
 
-### File Structure
-```
-main.py              # Complete application (UI + game logic)
-requirements.txt     # Python dependencies for Streamlit Cloud
-pyproject.toml       # Project metadata and dependencies
-packages.txt         # System-level apt packages
-.python-version      # Python version (3.11)
-```
-
-### Key Functions in main.py
-- `get_popular_songs_by_year(year)` - Fetches songs from Deezer API
-- `get_random_song(start_year, end_year)` - Selects random song with verified release date
-- `blur_image(image_url, blur_amount)` - Creates blurred album art
-- `calculate_score(guess, actual, time, hints)` - Scoring algorithm
-- `render_app()` - Main UI rendering function
-
-## Development Workflow
-
-### Local Development
 ```bash
-# Activate virtual environment
+# Run locally
+streamlit run main.py
+
+# Activate virtual environment (if using)
 source .venv/bin/activate
 
-# Run the app
-streamlit run main.py
+# Lint (using ruff, configured in pyproject.toml)
+ruff check .
+ruff format .
 ```
 
-### Deployment
-Push to `main` branch -> Streamlit Cloud auto-deploys
+## Deployment
 
-## Streamlit Patterns Used
+Push to `main` branch triggers automatic deployment to Streamlit Cloud at [song-year-game.streamlit.app](https://song-year-game.streamlit.app).
+
+## Architecture
+
+### File Structure
+- `main.py` - Core application: game logic, API integration, Streamlit UI rendering
+- `ui_components.py` - CSS styles, HTML templates, and JavaScript components (timer, scroll wheel, audio player)
+- `requirements.txt` / `pyproject.toml` - Python dependencies (Streamlit 1.52.2, Pillow, requests, supabase)
+- `packages.txt` - System dependencies for Pillow image processing
+- `.python-version` - Python 3.11 (required for Streamlit Cloud)
+
+### Data Flow
+1. **Song Selection**: Spotify API provides track metadata (via client credentials flow) -> Deezer API provides 30-second audio previews
+2. **State Management**: All game state stored in `st.session_state` (current_song, scores, timer, etc.)
+3. **UI Communication**: JavaScript components (timer, scroll wheel) sync with Streamlit via URL query params (`?yr=`, `?et=`)
+4. **Persistence**: Supabase stores leaderboard data; falls back to session state if unavailable
+
+### Key Components
+
+**main.py:**
+- `get_songs_from_spotify(year, genre_query)` - Fetches tracks from Spotify's "Top Hits" playlists or search
+- `get_deezer_preview(artist, track)` - Finds audio preview URL from Deezer
+- `get_random_song(start_year, end_year, ...)` - Orchestrates song selection with parallel Deezer lookups
+- `blur_image(image_url, blur_amount)` - Creates blurred album art using Pillow
+- `calculate_score(guess, actual, time_taken)` - Scoring algorithm (accuracy + speed bonus)
+- `render_game_interface()` / `render_settings_panel()` - Main UI rendering functions
+
+**ui_components.py:**
+- `MAIN_CSS` - Global styles (dark theme, animations, responsive layout)
+- `scroll_wheel_year_picker()` - JavaScript scroll wheel that syncs via `?yr=` query param
+- `timer_html()` - SVG countdown timer with color transitions and pause/resume support
+- `audio_player()` - HTML5 audio with visualizer sync and timer integration
+
+## Important Patterns
 
 ### Session State Keys
-- `game_active` - Boolean for game in progress
-- `current_song` - Dict with song data (name, artist, album, year, preview_url, image_url)
-- `score` / `total_score` - Current and cumulative scores
-- `hints_revealed` - List of revealed hint types
-- `game_start_time` - Timestamp for scoring
-- `leaderboard` - List of player scores
-- `player_name` - Current player name
+```python
+game_active, current_song, current_round, player_scores,
+start_time, game_over, timed_out, time_locked,
+elapsed_playing_time, blur_level, current_guess
+```
 
-### UI Components
-- `st.sidebar` - Settings and leaderboard
-- `st.columns` - Layout for buttons and inputs
-- `components.html` - Audio autoplay via JavaScript
-- `@st.cache_data` - Not currently used (API calls need fresh data)
-
-## API Integration
-
-### Deezer API (No Auth Required)
-- Search: `https://api.deezer.com/search?q=...`
-- Album details: `https://api.deezer.com/album/{id}`
-- Provides: 30-second previews, album art, release dates
+### Genre Configuration
+`GENRE_CONFIG` dict maps genre names to Spotify search queries and "golden age" year ranges (e.g., Rock: 1968-1985).
 
 ### Song Filtering
-- `MIN_POPULARITY_RANK = 200000` - Filter for popular songs
-- `is_compilation_or_remaster()` - Excludes compilations/remasters
-- Album year verification to ensure accurate release dates
+- `COMPILATION_KEYWORDS` - Excludes remasters, greatest hits, etc.
+- `MIN_SPOTIFY_POPULARITY = 50` - Filters for recognizable songs
+- `is_likely_english()` - Filters non-Latin character tracks
+
+### JavaScript-Streamlit Communication
+- Scroll wheel writes selected year to `?yr=` query param
+- Timer writes elapsed time to `?et=` query param
+- Streamlit reads these via `st.query_params.get()`
 
 ## Code Conventions
 
-### DO
-- Use `st.session_state` for all persistent data
-- Verify album release dates from Deezer album endpoint
-- Strip numbers from song titles to prevent year leaks
-- Use `components.html` for JavaScript (audio autoplay)
-
-### DON'T
-- Don't cache Deezer API calls (need variety)
-- Don't show raw year numbers in song/album titles
-- Don't store API tokens in code (Deezer doesn't need them)
+- Use `st.session_state` for all persistent data between reruns
+- Strip numbers from song titles (`strip_numbers_from_title()`) to prevent year leaks
+- Use `components.html()` for JavaScript components (audio, timer, scroll wheel)
+- Blur starts at 25px and decreases to 0 over `HINT_REVEAL_TIME` (25 seconds)
+- Timer has 30 seconds (`MAX_GUESS_TIME`); locks scroll wheel when expired
 
 ## Common Issues
 
-### Deployment
-- Python version must be 3.11 (see `.python-version`)
-- Streamlit must be pinned to 1.41.1 to avoid pyarrow build issues
-
-### Game Logic
-- Wrong years shown? Check album year verification in `get_popular_songs_by_year()`
-- No songs found? Expand year range or adjust `MIN_POPULARITY_RANK`
-
-### Audio
-- Autoplay does not work in browsers - users must click play manually
+- **Streamlit version**: Must use pinned version to avoid pyarrow build issues on Streamlit Cloud
+- **Supabase connection**: Requires secrets configuration in Streamlit Cloud (SUPABASE_URL, SUPABASE_KEY)
+- **Audio autoplay**: Browsers block autoplay; users must click play manually
+- **No songs found**: Expand year range or try different genre; check Spotify API rate limits
 
 ## Scoring System
-- **Accuracy**: Max 1000 points for exact match, decreasing for years off
-- **Speed Bonus**: Max 300 points, formula: `max(0, 300 - (seconds * 10))`
-- **Hint Penalty**: -100 points per hint (Album, Artist, Song Title)
+
+| Accuracy | Points |
+|----------|--------|
+| Exact match | 1000 |
+| Off by 1 year | 800 |
+| Off by 2 years | 600 |
+| Off by 3 years | 400 |
+| Off by 4-5 years | 200 |
+
+**Speed Bonus**: `max(0, 300 - (seconds * 10))` - up to 300 points for fast submissions
