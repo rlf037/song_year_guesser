@@ -1240,6 +1240,8 @@ def scroll_wheel_year_picker(
                 width: 100%;
                 text-align: center;
                 transition: transform 0.08s ease-out;
+                top: 0;
+                left: 0;
             "></div>
 
             <div style="
@@ -1298,31 +1300,30 @@ def scroll_wheel_year_picker(
             }}
 
             function buildYearTrack() {{
+                if (!track) {{
+                    console.error('Track element not found');
+                    return;
+                }}
                 track.innerHTML = '';
+                console.log('Building year track from ' + minYear + ' to ' + maxYear + ', current: ' + currentYear);
                 for (let year = minYear; year <= maxYear; year++) {{
                     const div = document.createElement('div');
                     div.className = 'year-item';
                     div.dataset.year = year;
-                    div.style.cssText = `
-                        height: ${{itemHeight}}px;
-                        line-height: ${{itemHeight}}px;
-                        font-size: 2em;
-                        font-weight: 600;
-                        font-family: 'SF Mono', Monaco, Consolas, monospace;
-                        color: #30363d;
-                        transition: color 0.1s, transform 0.1s;
-                    `;
+                    div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; transition: color 0.1s, transform 0.1s; display: flex; align-items: center; justify-content: center; width: 100%;';
                     div.textContent = year;
                     track.appendChild(div);
                 }}
+                console.log('Built ' + (maxYear - minYear + 1) + ' year items');
                 updatePosition(false);
             }}
 
             function updatePosition(animate = true) {{
+                if (!track) return;
                 const offset = (currentYear - minYear) * itemHeight;
                 const containerHeight = 180;
                 const centerOffset = (containerHeight / 2) - (itemHeight / 2);
-                track.style.transform = `translateY(${{centerOffset - offset}}px)`;
+                track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
                 if (!animate) track.style.transition = 'none';
                 else track.style.transition = 'transform 0.08s ease-out';
 
@@ -1331,18 +1332,22 @@ def scroll_wheel_year_picker(
                 const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
                 const actuallyLocked = isLocked || wrapperLocked;
                 
-                document.querySelectorAll('.year-item').forEach(item => {{
+                const yearItems = track.querySelectorAll('.year-item');
+                yearItems.forEach(item => {{
                     const year = parseInt(item.dataset.year);
                     const distance = Math.abs(year - currentYear);
                     if (distance === 0) {{
                         item.style.color = actuallyLocked ? '#d29922' : '#58a6ff';
                         item.style.transform = 'scale(1.1)';
+                        item.style.opacity = '1';
                     }} else if (distance === 1) {{
                         item.style.color = '#6e7681';
                         item.style.transform = 'scale(0.9)';
+                        item.style.opacity = '0.6';
                     }} else {{
                         item.style.color = '#30363d';
                         item.style.transform = 'scale(0.8)';
+                        item.style.opacity = '0.3';
                     }}
                 }});
             }}
@@ -1474,24 +1479,22 @@ def scroll_wheel_year_picker(
             syncToUrl();
         }}
         
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {{
-            document.addEventListener('DOMContentLoaded', init);
-        }} else {{
-            init();
-        }}
-
-            buildYearTrack();
-
-            // Initial sync to URL
-            syncToUrl();
+        // Initialize when DOM is ready - use multiple strategies for iframe context
+        function tryInit() {{
+            if (document.getElementById('scroll-container') && document.getElementById('year-track')) {{
+                init();
+            }} else {{
+                // Retry if elements not found yet
+                setTimeout(tryInit, 50);
+            }}
         }}
         
-        // Initialize when DOM is ready
         if (document.readyState === 'loading') {{
-            document.addEventListener('DOMContentLoaded', init);
+            document.addEventListener('DOMContentLoaded', tryInit);
         }} else {{
-            init();
+            // Try immediately, but also set a timeout fallback
+            tryInit();
+            setTimeout(tryInit, 100);
         }}
     }})();
     </script>
