@@ -929,16 +929,26 @@ def render_game_interface():
 
             # Check if we're in the process of submitting
             if st.session_state.get("submitting_guess", False):
-                # Show submitting state
+                # Show submitting state with prominent animation
                 st.markdown(
                     f"""<div style="
                         text-align: center;
                         padding: 2em;
-                        color: #8b949e;
+                        background: rgba(88, 166, 255, 0.1);
+                        border: 2px solid rgba(88, 166, 255, 0.3);
+                        border-radius: 12px;
+                        animation: submitPulse 0.8s ease-in-out infinite;
                     ">
-                        <div style="font-size: 2em; font-weight: 600; color: #58a6ff; margin-bottom: 0.3em;">{st.session_state.current_guess}</div>
-                        <div style="font-size: 0.9em;">Submitting your guess...</div>
-                    </div>""",
+                        <div style="font-size: 3em; font-weight: 700; color: #58a6ff; margin-bottom: 0.5em;">{st.session_state.current_guess}</div>
+                        <div style="font-size: 1.2em; color: #c9d1d9; font-weight: 600;">Submitting your guess...</div>
+                        <div style="margin-top: 1em; color: #6e7681; font-size: 0.9em;">⏳ Please wait</div>
+                    </div>
+                    <style>
+                        @keyframes submitPulse {{
+                            0%, 100% {{ opacity: 1; transform: scale(1); }}
+                            50% {{ opacity: 0.8; transform: scale(1.01); }}
+                        }}
+                    </style>""",
                     unsafe_allow_html=True,
                 )
             else:
@@ -950,9 +960,12 @@ def render_game_interface():
                     height=250,
                 )
 
-                # Submit button with selected year
+                # Submit button with selected year - styled differently when time is up
+                button_class = "submit-urgent" if is_locked else "submit-btn"
+                button_text = f"SUBMIT {st.session_state.current_guess} NOW!" if is_locked else f"Submit {st.session_state.current_guess}"
+
                 if st.button(
-                    f"Submit {st.session_state.current_guess}",
+                    button_text,
                     type="primary",
                     use_container_width=True,
                     key="submit_guess",
@@ -976,7 +989,7 @@ def render_game_interface():
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
             if st.session_state.audio_started:
-                components.html(timer_html(start_timestamp, MAX_GUESS_TIME), height=220)
+                components.html(timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=2), height=220)
             else:
                 st.markdown(static_timer(30), unsafe_allow_html=True)
 
@@ -1051,37 +1064,40 @@ def render_game_interface():
 
             st.write("")
 
-            # Action buttons
-            if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
-                st.session_state.loading_game = True
-                st.rerun()
+            # Action buttons - horizontally aligned
+            btn_col1, btn_col2 = st.columns(2)
+            with btn_col1:
+                if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
+                    st.session_state.loading_game = True
+                    st.rerun()
 
-            if st.button("🏁 End Game", use_container_width=True, key="end_game"):
-                # Save to persistent leaderboard
-                total_score = get_total_score()
-                songs_played = len(
-                    [
-                        s
-                        for s in st.session_state.player_scores
-                        if s["player"] == st.session_state.current_player
-                    ]
-                )
-                if songs_played > 0:
-                    add_to_leaderboard(
-                        st.session_state.current_player,
-                        total_score,
-                        songs_played,
-                        st.session_state.selected_genre,
+            with btn_col2:
+                if st.button("🏁 End Game", use_container_width=True, key="end_game"):
+                    # Save to persistent leaderboard
+                    total_score = get_total_score()
+                    songs_played = len(
+                        [
+                            s
+                            for s in st.session_state.player_scores
+                            if s["player"] == st.session_state.current_player
+                        ]
                     )
-                # Reset game state
-                st.session_state.game_active = False
-                st.session_state.game_over = False
-                st.session_state.current_round = 0
-                st.session_state.player_scores = []  # Clear session scores
-                st.session_state.played_song_ids = set()
-                st.session_state.played_song_keys = set()
-                st.session_state.next_song_cache = None
-                st.rerun()
+                    if songs_played > 0:
+                        add_to_leaderboard(
+                            st.session_state.current_player,
+                            total_score,
+                            songs_played,
+                            st.session_state.selected_genre,
+                        )
+                    # Reset game state
+                    st.session_state.game_active = False
+                    st.session_state.game_over = False
+                    st.session_state.current_round = 0
+                    st.session_state.player_scores = []  # Clear session scores
+                    st.session_state.played_song_ids = set()
+                    st.session_state.played_song_keys = set()
+                    st.session_state.next_song_cache = None
+                    st.rerun()
 
 
 def render_leaderboard():

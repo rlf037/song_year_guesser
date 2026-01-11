@@ -39,9 +39,7 @@ MAIN_CSS = """
     .header-title {
         font-size: 1.8em;
         font-weight: 700;
-        background: linear-gradient(135deg, #58a6ff 0%, #79c0ff 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #e6edf3;
         display: flex;
         align-items: center;
         gap: 0.3em;
@@ -70,16 +68,16 @@ MAIN_CSS = """
     }
 
     .header-item-value {
-        color: #58a6ff;
+        color: #c9d1d9;
         font-weight: 600;
     }
 
     .round-indicator {
-        background: rgba(56, 139, 253, 0.15);
-        border: 1px solid rgba(56, 139, 253, 0.4);
+        background: rgba(139, 148, 158, 0.1);
+        border: 1px solid rgba(139, 148, 158, 0.3);
         padding: 0.3em 0.8em;
         border-radius: 15px;
-        color: #58a6ff;
+        color: #c9d1d9;
         font-weight: 600;
         font-size: 0.85em;
     }
@@ -99,9 +97,7 @@ MAIN_CSS = """
     }
 
     .main-title .gradient-text {
-        background: linear-gradient(135deg, #58a6ff 0%, #79c0ff 50%, #a5d6ff 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #e6edf3;
     }
 
     .main-title .subtitle {
@@ -226,7 +222,7 @@ MAIN_CSS = """
 
     .audio-viz-bar {
         width: 5px;
-        background: linear-gradient(to top, #388bfd, #58a6ff);
+        background: linear-gradient(to top, #484f58, #6e7681);
         border-radius: 2px;
         animation: audioViz 0.5s ease-in-out infinite alternate;
     }
@@ -276,14 +272,14 @@ MAIN_CSS = """
     .year-display {
         font-size: 4em;
         font-weight: 700;
-        color: #58a6ff;
+        color: #e6edf3;
         text-align: center;
         font-family: 'SF Mono', Monaco, Consolas, monospace;
         margin: 0.2em 0 0.5em 0;
     }
 
     .year-display.locked {
-        color: #d29922;
+        color: #8b949e;
     }
 
     /* ===== YEAR WHEEL (legacy) ===== */
@@ -346,13 +342,13 @@ MAIN_CSS = """
     
     .year-wheel-item.selected {
         font-size: 2.8em;
-        color: #22d3ee;
-        text-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+        color: #e6edf3;
+        text-shadow: 0 0 20px rgba(230, 237, 243, 0.3);
     }
-    
+
     .year-wheel-item.selected.locked {
-        color: #f59e0b;
-        text-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+        color: #8b949e;
+        text-shadow: none;
     }
     
     .year-range-label {
@@ -369,10 +365,10 @@ MAIN_CSS = """
     
     .locked-indicator {
         font-size: 0.8em;
-        color: #f59e0b;
+        color: #8b949e;
         margin-top: 0.8em;
         padding: 0.5em;
-        background: rgba(245, 158, 11, 0.1);
+        background: rgba(139, 148, 158, 0.1);
         border-radius: 8px;
     }
     
@@ -403,7 +399,7 @@ MAIN_CSS = """
     .timer-seconds {
         font-size: 4em;
         font-weight: 800;
-        color: #22d3ee;
+        color: #e6edf3;
         line-height: 1;
     }
     
@@ -449,18 +445,63 @@ MAIN_CSS = """
         background: #2ea043 !important;
     }
 
+    /* Urgent submit button when time is up - applied via JavaScript */
+    .stButton > button.urgent-submit {
+        background: linear-gradient(135deg, #da3633, #f85149) !important;
+        color: white !important;
+        font-size: 1.3em !important;
+        font-weight: 800 !important;
+        padding: 1.2em 2em !important;
+        animation: urgentPulse 1s ease-in-out infinite !important;
+        border: 3px solid #f85149 !important;
+        box-shadow: 0 0 30px rgba(248, 81, 73, 0.6) !important;
+    }
+
+    .stButton > button.urgent-submit:hover:not(:disabled) {
+        background: linear-gradient(135deg, #f85149, #ff6b6b) !important;
+        transform: scale(1.03) !important;
+    }
+
+    @keyframes urgentPulse {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(248, 81, 73, 0.4);
+        }
+        50% {
+            transform: scale(1.02);
+            box-shadow: 0 0 35px rgba(248, 81, 73, 0.7);
+        }
+    }
+
+    /* JavaScript to apply urgent styling */
+    <script>
+        (function styleUrgentButtons() {
+            const buttons = document.querySelectorAll('.stButton > button[data-testid="baseButton-primary"]');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes('NOW!')) {
+                    btn.classList.add('urgent-submit');
+                } else {
+                    btn.classList.remove('urgent-submit');
+                }
+            });
+            // Run periodically to catch updates
+            setTimeout(styleUrgentButtons, 100);
+        })();
+    </script>
+
     /* ===== SCORE CARD ===== */
     .score-card {
         background: rgba(35, 134, 54, 0.15);
         border: 1px solid rgba(35, 134, 54, 0.4);
-        padding: 1.2em 2.5em;
-        border-radius: 12px;
+        padding: 0.8em 1.5em;
+        border-radius: 8px;
         text-align: center;
         color: #3fb950;
-        font-size: 1.5em;
-        font-weight: 700;
-        margin: 1em auto;
-        max-width: 350px;
+        font-size: 1em;
+        font-weight: 500;
+        margin: 0.8em auto;
+        max-width: 400px;
+        line-height: 1.4;
     }
 
     /* ===== CORRECT ANSWER ===== */
@@ -609,7 +650,7 @@ MAIN_CSS = """
     }
     
     .history-score {
-        color: #22d3ee;
+        color: #4a9eff;
         font-weight: 600;
         min-width: 45px;
         text-align: right;
@@ -629,7 +670,7 @@ MAIN_CSS = """
         background: transparent;
         border: 1px solid rgba(139, 92, 246, 0.4);
         border-radius: 20px;
-        color: #a78bfa;
+        color: #7b9ae0;
         font-size: 0.85em;
         text-decoration: none;
         transition: all 0.2s ease;
@@ -677,7 +718,7 @@ MAIN_CSS = """
         text-align: center;
         font-size: 1.3em;
         font-weight: 700;
-        color: #a78bfa;
+        color: #7b9ae0;
         margin-bottom: 1em;
     }
     
@@ -718,7 +759,7 @@ MAIN_CSS = """
     }
     
     .setting-value {
-        color: #a78bfa;
+        color: #7b9ae0;
         font-weight: 500;
     }
     
@@ -753,25 +794,46 @@ MAIN_CSS = """
     
     /* ===== HOW TO PLAY ===== */
     .how-to-play {
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(22, 27, 34, 0.6);
         backdrop-filter: blur(10px);
-        border-radius: 20px;
-        padding: 2em;
+        border-radius: 12px;
+        padding: 1.8em 2.5em;
         margin: 1em auto;
         max-width: 600px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #ffffff;
+        border: 1px solid rgba(48, 54, 61, 0.6);
+        color: #c9d1d9;
     }
-    
+
     .how-to-play h3 {
-        color: #8b5cf6;
+        color: #e6edf3;
         margin-bottom: 1em;
         text-align: center;
+        font-weight: 600;
+        font-size: 1.2em;
     }
-    
+
     .how-to-play ol {
         text-align: left;
         line-height: 2;
+        color: #c9d1d9;
+        margin: 0;
+        padding-left: 1.5em;
+    }
+
+    .how-to-play ol li {
+        margin-bottom: 0.5em;
+    }
+
+    .how-to-play-tip {
+        text-align: center;
+        margin-top: 1.5em;
+        padding: 0.8em 1.2em;
+        background: rgba(48, 54, 61, 0.4);
+        border: 1px solid rgba(110, 118, 129, 0.3);
+        border-radius: 8px;
+        color: #8b949e;
+        font-size: 0.85em;
+        font-weight: 500;
     }
     
     /* ===== SETTINGS PANEL ===== */
@@ -804,7 +866,7 @@ MAIN_CSS = """
         border-radius: 20px;
         margin: 0.5em auto;
         font-size: 0.95em;
-        color: #22d3ee;
+        color: #4a9eff;
         max-width: 350px;
         border: 1px solid rgba(34, 211, 238, 0.2);
     }
@@ -862,19 +924,19 @@ MAIN_CSS = """
     
     /* ===== SLIDER STYLING ===== */
     .stSlider > div > div > div > div {
-        background: linear-gradient(90deg, #6366f1, #8b5cf6) !important;
+        background: linear-gradient(90deg, #30363d, #6e7681) !important;
     }
-    
+
     .stSlider [data-baseweb="slider"] {
         margin-top: 0.5em;
     }
-    
+
     .stSlider [data-baseweb="slider"] [role="slider"] {
         width: 24px !important;
         height: 24px !important;
-        background: #22d3ee !important;
+        background: #c9d1d9 !important;
         border: 3px solid #fff !important;
-        box-shadow: 0 0 15px rgba(34, 211, 238, 0.5) !important;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.3) !important;
     }
     
     .stSlider [data-baseweb="slider"] [data-testid="stTickBar"] {
@@ -883,7 +945,7 @@ MAIN_CSS = """
     .stNumberInput input {
         background: rgba(255, 255, 255, 0.08) !important;
         border: 2px solid rgba(139, 92, 246, 0.3) !important;
-        color: #22d3ee !important;
+        color: #4a9eff !important;
         font-size: 3em !important;
         font-weight: 700 !important;
         text-align: center !important;
@@ -893,7 +955,7 @@ MAIN_CSS = """
     }
     
     .stNumberInput input:focus {
-        border-color: #8b5cf6 !important;
+        border-color: #6b8dd6 !important;
         box-shadow: 0 0 20px rgba(139, 92, 246, 0.3) !important;
     }
     
@@ -963,9 +1025,7 @@ def main_title() -> str:
     return """
     <div class="main-title">
         <h1>
-            <span class="music-icons">&#x1F3B5;</span>
             <span class="gradient-text">Song Year Guesser</span>
-            <span class="music-icons">&#x1F3B5;</span>
         </h1>
         <div class="subtitle">Test your music knowledge</div>
     </div>
@@ -1339,30 +1399,30 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
         .timer-ring.paused {{ opacity: 0.5; }}
         .timer-ring.warning {{ animation: warningPulse 1s ease-in-out infinite; }}
         .timer-ring.danger {{ animation: dangerPulse 0.5s ease-in-out infinite; }}
-        .timer-ring.critical {{ animation: criticalShake 0.15s ease-in-out infinite; }}
+        .timer-ring.critical {{ animation: criticalPulse 0.3s ease-in-out infinite; }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
         .timer-seconds {{ font-size: 3.5em; font-weight: 700; line-height: 1; transition: color 0.15s ease, transform 0.1s ease; font-family: 'SF Mono', Monaco, Consolas, monospace; }}
         .timer-seconds.pulse {{ animation: numberPulse 0.5s ease-in-out; }}
         .timer-label {{ font-size: 0.85em; color: #6e7681; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; transition: color 0.2s ease; }}
-        .timer-label.paused {{ color: #d29922; font-weight: 600; }}
-        .timer-label.urgent {{ color: #f85149; }}
-        @keyframes warningPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.02); }} }}
-        @keyframes dangerPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.04); }} }}
-        @keyframes criticalShake {{ 0%, 100% {{ transform: translateX(0) scale(1.05); }} 25% {{ transform: translateX(-2px) scale(1.05); }} 75% {{ transform: translateX(2px) scale(1.05); }} }}
-        @keyframes numberPulse {{ 0% {{ transform: scale(1); }} 50% {{ transform: scale(1.1); }} 100% {{ transform: scale(1); }} }}
-        .glow-effect {{ filter: drop-shadow(0 0 8px currentColor); }}
+        .timer-label.paused {{ color: #8b949e; font-weight: 600; }}
+        .timer-label.urgent {{ color: #da3633; font-weight: 600; }}
+        @keyframes warningPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.01); }} }}
+        @keyframes dangerPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.02); }} }}
+        @keyframes criticalPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.03); }} }}
+        @keyframes numberPulse {{ 0% {{ transform: scale(1); }} 50% {{ transform: scale(1.05); }} 100% {{ transform: scale(1); }} }}
+        .glow-effect {{ }}
     </style>
     <div class="timer-container">
         <div class="timer-ring" id="timer-ring">
             <svg width="180" height="180" viewBox="0 0 180 180" style="transform: rotate(-90deg);">
                 <circle cx="90" cy="90" r="80" fill="none" stroke="#21262d" stroke-width="8"/>
                 <circle id="timer-bg" cx="90" cy="90" r="80" fill="none" stroke="#30363d" stroke-width="8" opacity="0.3"/>
-                <circle id="timer-circle" cx="90" cy="90" r="80" fill="none" stroke="#58a6ff" stroke-width="8"
+                <circle id="timer-circle" cx="90" cy="90" r="80" fill="none" stroke="#8b949e" stroke-width="8"
                     stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="0"
                     style="transition: stroke-dashoffset 0.1s linear, stroke 0.15s ease;"/>
             </svg>
             <div class="timer-text">
-                <div id="timer-seconds" class="timer-seconds" style="color: #58a6ff;">{max_time}</div>
+                <div id="timer-seconds" class="timer-seconds" style="color: #c9d1d9;">{max_time}</div>
                 <div id="timer-label" class="timer-label">seconds</div>
             </div>
         </div>
@@ -1430,13 +1490,13 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
             }}
 
             function getProgressColor(progress) {{
-                // Blue (#58a6ff) -> Yellow (#d29922) -> Orange (#db6d28) -> Red (#f85149)
+                // Gray (#8b949e) -> Gray (#6e7681) -> Orange (#9e6a03) -> Red (#da3633)
                 if (progress < 0.5) {{
-                    return lerpColor('#58a6ff', '#d29922', progress * 2);
+                    return lerpColor('#8b949e', '#6e7681', progress * 2);
                 }} else if (progress < 0.75) {{
-                    return lerpColor('#d29922', '#db6d28', (progress - 0.5) * 4);
+                    return lerpColor('#6e7681', '#9e6a03', (progress - 0.5) * 4);
                 }} else {{
-                    return lerpColor('#db6d28', '#f85149', (progress - 0.75) * 4);
+                    return lerpColor('#9e6a03', '#da3633', (progress - 0.75) * 4);
                 }}
             }}
 
@@ -1446,8 +1506,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                 if (elapsed < 0) {{
                     secondsEl.textContent = maxTime;
                     circle.style.strokeDashoffset = 0;
-                    circle.style.stroke = '#58a6ff';
-                    secondsEl.style.color = '#58a6ff';
+                    circle.style.stroke = '#8b949e';
+                    secondsEl.style.color = '#c9d1d9';
                     ring.classList.remove('warning', 'danger', 'critical');
                     secondsEl.classList.remove('glow-effect');
                     labelEl.textContent = 'seconds';
@@ -1497,7 +1557,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) ->
                     labelEl.textContent = "TIME'S UP";
                     labelEl.classList.add('urgent');
                     ring.classList.remove('warning', 'danger', 'critical');
-                    ring.classList.add('critical');
+                    // No animation when time is up - just a steady display
                 }} else if (!isPaused) {{
                     labelEl.textContent = remaining <= 5 ? 'hurry!' : 'seconds';
                 }}
@@ -1529,10 +1589,10 @@ def static_timer(seconds: int = 30) -> str:
         <div style="position: relative; width: 200px; height: 200px;">
             <svg width="200" height="200" viewBox="0 0 200 200" style="transform: rotate(-90deg);">
                 <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
-                <circle cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#4a9eff" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
             </svg>
             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                <div style="font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1;">{seconds}</div>
+                <div style="font-size: 4em; font-weight: 800; color: #4a9eff; line-height: 1;">{seconds}</div>
                 <div style="font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em;">sec</div>
             </div>
         </div>
@@ -1609,7 +1669,7 @@ def year_scroll_wheel(
             cursor: pointer;
         }}
         .wheel-item.selected {{
-            color: #22d3ee;
+            color: #4a9eff;
             font-size: 2.8em;
             text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
         }}
@@ -1861,8 +1921,8 @@ def correct_answer_with_diff(actual_year: int, guessed_year: int) -> str:
 
 
 def score_card(score: int) -> str:
-    """Generate the score card display"""
-    return f'<div class="score-card">&#x1F3AF; {score} points</div>'
+    """Generate the score card display - compact single line"""
+    return f'<div class="score-card"><span style="font-size: 1.2em;">&#x1F3AF;</span> You earned <strong>{score} points</strong> this round</div>'
 
 
 def status_line(message: str) -> str:
@@ -1888,18 +1948,15 @@ def how_to_play() -> str:
     """Generate the how to play section"""
     return """
     <div class="how-to-play">
-        <h3>&#x1F3AE; How to Play</h3>
+        <h3>How to Play</h3>
         <ol>
-            <li><strong>&#x1F3A7; Listen</strong> to a 30-second song preview</li>
-            <li><strong>&#x1F5BC;&#xFE0F; Watch</strong> the album artwork and song info gradually reveal</li>
-            <li><strong>&#x1F3AF; Select</strong> your guess for the release year</li>
-            <li><strong>&#x26A1; Submit</strong> anytime - the faster you guess, the more bonus points!</li>
+            <li>Listen to a 30-second song preview</li>
+            <li>Watch the album artwork gradually unblur</li>
+            <li>Select your guess for the release year</li>
+            <li>Submit before time runs out for bonus points</li>
         </ol>
-        <div style="text-align: center; margin-top: 1em; padding: 0.8em; background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 10px; color: #22d3ee;">
-            &#x26A1; <strong>Time Bonus:</strong> Submit early for up to 300 extra points!
-        </div>
-        <div style="text-align: center; margin-top: 0.5em; padding: 0.8em; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; color: #f59e0b;">
-            &#x1F512; After 30 seconds, your selection locks - submit before time runs out!
+        <div class="how-to-play-tip">
+            Earn up to 300 bonus points by submitting quickly
         </div>
     </div>
     """
@@ -1925,11 +1982,11 @@ def leaderboard_entry(idx: int, score: dict) -> str:
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <span style="font-size: 1.3em;">{medal}</span>
-                <strong style="color: #8b5cf6;">{score["player"]}</strong>
+                <strong style="color: #c9d1d9;">{score["player"]}</strong>
             </div>
-            <div style="font-size: 1.2em; font-weight: 700; color: #22d3ee;">{score["total_score"]} pts</div>
+            <div style="font-size: 1.2em; font-weight: 700; color: #58a6ff;">{score["total_score"]} pts</div>
         </div>
-        <div style="font-size: 0.85em; color: #a0a0a0; margin-top: 0.3em;">
+        <div style="font-size: 0.85em; color: #8b949e; margin-top: 0.3em;">
             {genre} • {songs_played} songs • Avg: {avg_score} pts • {date}
         </div>
     </div>
@@ -2032,12 +2089,12 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
 
 def leaderboard_header() -> str:
     """Generate the leaderboard header"""
-    return '<div class="leaderboard-header">&#x1F3C6; Leaderboard</div>'
+    return '<div class="leaderboard-header">Leaderboard</div>'
 
 
 def empty_leaderboard() -> str:
     """Generate empty leaderboard message"""
-    return '<div style="text-align: center; color: #666; padding: 1.5em; font-size: 0.9em;">&#x1F3AE; No scores yet! Play a game to see your scores here.</div>'
+    return '<div style="text-align: center; color: #6e7681; padding: 1.5em; font-size: 0.9em;">No scores yet. Play a game to see your scores here.</div>'
 
 
 def elapsed_time_receiver() -> str:
