@@ -106,7 +106,7 @@ MAIN_CSS = """
     /* ===== MAIN TITLE (Welcome Screen) ===== */
     .main-title {
         text-align: center;
-        margin: 2em 0 1em 0;
+        margin: 4em 0 2.5em 0;
     }
 
     .main-title h1 {
@@ -128,7 +128,8 @@ MAIN_CSS = """
     .main-title .subtitle {
         font-size: 1.2em;
         color: #6e7681;
-        margin-top: 0.5em;
+        margin-top: 2.5em;
+        margin-bottom: 2.5em;
         font-weight: 400;
         letter-spacing: 2px;
         text-transform: uppercase;
@@ -1070,6 +1071,20 @@ MAIN_CSS = """
     .stNumberInput [data-baseweb="input"] button {
         display: none !important;
     }
+
+    /* ===== SMOOTH COMPONENT APPEARANCE ===== */
+    .fade-in {
+        opacity: 0;
+        transform: translateY(24px);
+        animation: fadeInUp 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    @keyframes fadeInUp {
+        0% { opacity: 0; transform: translateY(24px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .game-header, .main-title, .game-main, .song-info-card, .album-container, .audio-viz-container, .timer-container, .score-card, .result-container, .audio-container, .history-container, .leaderboard {
+        will-change: opacity, transform;
+    }
 </style>
 """
 
@@ -1090,7 +1105,7 @@ def game_header(
     """Generate the game header with controls"""
     genre_display = f"{genre_icon} {genre}" if genre else ""
     return f"""
-    <div class="game-header">
+    <div class="game-header fade-in">
         <div class="header-title">
             &#x1F3B5; Song Year Guesser
         </div>
@@ -1111,7 +1126,10 @@ def game_header(
                 <span class="header-item-label">Score</span>
                 <span class="header-item-value">{total_score}</span>
             </div>
-            <div class="round-indicator">Round {round_num}</div>
+            <div class="header-item">
+                <span class="header-item-label">Round</span>
+                <span class="header-item-value">{round_num}</span>
+            </div>
         </div>
     </div>
     """
@@ -1120,11 +1138,23 @@ def game_header(
 def main_title() -> str:
     """Generate the main title for the welcome screen"""
     return """
-    <div class="main-title">
+    <div class="main-title fade-in">
         <h1>
             <span class="gradient-text">Song Year Guesser</span>
         </h1>
         <div class="subtitle">Test your music knowledge</div>
+        <div class="how-to-play fade-in" style="max-width: 520px; margin: 3em auto 0 auto; background: rgba(30,41,59,0.7); border-radius: 14px; border: 1.5px solid #6366f1; box-shadow: 0 4px 24px rgba(99,102,241,0.08); padding: 2em 2em 1.5em 2em; color: #e0e7ef; font-size: 1.1em;">
+            <h2 style="font-size:1.3em; color:#a5b4fc; margin-bottom:0.7em; font-weight:700; letter-spacing:0.04em;">How to Play</h2>
+            <ol style="margin:0 0 0.5em 1.2em; padding:0; line-height:1.7;">
+                <li>Listen to the 30-second song preview.</li>
+                <li>Use the scroll wheel or arrows to pick the year you think the song was released.</li>
+                <li>Submit your guess before time runs out! The faster and more accurate, the higher your score.</li>
+                <li>Album art will un-blur as a hint. Compete for the top spot on the leaderboard!</li>
+            </ol>
+            <div style="margin-top:1.2em; color:#818cf8; font-size:0.98em;">
+                <b>Tip:</b> Try different genres and challenge your friends!
+            </div>
+        </div>
     </div>
     """
 
@@ -1133,7 +1163,7 @@ def song_info_card(song: dict, blur_amount: float) -> str:
     """Generate the song info card with blur effect on values only"""
     blur_css = f"filter: blur({blur_amount:.1f}px);" if blur_amount > 0 else ""
     return f"""
-    <div class="song-info-card">
+    <div class="song-info-card fade-in">
         <div class="song-info-item">
             <span class="song-info-icon">&#x1F3B5;</span>
             <span class="song-info-label">Song</span>
@@ -1231,7 +1261,6 @@ def scroll_wheel_year_picker(
     Works with mouse wheel, trackpad, drag, click, keyboard."""
     locked_style = "opacity: 0.6; pointer-events: none;" if locked else ""
     locked_border = "rgba(248, 81, 73, 0.4)" if locked else "rgba(48, 54, 61, 0.8)"
-
     return f"""
     <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; padding: 0.5em 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; {locked_style}' data-locked='{str(locked).lower()}'>
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
@@ -1244,11 +1273,88 @@ def scroll_wheel_year_picker(
     (function() {{
         const minYear = {int(start_year)};
         const maxYear = {int(end_year)};
+        let currentYear = {int(current_year)};
         const isLocked = {str(locked).lower()};
+        let container, track;
+        const itemHeight = 46;
+        function buildYearTrack() {{
+            track.innerHTML = '';
+            for (let year = minYear; year <= maxYear; year++) {{
+                const div = document.createElement('div');
+                div.className = 'year-item';
+                div.dataset.year = year;
+                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; display: flex; align-items: center; justify-content: center; width: 100%; position: relative;';
+                div.textContent = year.toString();
+                track.appendChild(div);
+            }}
+        }}
+        function updatePosition() {{
+            const offset = (currentYear - minYear) * itemHeight;
+            const containerHeight = 180;
+            const centerOffset = (containerHeight / 2) - (itemHeight / 2);
+            track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
+            const yearItems = track.querySelectorAll('.year-item');
+            yearItems.forEach(item => {{
+                const year = parseInt(item.dataset.year);
+                const distance = Math.abs(year - currentYear);
+                if (distance === 0) {{
+                    item.style.color = isLocked ? '#f59e0b' : '#818cf8';
+                    item.style.transform = 'scale(1.1)';
+                    item.style.opacity = '1';
+                }} else if (distance === 1) {{
+                    item.style.color = '#64748b';
+                    item.style.transform = 'scale(0.9)';
+                    item.style.opacity = '0.6';
+                }} else {{
+                    item.style.color = '#30363d';
+                    item.style.transform = 'scale(0.8)';
+                    item.style.opacity = '0.3';
+                }}
+            }});
+        }}
+        function setYear(year) {{
+            if (isLocked) return;
+            const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
+            if (newYear !== currentYear) {{
+                currentYear = newYear;
+                updatePosition();
+                syncToUrl();
+            }}
+        }}
+        function syncToUrl() {{
+            try {{
+                const url = new URL(window.parent.location.href);
+                url.searchParams.set('yr', currentYear.toString());
+                window.parent.history.replaceState(null, '', url.toString());
+            }} catch(e) {{}}
+        }}
+        function init() {{
+            container = document.getElementById('scroll-container');
+            track = document.getElementById('year-track');
+            if (!container || !track) {{ setTimeout(init, 100); return; }}
+            buildYearTrack();
+            updatePosition();
+            if (!isLocked) {{
+                container.addEventListener('wheel', function(e) {{
+                    e.preventDefault();
+                    const SCROLL_SENSITIVITY = 40;
+                    let scrollDelta = e.deltaY / SCROLL_SENSITIVITY;
+                    if (Math.abs(scrollDelta) >= 1) {{
+                        const delta = Math.sign(scrollDelta);
+                        setYear(currentYear + delta);
+                    }}
+                }}, {{ passive: false }});
+                container.addEventListener('click', function(e) {{
+                    if (e.target.classList.contains('year-item')) {{
+                        setYear(parseInt(e.target.dataset.year));
+                    }}
+                }});
+            }}
+        }}
         setTimeout(init, 0);
     }})();
     </script>
-    """
+"""
 
 
 def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) -> str:
@@ -1486,7 +1592,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             setInterval(updateTimer, 100);
         }})();
     </script>
-    """
+"""
 
 
 def static_timer(seconds: int = 30) -> str:
@@ -1778,13 +1884,14 @@ def year_scroll_wheel(
             setInterval(sendCurrentYear, 300);
         }})();
     </script>
-    """
+"""
 
 
 def result_display(emoji: str, message: str, subtitle: str, color: str) -> str:
     """Generate the result message display"""
     return f"""
-    <div class="result-container">
+
+    <div class="result-container fade-in">
         <div class="result-emoji">{emoji}</div>
         <div class="result-message" style="color: {color};">{message}</div>
         <div class="result-subtitle">{subtitle}</div>
@@ -1853,10 +1960,10 @@ def how_to_play() -> str:
     <div class="how-to-play">
         <h3>How to Play</h3>
         <ol>
-            <li>Listen to a 30-second song preview</li>
-            <li>Watch the album artwork gradually unblur</li>
-            <li>Select your guess for the release year</li>
-            <li>Submit before time runs out for bonus points</li>
+            <li>Listen to the 30-second song preview.</li>
+            <li>Use the scroll wheel or arrows to pick the year you think the song was released.</li>
+            <li>Submit your guess before time runs out! The faster and more accurate, the higher your score.</li>
+            <li>Album art will un-blur as a hint. Compete for the top spot on the leaderboard!</li>
         </ol>
         <div class="how-to-play-tip">
             Earn up to 300 bonus points by submitting quickly
@@ -1994,7 +2101,7 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
             {'audio.volume = 1.0; audio.play().then(function() { notifyAutoplayStatus(false); }).catch(function(e) { console.log("Autoplay prevented:", e); notifyAutoplayStatus(true); });' if autoplay else ""}
         }})();
     </script>
-    """
+"""
 
 
 def leaderboard_header() -> str:

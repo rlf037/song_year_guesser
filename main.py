@@ -1346,8 +1346,9 @@ def render_game_interface():
                 if st.button(
                     "▶️ Next Song", type="primary", use_container_width=True, key="next_song"
                 ):
-                    # Reset time lock immediately before loading new song
+                    # Always reset scroll picker lock and related state for next round
                     st.session_state.time_locked = False
+                    st.session_state.timed_out = False
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
                     st.session_state.loading_game = True
@@ -1481,7 +1482,7 @@ def main():
             genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
             start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
             st.session_state.loading_game = False
-            st.rerun()
+        st.rerun()
         return
 
     # Handle guess submission (quick operation, no spinner needed)
