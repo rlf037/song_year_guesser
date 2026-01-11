@@ -29,7 +29,7 @@ Push to `main` branch triggers automatic deployment to Streamlit Cloud at [song-
 ### File Structure
 - `main.py` - Core application: game logic, API integration, Streamlit UI rendering
 - `ui_components.py` - CSS styles, HTML templates, and JavaScript components (timer, scroll wheel, audio player)
-- `requirements.txt` / `pyproject.toml` - Python dependencies (Streamlit 1.52.2, Pillow, requests, supabase)
+- `requirements.txt` / `pyproject.toml` - Python dependencies (Streamlit 1.52.2, Pillow, requests, supabase, streamlit-autorefresh)
 - `packages.txt` - System dependencies for Pillow image processing
 - `.python-version` - Python 3.11 (required for Streamlit Cloud)
 
@@ -88,7 +88,8 @@ elapsed_playing_time, blur_level, current_guess
 ## Common Issues
 
 - **Streamlit version**: Must use pinned version to avoid pyarrow build issues on Streamlit Cloud
-- **Supabase connection**: Requires secrets configuration in Streamlit Cloud (SUPABASE_URL, SUPABASE_KEY)
+- **Spotify credentials**: Requires `spotify.client_id` and `spotify.client_secret` in Streamlit secrets
+- **Supabase connection**: Requires `supabase.SUPABASE_URL` and `supabase.SUPABASE_KEY` in Streamlit secrets
 - **Audio autoplay**: Browsers block autoplay; users must click play manually
 - **No songs found**: Expand year range or try different genre; check Spotify API rate limits
 
