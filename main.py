@@ -973,7 +973,7 @@ def render_game_interface():
     if st.session_state.audio_started and not st.session_state.game_over:
         components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
 
-    # Start timer immediately when game begins (simplified approach)
+        # Start timer immediately when game begins (simplified approach)
         # Auto-refresh for game state updates (optimized frequency)
         st_autorefresh(interval=1000, key="game_timer")
 
@@ -1492,14 +1492,15 @@ def main():
             genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
             start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
             st.session_state.loading_game = False
-        st.rerun()
+        # Only rerun if not already triggered by button or state
         return
 
     # Handle guess submission (quick operation, no spinner needed)
     if st.session_state.submitting_guess:
         make_guess(st.session_state.current_guess, timed_out=st.session_state.guess_timed_out)
         st.session_state.submitting_guess = False
-        st.rerun()
+        # Only rerun if not already triggered by button or state
+        return
 
     # Handle saving to leaderboard
     if st.session_state.saving_to_leaderboard:
@@ -1576,7 +1577,6 @@ def main():
         st.session_state.played_song_keys = set()
         st.session_state.next_song_cache = None
         st.session_state.saving_to_leaderboard = False
-        st.rerun()
         return
 
     if not st.session_state.game_active:
@@ -1602,7 +1602,6 @@ def main():
                 st.session_state.played_song_keys = set()
                 st.session_state.next_song_cache = None
                 st.session_state.loading_game = True
-                # Removed extra st.rerun() to prevent double refresh
 
         st.write("")
         st.write("")
