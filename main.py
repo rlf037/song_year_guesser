@@ -972,15 +972,18 @@ def render_game_interface():
 
                 # Custom urgent button HTML when time is up
                 if is_locked:
-                    if st.button("​", type="primary", use_container_width=True, key="submit_guess_hidden"):
-                        st.session_state.submitting_guess = True
-                        st.session_state.guess_timed_out = is_locked
-                        st.rerun()
+                    # Use form to trigger submission
+                    with st.form(key="urgent_submit_form", clear_on_submit=False):
+                        submitted = st.form_submit_button("HIDDEN", type="primary")
+                        if submitted:
+                            st.session_state.submitting_guess = True
+                            st.session_state.guess_timed_out = True
+                            st.rerun()
 
                     # Overlay urgent animated button
                     st.markdown(f'''
-                        <div class="urgent-button-container" onclick="document.querySelector('[key=submit_guess_hidden]').click()">
-                            <div class="urgent-button">
+                        <div class="urgent-button-container">
+                            <div class="urgent-button" id="urgent-submit-btn">
                                 <span class="urgent-icon">⚠️</span>
                                 SUBMIT {st.session_state.current_guess}
                                 <span class="urgent-icon">⚠️</span>
@@ -988,10 +991,10 @@ def render_game_interface():
                         </div>
                         <style>
                             .urgent-button-container {{
-                                margin-top: -3.8em;
-                                cursor: pointer;
+                                margin-top: -7em;
                                 position: relative;
                                 z-index: 1000;
+                                margin-bottom: 3em;
                             }}
                             .urgent-button {{
                                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
@@ -1008,6 +1011,7 @@ def render_game_interface():
                                 animation: urgentPulseButton 0.6s ease-in-out infinite;
                                 border: 2px solid rgba(255, 255, 255, 0.2);
                                 letter-spacing: 1px;
+                                cursor: pointer;
                             }}
                             .urgent-icon {{
                                 display: inline-block;
@@ -1034,6 +1038,17 @@ def render_game_interface():
                                 75% {{ transform: rotate(10deg); }}
                             }}
                         </style>
+                        <script>
+                            (function() {{
+                                const urgentBtn = document.getElementById('urgent-submit-btn');
+                                const formButton = document.querySelector('button[kind="primary"]');
+                                if (urgentBtn && formButton) {{
+                                    urgentBtn.onclick = function() {{
+                                        formButton.click();
+                                    }};
+                                }}
+                            }})();
+                        </script>
                     ''', unsafe_allow_html=True)
                 else:
                     if st.button(button_text, type="primary", use_container_width=True, key="submit_guess"):
