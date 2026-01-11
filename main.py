@@ -931,6 +931,11 @@ def render_game_interface():
     if st.session_state.audio_started and not st.session_state.game_over:
         components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
 
+    # Start timer immediately when game begins (simplified approach)
+    if st.session_state.start_time is None and st.session_state.current_song:
+        st.session_state.start_time = time.time()
+        st.session_state.audio_started = True
+
     # Calculate elapsed time
     if st.session_state.start_time is not None:
         # Use actual playing time (excludes paused time) if available
@@ -945,7 +950,7 @@ def render_game_interface():
         elapsed_seconds = 0
         start_timestamp = 0
 
-    # Check for timeout - lock input but don't auto-submit
+    # Check for timeout - lock input immediately when time runs out
     time_expired = (
         not st.session_state.game_over
         and st.session_state.audio_started
@@ -953,17 +958,17 @@ def render_game_interface():
     )
     if time_expired and not st.session_state.time_locked:
         st.session_state.time_locked = True
+        # Force immediate re-render to lock scroll wheel
         st.rerun()
 
-    # Calculate blur amount - always start fully blurred
-    # Ensure blur is always applied from the start, even before audio starts
+    # Calculate blur amount - ALWAYS start with maximum blur to prevent flash
     if not st.session_state.game_over:
-        # Always use maximum blur until audio has been playing for at least 1 second
-        if not st.session_state.audio_started:
-            # Before audio starts, keep everything fully blurred
-            current_blur = 25
-            hint_blur = 8
-        elif st.session_state.elapsed_playing_time > 0 and elapsed_float >= 1.0:
+        # Start with maximum blur and NEVER show unblurred image initially
+        current_blur = 25  # Always start fully blurred
+        hint_blur = 8
+
+        # Only reduce blur after audio has been playing for at least 1 second
+        if st.session_state.audio_started and st.session_state.elapsed_playing_time > 0 and elapsed_float >= 1.0:
             # Audio has been playing for at least 1 second, gradually reduce blur
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
@@ -984,14 +989,10 @@ def render_game_interface():
 
         with main_left:
             # Album artwork (much larger - 450px)
-            # Always apply blur - ensure it's fully blurred at start
+            # ALWAYS start with maximum blur - no exceptions
             if song["image_url"]:
-                # Always use current_blur - it's already set to 25 if audio hasn't started
-                # Don't use cached unblurred version
-                applied_blur = int(current_blur)
-                # Ensure minimum blur of 25 if audio hasn't started
-                if not st.session_state.audio_started:
-                    applied_blur = max(25, applied_blur)
+                # Force maximum blur initially, regardless of any other logic
+                applied_blur = max(25, int(current_blur))
                 blurred_image = blur_image(song["image_url"], applied_blur)
                 if blurred_image:
                     st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
@@ -1149,15 +1150,18 @@ def render_game_interface():
                 button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess", disabled=st.session_state.get("submitting_guess", False))
 
                 if button_clicked:
-                    # Immediately show processing feedback
+                    # Show immediate processing feedback BEFORE processing
                     st.markdown(f'''
-                        <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(34, 211, 238, 0.1); border: 2px solid #22d3ee; border-radius: 12px; color: #22d3ee; font-weight: 600;">
+                        <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 2px solid #6366f1; border-radius: 16px; color: #6366f1; font-weight: 700; font-size: 1.1em;">
                             ⚡ Processing your guess of {st.session_state.current_guess}...
                         </div>
                     ''', unsafe_allow_html=True)
-                    # Set processing state
+
+                    # Set processing state immediately
                     st.session_state.submitting_guess = True
                     st.session_state.guess_timed_out = is_locked
+
+                    # Force immediate re-render to show processing status
                     st.rerun()
                 
                 # Enhanced button styling - happy medium between bland and flashy

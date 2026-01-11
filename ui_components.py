@@ -2259,6 +2259,13 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 updateViz(true);
                 updateTimer(true);
                 notifyAutoplayStatus(false);
+
+                // Signal to Streamlit that audio has started
+                try {{
+                    localStorage.setItem('audio_started_{song_id}', 'true');
+                }} catch(e) {{
+                    console.log('Could not signal audio start:', e);
+                }}
             }});
             audio.addEventListener('pause', function() {{
                 // Only pause timer if audio was manually paused (not ended)
