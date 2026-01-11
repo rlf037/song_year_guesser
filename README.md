@@ -75,7 +75,7 @@ song_year_guesser/
 ├── ui_components.py   # UI components and HTML templates
 ├── requirements.txt   # Python dependencies
 ├── packages.txt       # System dependencies for Pillow
-├── README.md          # This file
+├── README.md          # Project documentation
 └── LICENSE            # License
 ```
 
