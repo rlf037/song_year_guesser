@@ -1102,11 +1102,17 @@ def render_game_interface():
                         </style>
                     ''', unsafe_allow_html=True)
             else:
-                # Normal button with improved styling
-                if st.button(button_text, type="primary", use_container_width=True, key="submit_guess"):
+                # Normal button - show status immediately on click
+                button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess")
+                if button_clicked:
+                    # Set submitting state immediately
                     st.session_state.submitting_guess = True
                     st.session_state.guess_timed_out = is_locked
                     st.rerun()
+                
+                # Show status if submitting (this will show on the rerun)
+                if st.session_state.get("submitting_guess", False) and not is_locked:
+                    st.info(f"⏳ Submitting {st.session_state.current_guess}...")
                 
                 # Enhanced button styling - happy medium between bland and flashy
                 st.markdown(f'''

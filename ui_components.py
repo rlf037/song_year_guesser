@@ -39,7 +39,7 @@ MAIN_CSS = """
     .header-title {
         font-size: 1.8em;
         font-weight: 700;
-        color: #e6edf3;
+        color: #58a6ff;
         display: flex;
         align-items: center;
         gap: 0.3em;
@@ -97,7 +97,10 @@ MAIN_CSS = """
     }
 
     .main-title .gradient-text {
-        color: #e6edf3;
+        background: linear-gradient(135deg, #58a6ff 0%, #22d3ee 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .main-title .subtitle {
@@ -1264,106 +1267,113 @@ def scroll_wheel_year_picker(
         let lastY = 0;
         let isDragging = false;
         let animationId = null;
-
-        const container = document.getElementById('scroll-container');
-        const track = document.getElementById('year-track');
+        let container = null;
+        let track = null;
         const itemHeight = 46;
 
-        // Set cursor and pointer-events based on lock state
-        // Also check wrapper for lock state to ensure proper initialization
-        const wrapper = document.getElementById('year-picker-wrapper');
-        const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
-        const actuallyLocked = isLocked || wrapperLocked;
-        
-        if (actuallyLocked) {{
-            container.style.cursor = 'not-allowed';
-            container.style.pointerEvents = 'none';
-            if (wrapper) wrapper.style.pointerEvents = 'none';
-        }} else {{
-            container.style.cursor = 'ns-resize';
-            container.style.pointerEvents = 'auto';
-            if (wrapper) wrapper.style.pointerEvents = 'auto';
-        }}
-
-        function buildYearTrack() {{
-            track.innerHTML = '';
-            for (let year = minYear; year <= maxYear; year++) {{
-                const div = document.createElement('div');
-                div.className = 'year-item';
-                div.dataset.year = year;
-                div.style.cssText = `
-                    height: ${{itemHeight}}px;
-                    line-height: ${{itemHeight}}px;
-                    font-size: 2em;
-                    font-weight: 600;
-                    font-family: 'SF Mono', Monaco, Consolas, monospace;
-                    color: #30363d;
-                    transition: color 0.1s, transform 0.1s;
-                `;
-                div.textContent = year;
-                track.appendChild(div);
+        // Wait for DOM to be ready
+        function init() {{
+            container = document.getElementById('scroll-container');
+            track = document.getElementById('year-track');
+            if (!container || !track) {{
+                console.error('Scroll wheel elements not found, retrying...');
+                setTimeout(init, 100);
+                return;
             }}
-            updatePosition(false);
-        }}
 
-        function updatePosition(animate = true) {{
-            const offset = (currentYear - minYear) * itemHeight;
-            const containerHeight = 180;
-            const centerOffset = (containerHeight / 2) - (itemHeight / 2);
-            track.style.transform = `translateY(${{centerOffset - offset}}px)`;
-            if (!animate) track.style.transition = 'none';
-            else track.style.transition = 'transform 0.08s ease-out';
-
-            // Check lock state from wrapper as well
+            // Set cursor and pointer-events based on lock state
+            // Also check wrapper for lock state to ensure proper initialization
             const wrapper = document.getElementById('year-picker-wrapper');
             const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
             const actuallyLocked = isLocked || wrapperLocked;
             
-            document.querySelectorAll('.year-item').forEach(item => {{
-                const year = parseInt(item.dataset.year);
-                const distance = Math.abs(year - currentYear);
-                if (distance === 0) {{
-                    item.style.color = actuallyLocked ? '#d29922' : '#58a6ff';
-                    item.style.transform = 'scale(1.1)';
-                }} else if (distance === 1) {{
-                    item.style.color = '#6e7681';
-                    item.style.transform = 'scale(0.9)';
-                }} else {{
-                    item.style.color = '#30363d';
-                    item.style.transform = 'scale(0.8)';
+            if (actuallyLocked) {{
+                container.style.cursor = 'not-allowed';
+                container.style.pointerEvents = 'none';
+                if (wrapper) wrapper.style.pointerEvents = 'none';
+            }} else {{
+                container.style.cursor = 'ns-resize';
+                container.style.pointerEvents = 'auto';
+                if (wrapper) wrapper.style.pointerEvents = 'auto';
+            }}
+
+            function buildYearTrack() {{
+                track.innerHTML = '';
+                for (let year = minYear; year <= maxYear; year++) {{
+                    const div = document.createElement('div');
+                    div.className = 'year-item';
+                    div.dataset.year = year;
+                    div.style.cssText = `
+                        height: ${{itemHeight}}px;
+                        line-height: ${{itemHeight}}px;
+                        font-size: 2em;
+                        font-weight: 600;
+                        font-family: 'SF Mono', Monaco, Consolas, monospace;
+                        color: #30363d;
+                        transition: color 0.1s, transform 0.1s;
+                    `;
+                    div.textContent = year;
+                    track.appendChild(div);
                 }}
-            }});
-        }}
-
-        function syncToUrl() {{
-            // Update URL query param so Streamlit can read it
-            try {{
-                const url = new URL(window.parent.location.href);
-                url.searchParams.set('yr', currentYear.toString());
-                window.parent.history.replaceState(null, '', url.toString());
-            }} catch(e) {{
-                console.log('Could not update URL:', e);
+                updatePosition(false);
             }}
-        }}
 
-        function setYear(year) {{
-            // Check both isLocked and wrapper state
-            const wrapper = document.getElementById('year-picker-wrapper');
-            const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
-            if (isLocked || wrapperLocked) return;
-            const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
-            if (newYear !== currentYear) {{
-                currentYear = newYear;
-                updatePosition();
-                syncToUrl();
+            function updatePosition(animate = true) {{
+                const offset = (currentYear - minYear) * itemHeight;
+                const containerHeight = 180;
+                const centerOffset = (containerHeight / 2) - (itemHeight / 2);
+                track.style.transform = `translateY(${{centerOffset - offset}}px)`;
+                if (!animate) track.style.transition = 'none';
+                else track.style.transition = 'transform 0.08s ease-out';
+
+                // Check lock state from wrapper as well
+                const wrapper = document.getElementById('year-picker-wrapper');
+                const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
+                const actuallyLocked = isLocked || wrapperLocked;
+                
+                document.querySelectorAll('.year-item').forEach(item => {{
+                    const year = parseInt(item.dataset.year);
+                    const distance = Math.abs(year - currentYear);
+                    if (distance === 0) {{
+                        item.style.color = actuallyLocked ? '#d29922' : '#58a6ff';
+                        item.style.transform = 'scale(1.1)';
+                    }} else if (distance === 1) {{
+                        item.style.color = '#6e7681';
+                        item.style.transform = 'scale(0.9)';
+                    }} else {{
+                        item.style.color = '#30363d';
+                        item.style.transform = 'scale(0.8)';
+                    }}
+                }});
             }}
-        }}
 
-        // Only add event listeners if not locked
-        const wrapper = document.getElementById('year-picker-wrapper');
-        const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
-        if (!isLocked && !wrapperLocked) {{
-            container.addEventListener('wheel', (e) => {{
+            function syncToUrl() {{
+                // Update URL query param so Streamlit can read it
+                try {{
+                    const url = new URL(window.parent.location.href);
+                    url.searchParams.set('yr', currentYear.toString());
+                    window.parent.history.replaceState(null, '', url.toString());
+                }} catch(e) {{
+                    console.log('Could not update URL:', e);
+                }}
+            }}
+
+            function setYear(year) {{
+                // Check both isLocked and wrapper state
+                const wrapper = document.getElementById('year-picker-wrapper');
+                const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
+                if (isLocked || wrapperLocked) return;
+                const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
+                if (newYear !== currentYear) {{
+                    currentYear = newYear;
+                    updatePosition();
+                    syncToUrl();
+                }}
+            }}
+
+            // Only add event listeners if not locked
+            if (!isLocked && !wrapperLocked) {{
+                container.addEventListener('wheel', (e) => {{
                 e.preventDefault();
                 const delta = Math.sign(e.deltaY);
                 setYear(currentYear + delta);
@@ -1440,28 +1450,49 @@ def scroll_wheel_year_picker(
                 }}
             }});
 
-            container.addEventListener('click', (e) => {{
-                if (Math.abs(velocity) > 2) return;
-                const rect = container.getBoundingClientRect();
-                const clickY = e.clientY - rect.top;
-                const centerY = rect.height / 2;
-                const diff = Math.round((clickY - centerY) / itemHeight);
-                if (diff !== 0) setYear(currentYear + diff);
-            }});
+                container.addEventListener('click', (e) => {{
+                    if (Math.abs(velocity) > 2) return;
+                    const rect = container.getBoundingClientRect();
+                    const clickY = e.clientY - rect.top;
+                    const centerY = rect.height / 2;
+                    const diff = Math.round((clickY - centerY) / itemHeight);
+                    if (diff !== 0) setYear(currentYear + diff);
+                }});
 
-            container.setAttribute('tabindex', '0');
-            container.addEventListener('keydown', (e) => {{
-                if (e.key === 'ArrowUp') {{ setYear(currentYear - 1); e.preventDefault(); }}
-                if (e.key === 'ArrowDown') {{ setYear(currentYear + 1); e.preventDefault(); }}
-                if (e.key === 'PageUp') {{ setYear(currentYear - 5); e.preventDefault(); }}
-                if (e.key === 'PageDown') {{ setYear(currentYear + 5); e.preventDefault(); }}
-            }});
+                container.setAttribute('tabindex', '0');
+                container.addEventListener('keydown', (e) => {{
+                    if (e.key === 'ArrowUp') {{ setYear(currentYear - 1); e.preventDefault(); }}
+                    if (e.key === 'ArrowDown') {{ setYear(currentYear + 1); e.preventDefault(); }}
+                    if (e.key === 'PageUp') {{ setYear(currentYear - 5); e.preventDefault(); }}
+                    if (e.key === 'PageDown') {{ setYear(currentYear + 5); e.preventDefault(); }}
+                }});
+            }}
+            
+            buildYearTrack();
+            
+            // Initial sync to URL
+            syncToUrl();
+        }}
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', init);
+        }} else {{
+            init();
         }}
 
-        buildYearTrack();
+            buildYearTrack();
 
-        // Initial sync to URL
-        syncToUrl();
+            // Initial sync to URL
+            syncToUrl();
+        }}
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', init);
+        }} else {{
+            init();
+        }}
     }})();
     </script>
     """
