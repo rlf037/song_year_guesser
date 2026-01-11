@@ -252,9 +252,18 @@ def get_supabase_client() -> "Client | None":
         return None
     try:
         # Try nested [supabase] section first, then top-level
+        url = ""
+        key = ""
+        
         if "supabase" in st.secrets:
-            url = st.secrets.supabase.get("SUPABASE_URL", "")
-            key = st.secrets.supabase.get("SUPABASE_KEY", "")
+            # Access from [supabase] section - use attribute access for Streamlit secrets
+            try:
+                url = st.secrets.supabase.SUPABASE_URL
+                key = st.secrets.supabase.SUPABASE_KEY
+            except (AttributeError, KeyError):
+                # Fallback to dict-style access
+                url = st.secrets["supabase"].get("SUPABASE_URL", "")
+                key = st.secrets["supabase"].get("SUPABASE_KEY", "")
         else:
             # Fall back to top-level keys
             url = st.secrets.get("SUPABASE_URL", "")
