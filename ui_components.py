@@ -374,7 +374,11 @@ MAIN_CSS = """
 
     /* Ensure extra spacing above the year picker for clearer separation */
     #year-picker-wrapper {
-        margin-top: 1.2em !important;
+        margin-top: 2.4em !important;
+    }
+    @media (max-width: 600px) {
+        #year-picker-wrapper { margin-top: 1.2em !important; }
+        .compact-settings { margin-bottom: 1.6em !important; }
     }
 
     .year-wheel-inner {
@@ -921,7 +925,7 @@ MAIN_CSS = """
 
     /* Add extra space below compact settings (user input boxes) */
     .compact-settings {
-        margin-bottom: 1.2em;
+        margin-bottom: 3.0em !important;
     }
 
     /* ===== HOW TO PLAY ===== */
@@ -2000,7 +2004,8 @@ def how_to_play() -> str:
             <li>Submit your guess before the timer runs out.</li>
             <li>Play multiple rounds to earn points and climb the leaderboard.</li>
         </ol>
-    </div>
+            <div class="how-to-play-tip" style="margin-top:0.6em;">Tip: The album cover starts blurred and sharpens as the timer counts down — guessing early can earn a speed bonus.</div>
+        </div>
     """
 
 
