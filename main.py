@@ -255,38 +255,45 @@ def get_supabase_client() -> "Client | None":
     key = ""
     
     try:
-        # Try nested [supabase] section first, then top-level
-        if hasattr(st.secrets, "supabase"):
-            # Access from [supabase] section - use attribute access for Streamlit secrets
+        # Try to access secrets in different ways
+        url = ""
+        key = ""
+
+        # Method 1: Check if supabase is in secrets as a nested section
+        if "supabase" in st.secrets:
+            print("DEBUG: Found 'supabase' in st.secrets")
             try:
+                # Try attribute access (Streamlit Cloud)
                 url = st.secrets.supabase.SUPABASE_URL
                 key = st.secrets.supabase.SUPABASE_KEY
-                print(f"DEBUG: Found Supabase secrets in [supabase] section")
-            except AttributeError as e:
-                print(f"DEBUG: AttributeError accessing supabase section: {e}")
-                # Fallback to dict-style access
+                print("DEBUG: Successfully accessed via st.secrets.supabase.SUPABASE_URL")
+            except AttributeError:
                 try:
+                    # Try dict access
                     url = st.secrets["supabase"]["SUPABASE_URL"]
                     key = st.secrets["supabase"]["SUPABASE_KEY"]
-                    print(f"DEBUG: Found Supabase secrets via dict access")
-                except (KeyError, TypeError) as e2:
-                    print(f"DEBUG: Dict access also failed: {e2}")
-        elif "supabase" in st.secrets:
-            # Try dict-style access
-            url = st.secrets["supabase"].get("SUPABASE_URL", "")
-            key = st.secrets["supabase"].get("SUPABASE_KEY", "")
-            print(f"DEBUG: Found Supabase secrets via dict.get()")
+                    print("DEBUG: Successfully accessed via st.secrets['supabase']['SUPABASE_URL']")
+                except (KeyError, TypeError) as e:
+                    print(f"DEBUG: Dict access failed: {e}")
+                    # Try get() method
+                    url = st.secrets["supabase"].get("SUPABASE_URL", "")
+                    key = st.secrets["supabase"].get("SUPABASE_KEY", "")
+                    if url and key:
+                        print("DEBUG: Successfully accessed via st.secrets['supabase'].get()")
         else:
-            # Fall back to top-level keys
+            # Method 2: Check for top-level keys
+            print("DEBUG: No 'supabase' section found, trying top-level keys")
             url = st.secrets.get("SUPABASE_URL", "")
             key = st.secrets.get("SUPABASE_KEY", "")
-            print(f"DEBUG: Trying top-level keys: URL={bool(url)}, KEY={bool(key)}")
-        
+
+        # Final check
         if not url:
-            print(f"ERROR: SUPABASE_URL is empty or missing")
+            print("ERROR: SUPABASE_URL not found in secrets")
+            print(f"DEBUG: Available secrets keys: {list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else 'N/A'}")
             return None
+
         if not key:
-            print(f"ERROR: SUPABASE_KEY is empty or missing")
+            print("ERROR: SUPABASE_KEY not found in secrets")
             return None
         
         print(f"DEBUG: Creating Supabase client with URL={url[:30]}... and KEY={key[:10]}...")
@@ -364,7 +371,9 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
     }
 
     # Try to save to Supabase first
+    print("DEBUG: About to get Supabase client...")
     client = get_supabase_client()
+    print(f"DEBUG: Client result: {client is not None}")
     if not client:
         # No Supabase client available - use session state
         error_details = []
