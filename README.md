@@ -71,18 +71,12 @@ streamlit run main.py
 
 ```
 song_year_guesser/
-├── main.py                    # Main application
-├── ui_components.py           # UI components and HTML templates
-├── requirements.txt           # Python dependencies
-├── pyproject.toml             # Project configuration
-├── packages.txt               # System dependencies
-├── .python-version            # Python version (3.13)
-├── .cursorrules               # Cursor IDE instructions
-├── CLAUDE.md                  # Claude AI assistant instructions
-├── .github/copilot-instructions.md  # GitHub Copilot instructions
-├── LICENSE                    # Apache License 2.0
-├── .gitignore                 # Git ignore patterns
-└── README.md                  # This file
+├── main.py            # Main application
+├── ui_components.py   # UI components and HTML templates
+├── requirements.txt   # Python dependencies
+├── packages.txt       # System dependencies for Pillow
+├── README.md          # This file
+└── LICENSE            # License
 ```
 
 ## Troubleshooting
