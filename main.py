@@ -251,8 +251,15 @@ def get_supabase_client() -> "Client | None":
         print("Supabase library not available")
         return None
     try:
-        url = st.secrets.get("SUPABASE_URL", "")
-        key = st.secrets.get("SUPABASE_KEY", "")
+        # Try nested [supabase] section first, then top-level
+        if "supabase" in st.secrets:
+            url = st.secrets.supabase.get("SUPABASE_URL", "")
+            key = st.secrets.supabase.get("SUPABASE_KEY", "")
+        else:
+            # Fall back to top-level keys
+            url = st.secrets.get("SUPABASE_URL", "")
+            key = st.secrets.get("SUPABASE_KEY", "")
+        
         if not url or not key:
             print(f"Supabase credentials missing: URL={bool(url)}, KEY={bool(key)}")
             return None
