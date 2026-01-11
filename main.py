@@ -1607,7 +1607,7 @@ def main():
                 st.session_state.next_song_cache = None
                 st.session_state.loading_game = True
                 # Immediately rerun so the loading spinner block runs on first click
-                st.experimental_rerun()
+                st.rerun()
 
         st.write("")
         st.write("")
