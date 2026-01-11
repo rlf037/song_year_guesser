@@ -248,16 +248,21 @@ MAX_LEADERBOARD_ENTRIES = 20
 def get_supabase_client() -> "Client | None":
     """Get Supabase client if configured"""
     if not SUPABASE_AVAILABLE:
+        print("Supabase library not available")
         return None
     try:
         url = st.secrets.get("SUPABASE_URL", "")
         key = st.secrets.get("SUPABASE_KEY", "")
-        if url and key:
-            client = create_client(url, key)
-            # Test connection by trying to access the table
-            return client
+        if not url or not key:
+            print(f"Supabase credentials missing: URL={bool(url)}, KEY={bool(key)}")
+            return None
+        client = create_client(url, key)
+        # Test connection by trying to access the table
+        return client
     except Exception as e:
         print(f"Error creating Supabase client: {e}")
+        import traceback
+        traceback.print_exc()
         pass
     return None
 
