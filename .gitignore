@@ -29,7 +29,6 @@ env/
 
 # Local development
 .devcontainer/
-.github/
 .cache
 
 # Logs
