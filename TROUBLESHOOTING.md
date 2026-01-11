@@ -48,11 +48,19 @@
 
 **Symptoms:**
 - Key starts with `sb_secret_`
-- May work locally but fail in production
+- In-app debug shows: "⚠️ Using service_role key - should use anon public key"
+- Database client creation fails
 
 **Solution:**
-- Use the **anon public** key from Supabase Settings → API
-- The anon key is safe for client applications
+1. Go to Supabase Dashboard → Settings → API
+2. Copy the **anon public** key (NOT service_role)
+3. Update Streamlit Cloud secrets:
+   ```toml
+   [supabase]
+   SUPABASE_URL = "https://your-project.supabase.co"
+   SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  # anon key
+   ```
+4. The anon key is safe for client applications and what Streamlit apps should use
 
 ## Testing Your Setup
 
