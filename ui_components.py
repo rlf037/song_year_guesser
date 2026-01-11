@@ -372,6 +372,11 @@ MAIN_CSS = """
         user-select: none;
     }
 
+    /* Ensure extra spacing above the year picker for clearer separation */
+    #year-picker-wrapper {
+        margin-top: 1.2em !important;
+    }
+
     .year-wheel-inner {
         display: flex;
         flex-direction: column;
