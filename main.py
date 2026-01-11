@@ -974,9 +974,8 @@ def render_game_interface():
         components.html(elapsed_time_receiver() + get_elapsed_time_js(), height=0)
 
     # Start timer immediately when game begins (simplified approach)
-    if st.session_state.start_time is None and st.session_state.current_song:
-        st.session_state.start_time = time.time()
-        st.session_state.audio_started = True
+        # Auto-refresh for game state updates (optimized frequency)
+        st_autorefresh(interval=1000, key="game_timer")
 
     # Calculate elapsed time
     if st.session_state.start_time is not None:
