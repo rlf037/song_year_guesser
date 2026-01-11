@@ -1301,20 +1301,27 @@ def scroll_wheel_year_picker(
 
             function buildYearTrack() {{
                 if (!track) {{
-                    console.error('Track element not found');
+                    console.error('Track element not found in buildYearTrack');
+                    return;
+                }}
+                if (!container) {{
+                    console.error('Container element not found in buildYearTrack');
                     return;
                 }}
                 track.innerHTML = '';
                 console.log('Building year track from ' + minYear + ' to ' + maxYear + ', current: ' + currentYear);
+                const yearCount = maxYear - minYear + 1;
                 for (let year = minYear; year <= maxYear; year++) {{
                     const div = document.createElement('div');
                     div.className = 'year-item';
                     div.dataset.year = year;
-                    div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; transition: color 0.1s, transform 0.1s; display: flex; align-items: center; justify-content: center; width: 100%;';
-                    div.textContent = year;
+                    div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; transition: color 0.1s, transform 0.1s; display: flex; align-items: center; justify-content: center; width: 100%; position: relative;';
+                    div.textContent = year.toString();
                     track.appendChild(div);
                 }}
-                console.log('Built ' + (maxYear - minYear + 1) + ' year items');
+                console.log('Built ' + yearCount + ' year items, track children: ' + track.children.length);
+                // Force a reflow to ensure rendering
+                track.offsetHeight;
                 updatePosition(false);
             }}
 
