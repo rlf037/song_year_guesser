@@ -1311,20 +1311,14 @@ def scroll_wheel_year_picker(
                 return;
             }}
 
-            // Set cursor and pointer-events based on lock state
-            // Also check wrapper for lock state to ensure proper initialization
-            const wrapper = document.getElementById('year-picker-wrapper');
-            const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
-            const actuallyLocked = isLocked || wrapperLocked;
-            
-            if (actuallyLocked) {{
+            // Set cursor and pointer-events based ONLY on the isLocked parameter from Python
+            // This ensures proper unlocking when time_locked changes
+            if (isLocked) {{
                 container.style.cursor = 'not-allowed';
                 container.style.pointerEvents = 'none';
-                if (wrapper) wrapper.style.pointerEvents = 'none';
             }} else {{
                 container.style.cursor = 'ns-resize';
                 container.style.pointerEvents = 'auto';
-                if (wrapper) wrapper.style.pointerEvents = 'auto';
             }}
 
             function buildYearTrack() {{
@@ -1362,21 +1356,17 @@ def scroll_wheel_year_picker(
                 if (!animate) track.style.transition = 'none';
                 else track.style.transition = 'transform 0.08s ease-out';
 
-                // Check lock state from wrapper as well
-                const wrapper = document.getElementById('year-picker-wrapper');
-                const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
-                const actuallyLocked = isLocked || wrapperLocked;
-                
+                // Update year item colors based on lock state
                 const yearItems = track.querySelectorAll('.year-item');
                 yearItems.forEach(item => {{
                     const year = parseInt(item.dataset.year);
                     const distance = Math.abs(year - currentYear);
                     if (distance === 0) {{
-                        item.style.color = actuallyLocked ? '#f59e0b' : '#818cf8';
+                        item.style.color = isLocked ? '#f59e0b' : '#818cf8';
                         item.style.transform = 'scale(1.1)';
                         item.style.opacity = '1';
                     }} else if (distance === 1) {{
-                        item.style.color = '#6e7681';
+                        item.style.color = '#64748b';
                         item.style.transform = 'scale(0.9)';
                         item.style.opacity = '0.6';
                     }} else {{
@@ -1399,10 +1389,8 @@ def scroll_wheel_year_picker(
             }}
 
             function setYear(year) {{
-                // Check both isLocked and wrapper state
-                const wrapper = document.getElementById('year-picker-wrapper');
-                const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
-                if (isLocked || wrapperLocked) return;
+                // Only check isLocked parameter from Python
+                if (isLocked) return;
                 const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
                 if (newYear !== currentYear) {{
                     currentYear = newYear;
@@ -1412,7 +1400,7 @@ def scroll_wheel_year_picker(
             }}
 
             // Only add event listeners if not locked
-            if (!isLocked && !wrapperLocked) {{
+            if (!isLocked) {{
                 container.addEventListener('wheel', (e) => {{
                 e.preventDefault();
                 const delta = Math.sign(e.deltaY);
