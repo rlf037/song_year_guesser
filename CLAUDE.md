@@ -31,7 +31,7 @@ Push to `main` branch triggers automatic deployment to Streamlit Cloud at [song-
 - `ui_components.py` - CSS styles, HTML templates, and JavaScript components (timer, scroll wheel, audio player)
 - `requirements.txt` / `pyproject.toml` - Python dependencies (Streamlit 1.52.2, Pillow, requests, supabase, streamlit-autorefresh)
 - `packages.txt` - System dependencies for Pillow image processing
-- `.python-version` - Python 3.11 (required for Streamlit Cloud)
+- `.python-version` - Python 3.13 (for Streamlit Cloud)
 
 ### Data Flow
 1. **Song Selection**: Spotify API provides track metadata (via client credentials flow) -> Deezer API provides 30-second audio previews

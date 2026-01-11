@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "A multiplayer web game where players guess the release year of popular songs"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 keywords = ["streamlit", "game", "music", "deezer", "trivia"]
 authors = [
     { name = "rlf037" }
