@@ -958,13 +958,12 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             else:
-                # Scroll wheel year picker - use round number as key to force re-render
+                # Scroll wheel year picker
                 components.html(
                     scroll_wheel_year_picker(
                         st.session_state.current_guess, start_year, end_year, is_locked
                     ),
                     height=220,
-                    key=f"scroll_{st.session_state.current_round}_{is_locked}",
                 )
 
                 # Submit button with selected year
