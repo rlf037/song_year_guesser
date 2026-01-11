@@ -248,39 +248,65 @@ MAX_LEADERBOARD_ENTRIES = 20
 def get_supabase_client() -> "Client | None":
     """Get Supabase client if configured"""
     if not SUPABASE_AVAILABLE:
-        print("Supabase library not available")
+        print("ERROR: Supabase library not available - install with: pip install supabase")
         return None
+    
+    url = ""
+    key = ""
+    
     try:
         # Try nested [supabase] section first, then top-level
-        url = ""
-        key = ""
-        
-        if "supabase" in st.secrets:
+        if hasattr(st.secrets, "supabase"):
             # Access from [supabase] section - use attribute access for Streamlit secrets
             try:
                 url = st.secrets.supabase.SUPABASE_URL
                 key = st.secrets.supabase.SUPABASE_KEY
-            except (AttributeError, KeyError):
+                print(f"DEBUG: Found Supabase secrets in [supabase] section")
+            except AttributeError as e:
+                print(f"DEBUG: AttributeError accessing supabase section: {e}")
                 # Fallback to dict-style access
-                url = st.secrets["supabase"].get("SUPABASE_URL", "")
-                key = st.secrets["supabase"].get("SUPABASE_KEY", "")
+                try:
+                    url = st.secrets["supabase"]["SUPABASE_URL"]
+                    key = st.secrets["supabase"]["SUPABASE_KEY"]
+                    print(f"DEBUG: Found Supabase secrets via dict access")
+                except (KeyError, TypeError) as e2:
+                    print(f"DEBUG: Dict access also failed: {e2}")
+        elif "supabase" in st.secrets:
+            # Try dict-style access
+            url = st.secrets["supabase"].get("SUPABASE_URL", "")
+            key = st.secrets["supabase"].get("SUPABASE_KEY", "")
+            print(f"DEBUG: Found Supabase secrets via dict.get()")
         else:
             # Fall back to top-level keys
             url = st.secrets.get("SUPABASE_URL", "")
             key = st.secrets.get("SUPABASE_KEY", "")
+            print(f"DEBUG: Trying top-level keys: URL={bool(url)}, KEY={bool(key)}")
         
-        if not url or not key:
-            print(f"Supabase credentials missing: URL={bool(url)}, KEY={bool(key)}")
+        if not url:
+            print(f"ERROR: SUPABASE_URL is empty or missing")
             return None
+        if not key:
+            print(f"ERROR: SUPABASE_KEY is empty or missing")
+            return None
+        
+        print(f"DEBUG: Creating Supabase client with URL={url[:30]}... and KEY={key[:10]}...")
         client = create_client(url, key)
-        # Test connection by trying to access the table
+        print(f"DEBUG: Supabase client created successfully")
+        
+        # Test connection by trying a simple query
+        try:
+            test_response = client.table("leaderboard").select("id").limit(1).execute()
+            print(f"DEBUG: Connection test successful")
+        except Exception as test_e:
+            print(f"WARNING: Connection test failed (table might not exist): {test_e}")
+            # Still return client - table might just not exist yet
+        
         return client
     except Exception as e:
-        print(f"Error creating Supabase client: {e}")
+        print(f"ERROR creating Supabase client: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
-        pass
-    return None
+        return None
 
 
 def clear_song_cache():
@@ -339,38 +365,50 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
 
     # Try to save to Supabase first
     client = get_supabase_client()
-    if client:
-        try:
-            response = client.table("leaderboard").insert(entry).execute()
-            # Check if insert was successful
-            # Supabase returns data if successful, but some configs might return empty
-            if response.data is not None:
-                # Successfully saved to database
-                return (True, "✅ Score saved to database!")
-            else:
-                # Insert might have succeeded but no data returned (check response status)
-                # Assume success if no exception was raised
-                return (True, "✅ Score saved to database!")
-        except Exception as e:
-            error_msg = str(e)
-            print(f"Error saving to Supabase: {error_msg}")
-            # Fall back to session state
-            leaderboard = load_leaderboard()
-            leaderboard.append(entry)
-            save_leaderboard(leaderboard)
-            # Provide user-friendly error message
-            if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
-                return (False, "⚠️ Score already exists in database")
-            elif "permission" in error_msg.lower() or "policy" in error_msg.lower():
-                return (False, "⚠️ Database permission denied - saved locally")
-            else:
-                return (False, "⚠️ Database error - saved locally only")
-
-    # No Supabase client available - use session state
-    leaderboard = load_leaderboard()
-    leaderboard.append(entry)
-    save_leaderboard(leaderboard)
-    return (False, "⚠️ Database not configured - saved locally only")
+    if not client:
+        # No Supabase client available - use session state
+        print("WARNING: No Supabase client - check secrets configuration")
+        leaderboard = load_leaderboard()
+        leaderboard.append(entry)
+        save_leaderboard(leaderboard)
+        return (False, "⚠️ Database not configured - saved locally only")
+    
+    try:
+        print(f"DEBUG: Attempting to insert entry: {entry}")
+        response = client.table("leaderboard").insert(entry).execute()
+        print(f"DEBUG: Insert response: {response}")
+        # Check if insert was successful
+        # Supabase returns data if successful, but some configs might return empty
+        if response.data is not None:
+            # Successfully saved to database
+            print("DEBUG: Successfully saved to database")
+            return (True, "✅ Score saved to database!")
+        else:
+            # Insert might have succeeded but no data returned (check response status)
+            # Assume success if no exception was raised
+            print("DEBUG: Insert completed (no data returned, but no error)")
+            return (True, "✅ Score saved to database!")
+    except Exception as e:
+        error_msg = str(e)
+        error_type = type(e).__name__
+        print(f"ERROR saving to Supabase: {error_type}: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fall back to session state
+        leaderboard = load_leaderboard()
+        leaderboard.append(entry)
+        save_leaderboard(leaderboard)
+        
+        # Provide user-friendly error message
+        if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
+            return (False, "⚠️ Score already exists in database")
+        elif "permission" in error_msg.lower() or "policy" in error_msg.lower() or "RLS" in error_msg:
+            return (False, "⚠️ Database permission denied - check RLS policies")
+        elif "relation" in error_msg.lower() or "does not exist" in error_msg.lower():
+            return (False, "⚠️ Table 'leaderboard' doesn't exist - run supabase_setup.sql")
+        else:
+            return (False, f"⚠️ Database error: {error_type} - saved locally only")
 
 
 def search_top_hits_playlist(year: int, token: str) -> str | None:
