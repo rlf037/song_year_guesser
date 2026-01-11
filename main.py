@@ -689,6 +689,7 @@ def initialize_game_state():
         "loading_game": False,
         "submitting_guess": False,
         "guess_timed_out": False,
+        "saving_to_leaderboard": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -859,14 +860,14 @@ def render_game_interface():
             # Before audio starts, keep everything fully blurred
             current_blur = 25
             hint_blur = 8
-        elif st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0:
-            # Audio is playing, gradually reduce blur
+        elif st.session_state.elapsed_playing_time > 0 and elapsed_float >= 1.0:
+            # Audio has been playing for at least 1 second, gradually reduce blur
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
             hint_blur = max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME))
         else:
-            # Fallback - keep blurred
-            current_blur = st.session_state.blur_level
+            # Audio just started - keep fully blurred
+            current_blur = 25
             hint_blur = 8
     else:
         current_blur = 0
@@ -957,39 +958,88 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             else:
-                # Scroll wheel year picker
+                # Scroll wheel year picker - use round number as key to force re-render
                 components.html(
                     scroll_wheel_year_picker(
                         st.session_state.current_guess, start_year, end_year, is_locked
                     ),
-                    height=250,
+                    height=220,
+                    key=f"scroll_{st.session_state.current_round}_{is_locked}",
                 )
 
-                # Submit button with selected year - styled differently when time is up
-                button_class = "submit-urgent" if is_locked else "submit-btn"
-                button_text = f"SUBMIT {st.session_state.current_guess} NOW!" if is_locked else f"Submit {st.session_state.current_guess}"
+                # Submit button with selected year
+                button_text = f"Submit {st.session_state.current_guess}"
 
-                if st.button(
-                    button_text,
-                    type="primary",
-                    use_container_width=True,
-                    key="submit_guess",
-                ):
-                    st.session_state.submitting_guess = True
-                    st.session_state.guess_timed_out = is_locked
-                    st.rerun()
+                # Custom urgent button HTML when time is up
+                if is_locked:
+                    if st.button("​", type="primary", use_container_width=True, key="submit_guess_hidden"):
+                        st.session_state.submitting_guess = True
+                        st.session_state.guess_timed_out = is_locked
+                        st.rerun()
 
-                # Show time bonus hint when not locked
-                if not is_locked:
-                    st.markdown(
-                        '<div style="text-align: center; color: #6e7681; font-size: 0.75em; margin-top: 0.3em;">Submit early for time bonus</div>',
-                        unsafe_allow_html=True,
-                    )
+                    # Overlay urgent animated button
+                    st.markdown(f'''
+                        <div class="urgent-button-container" onclick="document.querySelector('[key=submit_guess_hidden]').click()">
+                            <div class="urgent-button">
+                                <span class="urgent-icon">⚠️</span>
+                                SUBMIT {st.session_state.current_guess}
+                                <span class="urgent-icon">⚠️</span>
+                            </div>
+                        </div>
+                        <style>
+                            .urgent-button-container {{
+                                margin-top: -3.8em;
+                                cursor: pointer;
+                                position: relative;
+                                z-index: 1000;
+                            }}
+                            .urgent-button {{
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+                                color: white;
+                                font-size: 1.5em;
+                                font-weight: 900;
+                                padding: 0.7em 1.5em;
+                                border-radius: 16px;
+                                text-align: center;
+                                box-shadow:
+                                    0 0 60px rgba(239, 68, 68, 0.8),
+                                    0 8px 30px rgba(220, 38, 38, 0.6),
+                                    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+                                animation: urgentPulseButton 0.6s ease-in-out infinite;
+                                border: 2px solid rgba(255, 255, 255, 0.2);
+                                letter-spacing: 1px;
+                            }}
+                            .urgent-icon {{
+                                display: inline-block;
+                                animation: urgentShake 0.3s ease-in-out infinite;
+                                font-size: 1.2em;
+                            }}
+                            @keyframes urgentPulseButton {{
+                                0%, 100% {{
+                                    transform: scale(1);
+                                    box-shadow: 0 0 50px rgba(239, 68, 68, 0.7),
+                                               0 8px 30px rgba(220, 38, 38, 0.5),
+                                               inset 0 2px 0 rgba(255, 255, 255, 0.3);
+                                }}
+                                50% {{
+                                    transform: scale(1.08);
+                                    box-shadow: 0 0 80px rgba(239, 68, 68, 1),
+                                               0 12px 40px rgba(220, 38, 38, 0.8),
+                                               inset 0 2px 0 rgba(255, 255, 255, 0.4);
+                                }}
+                            }}
+                            @keyframes urgentShake {{
+                                0%, 100% {{ transform: rotate(0deg); }}
+                                25% {{ transform: rotate(-10deg); }}
+                                75% {{ transform: rotate(10deg); }}
+                            }}
+                        </style>
+                    ''', unsafe_allow_html=True)
                 else:
-                    st.markdown(
-                        '<div style="text-align: center; color: #d29922; font-size: 0.75em; margin-top: 0.3em;">Time\'s up - submit now</div>',
-                        unsafe_allow_html=True,
-                    )
+                    if st.button(button_text, type="primary", use_container_width=True, key="submit_guess"):
+                        st.session_state.submitting_guess = True
+                        st.session_state.guess_timed_out = is_locked
+                        st.rerun()
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
@@ -1084,30 +1134,7 @@ def render_game_interface():
 
             with btn_col2:
                 if st.button("🏁 End Game", use_container_width=True, key="end_game"):
-                    # Save to persistent leaderboard
-                    total_score = get_total_score()
-                    songs_played = len(
-                        [
-                            s
-                            for s in st.session_state.player_scores
-                            if s["player"] == st.session_state.current_player
-                        ]
-                    )
-                    if songs_played > 0:
-                        add_to_leaderboard(
-                            st.session_state.current_player,
-                            total_score,
-                            songs_played,
-                            st.session_state.selected_genre,
-                        )
-                    # Reset game state
-                    st.session_state.game_active = False
-                    st.session_state.game_over = False
-                    st.session_state.current_round = 0
-                    st.session_state.player_scores = []  # Clear session scores
-                    st.session_state.played_song_ids = set()
-                    st.session_state.played_song_keys = set()
-                    st.session_state.next_song_cache = None
+                    st.session_state.saving_to_leaderboard = True
                     st.rerun()
 
 
@@ -1239,6 +1266,37 @@ def main():
         make_guess(st.session_state.current_guess, timed_out=st.session_state.guess_timed_out)
         st.session_state.submitting_guess = False
         st.rerun()
+
+    # Handle saving to leaderboard
+    if st.session_state.saving_to_leaderboard:
+        st.markdown(main_title(), unsafe_allow_html=True)
+        with st.spinner("💾 Saving your score to the leaderboard..."):
+            total_score = get_total_score()
+            songs_played = len(
+                [
+                    s
+                    for s in st.session_state.player_scores
+                    if s["player"] == st.session_state.current_player
+                ]
+            )
+            if songs_played > 0:
+                add_to_leaderboard(
+                    st.session_state.current_player,
+                    total_score,
+                    songs_played,
+                    st.session_state.selected_genre,
+                )
+            # Reset game state
+            st.session_state.game_active = False
+            st.session_state.game_over = False
+            st.session_state.current_round = 0
+            st.session_state.player_scores = []
+            st.session_state.played_song_ids = set()
+            st.session_state.played_song_keys = set()
+            st.session_state.next_song_cache = None
+            st.session_state.saving_to_leaderboard = False
+            st.rerun()
+        return
 
     if not st.session_state.game_active:
         # Welcome screen

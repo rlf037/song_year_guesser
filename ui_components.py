@@ -1252,11 +1252,6 @@ def scroll_wheel_year_picker(
                 background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};
             "></div>
         </div>
-
-        <div style="color: #484f58; font-size: 0.7em; margin-top: 0.5em; letter-spacing: 1px;">
-            {start_year} — {end_year}
-        </div>
-        {locked_indicator}
     </div>
 
     <script>
@@ -1460,20 +1455,16 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             width: 190px;
             height: 190px;
             transition: opacity 0.3s ease;
-            filter: drop-shadow(0 4px 12px rgba(34, 211, 238, 0.2));
         }}
-        .timer-ring.paused {{ opacity: 0.5; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3)); }}
+        .timer-ring.paused {{ opacity: 0.5; }}
         .timer-ring.warning {{
             animation: warningPulse 1s ease-in-out infinite;
-            filter: drop-shadow(0 6px 16px rgba(251, 191, 36, 0.4));
         }}
         .timer-ring.danger {{
             animation: dangerPulse 0.6s ease-in-out infinite;
-            filter: drop-shadow(0 8px 20px rgba(251, 146, 60, 0.5));
         }}
         .timer-ring.critical {{
             animation: criticalPulse 0.4s ease-in-out infinite;
-            filter: drop-shadow(0 10px 28px rgba(239, 68, 68, 0.7));
         }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
         .timer-seconds {{
@@ -1528,7 +1519,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
                 <circle id="timer-bg" cx="95" cy="95" r="80" fill="none" stroke="#30363d" stroke-width="10" opacity="0.3"/>
                 <circle id="timer-circle" cx="95" cy="95" r="80" fill="none" stroke="url(#timerGradient)" stroke-width="10"
                     stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="0"
-                    style="transition: stroke-dashoffset 0.1s linear, stroke 0.2s ease; filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.6));"/>
+                    style="transition: stroke-dashoffset 0.1s linear, stroke 0.2s ease;"/>
             </svg>
             <div class="timer-text">
                 <div id="timer-seconds" class="timer-seconds" style="color: #c9d1d9;">{max_time}</div>
