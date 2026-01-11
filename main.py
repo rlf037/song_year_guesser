@@ -16,6 +16,7 @@ from streamlit_autorefresh import st_autorefresh
 # Supabase for persistent leaderboard
 try:
     from supabase import Client, create_client
+
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
@@ -46,7 +47,7 @@ from ui_components import (
 )
 
 # Pre-compiled regex patterns for performance
-_NUMBERS_PATTERN = re.compile(r'\d+')
+_NUMBERS_PATTERN = re.compile(r"\d+")
 _NON_LATIN_PATTERN = re.compile(
     r"[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\u0400-\u04ff\u0600-\u06ff\u0e00-\u0e7f\uac00-\ud7af\u0590-\u05ff]"
 )
@@ -263,7 +264,7 @@ def get_supabase_client() -> "Client | None":
 
         # Try to get credentials from secrets
         try:
-            if hasattr(st.secrets, 'supabase'):
+            if hasattr(st.secrets, "supabase"):
                 url = st.secrets.supabase.SUPABASE_URL
                 key = st.secrets.supabase.SUPABASE_KEY
         except AttributeError:
@@ -308,9 +309,13 @@ def load_leaderboard() -> list[dict]:
     client = get_supabase_client()
     if client:
         try:
-            response = client.table("leaderboard").select("*").order(
-                "total_score", desc=True
-            ).limit(MAX_LEADERBOARD_ENTRIES).execute()
+            response = (
+                client.table("leaderboard")
+                .select("*")
+                .order("total_score", desc=True)
+                .limit(MAX_LEADERBOARD_ENTRIES)
+                .execute()
+            )
             if response.data:
                 return response.data
         except Exception as e:
@@ -387,10 +392,10 @@ def add_to_leaderboard(
 
         # Check if insert was successful
         # Supabase returns data if successful, but some configs might return empty
-        if hasattr(response, 'data') and response.data is not None:
+        if hasattr(response, "data") and response.data is not None:
             # Successfully saved to database
             return (True, "✅ Score saved to database!")
-        elif hasattr(response, 'status_code') and response.status_code in [200, 201]:
+        elif hasattr(response, "status_code") and response.status_code in [200, 201]:
             # HTTP success status
             return (True, "✅ Score saved to database!")
         else:
@@ -403,6 +408,7 @@ def add_to_leaderboard(
         print(f"ERROR saving to Supabase: {error_type}: {error_msg}")
         print(f"ERROR full details: {repr(e)}")
         import traceback
+
         traceback.print_exc()
 
         # Fall back to session state
@@ -414,14 +420,27 @@ def add_to_leaderboard(
         error_msg_lower = error_msg.lower()
         if "duplicate" in error_msg_lower or "unique" in error_msg_lower:
             return (False, "⚠️ Score already exists in database")
-        elif ("permission" in error_msg_lower or "policy" in error_msg_lower or
-              "RLS" in error_msg or "row-level security" in error_msg_lower):
+        elif (
+            "permission" in error_msg_lower
+            or "policy" in error_msg_lower
+            or "RLS" in error_msg
+            or "row-level security" in error_msg_lower
+        ):
             return (False, "⚠️ Database permission denied - check RLS policies in Supabase")
-        elif ("relation" in error_msg_lower or "does not exist" in error_msg_lower or
-              "table" in error_msg_lower):
-            return (False, "⚠️ Table 'leaderboard' doesn't exist - run supabase_setup.sql in SQL Editor")
-        elif ("connection" in error_msg_lower or "network" in error_msg_lower or
-              "timeout" in error_msg_lower):
+        elif (
+            "relation" in error_msg_lower
+            or "does not exist" in error_msg_lower
+            or "table" in error_msg_lower
+        ):
+            return (
+                False,
+                "⚠️ Table 'leaderboard' doesn't exist - run supabase_setup.sql in SQL Editor",
+            )
+        elif (
+            "connection" in error_msg_lower
+            or "network" in error_msg_lower
+            or "timeout" in error_msg_lower
+        ):
             return (False, "⚠️ Database connection failed - check network/Supabase status")
         else:
             return (False, f"⚠️ Database error ({error_type}): {error_msg[:100]}")
@@ -861,7 +880,7 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     st.session_state.start_time = None
     st.session_state.game_over = False
     st.session_state.timed_out = False
-    st.session_state.time_locked = False
+    st.session_state.time_locked = False  # Always unlock scroll wheel at new round
     st.session_state.blur_level = 25
     st.session_state.audio_started = False
     st.session_state.song_loaded_time = time.time()
@@ -891,6 +910,9 @@ def make_guess(guess_year: int, timed_out: bool = False):
         st.session_state.timed_out = True
     else:
         score = calculate_score(guess_year, song["year"], time_taken)
+
+    # Always unlock scroll wheel after guess is processed (for next round)
+    st.session_state.time_locked = False
 
     st.session_state.player_scores.append(
         {
@@ -982,9 +1004,11 @@ def render_game_interface():
         hint_blur = 8
 
         # Only reduce blur after audio has been playing for at least 1 second
-        if (st.session_state.audio_started and
-            st.session_state.elapsed_playing_time > 0 and
-            elapsed_float >= 1.0):
+        if (
+            st.session_state.audio_started
+            and st.session_state.elapsed_playing_time > 0
+            and elapsed_float >= 1.0
+        ):
             # Audio has been playing for at least 1 second, gradually reduce blur
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
@@ -1022,12 +1046,14 @@ def render_game_interface():
                 components.html(
                     audio_player(song["preview_url"], song["id"], autoplay=True), height=70
                 )
-                if (not st.session_state.audio_started and
-                    st.session_state.song_loaded_time and
-                    (time.time() - st.session_state.song_loaded_time) > 1.0):
-                        st.session_state.audio_started = True
-                        st.session_state.start_time = time.time()
-                        st.rerun()
+                if (
+                    not st.session_state.audio_started
+                    and st.session_state.song_loaded_time
+                    and (time.time() - st.session_state.song_loaded_time) > 1.0
+                ):
+                    st.session_state.audio_started = True
+                    st.session_state.start_time = time.time()
+                    st.rerun()
 
             # Song info card below audio
             st.markdown(
@@ -1061,7 +1087,9 @@ def render_game_interface():
                 st.session_state.current_guess, start_year, end_year, is_locked
             )
             # Add hidden round marker to force component refresh (content change forces re-render)
-            scroll_wheel_html += f"<!-- round:{st.session_state.current_round} locked:{is_locked} -->"
+            scroll_wheel_html += (
+                f"<!-- round:{st.session_state.current_round} locked:{is_locked} -->"
+            )
             # Note: components.html doesn't support key parameter, but content changes force re-render
             components.html(scroll_wheel_html, height=220)
 
@@ -1071,7 +1099,8 @@ def render_game_interface():
             # Check if currently submitting to show status
             if st.session_state.get("submitting_guess", False):
                 # Show submitting status with visual feedback - make it more prominent
-                st.markdown(f'''
+                st.markdown(
+                    f"""
                         <div style="
                             text-align: center;
                             padding: 1.2em 2.5em;
@@ -1108,24 +1137,35 @@ def render_game_interface():
                                 to {{ transform: rotate(360deg); }}
                             }}
                         </style>
-                    ''', unsafe_allow_html=True)
+                    """,
+                    unsafe_allow_html=True,
+                )
             elif is_locked:
                 # Time's up - urgent button with immediate feedback
                 button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
 
-                button_clicked = st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent")
+                button_clicked = st.button(
+                    button_text_urgent,
+                    type="primary",
+                    use_container_width=True,
+                    key="submit_guess_urgent",
+                )
                 if button_clicked:
-                    st.markdown('''
+                    st.markdown(
+                        """
                         <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 12px; color: #ef4444; font-weight: 600;">
                             🚨 Time's up! Processing your final guess...
                         </div>
-                    ''', unsafe_allow_html=True)
+                    """,
+                        unsafe_allow_html=True,
+                    )
                     make_guess(st.session_state.current_guess, timed_out=True)
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
                     st.rerun()
 
-                st.markdown('''
+                st.markdown(
+                    """
                         <style>
                             button[key="submit_guess_urgent"] {
                                 animation: urgentPulse 1s ease-in-out infinite !important;
@@ -1152,23 +1192,31 @@ def render_game_interface():
                                 box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
                             }
                         </style>
-                    ''', unsafe_allow_html=True)
+                    """,
+                    unsafe_allow_html=True,
+                )
             else:
                 # Normal button with immediate feedback
-                button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess")
+                button_clicked = st.button(
+                    button_text, type="primary", use_container_width=True, key="submit_guess"
+                )
                 if button_clicked:
-                    st.markdown(f'''
+                    st.markdown(
+                        f"""
                         <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border: 2px solid #6366f1; border-radius: 16px; color: #6366f1; font-weight: 700; font-size: 1.1em;">
                             ⚡ Processing your guess of {st.session_state.current_guess}...
                         </div>
-                    ''', unsafe_allow_html=True)
+                    """,
+                        unsafe_allow_html=True,
+                    )
                     make_guess(st.session_state.current_guess, timed_out=False)
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
                     st.rerun()
 
                 # Enhanced button styling - happy medium between bland and flashy
-                st.markdown('''
+                st.markdown(
+                    """
                         <style>
                             button[key="submit_guess"] {{
                                 background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
@@ -1206,14 +1254,18 @@ def render_game_interface():
                                 box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
                             }}
                         </style>
-                    ''', unsafe_allow_html=True)
+                    """,
+                    unsafe_allow_html=True,
+                )
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
             if st.session_state.audio_started:
                 # Only delay on the first song of the round
                 delay = 2 if st.session_state.current_round == 1 else 0
-                components.html(timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay), height=220)
+                components.html(
+                    timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay), height=220
+                )
             else:
                 st.markdown(static_timer(30), unsafe_allow_html=True)
 
@@ -1455,9 +1507,7 @@ def main():
                 status_placeholder.info("💾 Database connected - saving score...")
             except Exception as test_e:
                 error_msg = str(test_e)
-                status_placeholder.error(
-                    f"⚠️ Database connection failed: {error_msg[:150]}"
-                )
+                status_placeholder.error(f"⚠️ Database connection failed: {error_msg[:150]}")
                 if "relation" in error_msg.lower() or "does not exist" in error_msg.lower():
                     status_placeholder.error(
                         "⚠️ Table 'leaderboard' doesn't exist. Run supabase_setup.sql in "
