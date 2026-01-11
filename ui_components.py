@@ -1402,16 +1402,16 @@ def scroll_wheel_year_picker(
 
             // Only add event listeners if not locked
             if (!isLocked) {{
-                container.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                // Require a larger scroll to change year (slower)
-                const SCROLL_SENSITIVITY = 40; // Increase for slower scroll
-                let scrollDelta = e.deltaY / SCROLL_SENSITIVITY;
-                if (Math.abs(scrollDelta) >= 1) {
-                    const delta = Math.sign(scrollDelta);
-                    setYear(currentYear + delta);
-                }
-            }, { passive: false });
+                container.addEventListener('wheel', function(e) {
+                    e.preventDefault();
+                    // Require a larger scroll to change year (slower)
+                    const SCROLL_SENSITIVITY = 40; // Increase for slower scroll
+                    let scrollDelta = e.deltaY / SCROLL_SENSITIVITY;
+                    if (Math.abs(scrollDelta) >= 1) {
+                        const delta = Math.sign(scrollDelta);
+                        setYear(currentYear + delta);
+                    }
+                }, { passive: false });
 
             container.addEventListener('mousedown', (e) => {{
                 isDragging = true;
