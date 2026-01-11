@@ -933,79 +933,125 @@ def render_game_interface():
                 except (ValueError, TypeError):
                     pass
 
-            # Check if we're in the process of submitting
+            # Scroll wheel year picker - include round number to force re-render with new lock state
+            scroll_wheel_html = scroll_wheel_year_picker(
+                st.session_state.current_guess, start_year, end_year, is_locked
+            )
+            # Add hidden round marker to force component refresh
+            scroll_wheel_html += f"<!-- round:{st.session_state.current_round} locked:{is_locked} -->"
+            # Use unique key to force re-render when lock state or round changes
+            components.html(scroll_wheel_html, height=220, key=f"year_picker_{st.session_state.current_round}_{is_locked}")
+
+            # Submit button with selected year
+            button_text = f"Submit {st.session_state.current_guess}"
+
+            # Check if currently submitting to show status
             if st.session_state.get("submitting_guess", False):
-                # Show submitting state with prominent animation
-                st.markdown(
-                    f"""<div style="
-                        text-align: center;
-                        padding: 2em;
-                        background: rgba(88, 166, 255, 0.1);
-                        border: 2px solid rgba(88, 166, 255, 0.3);
-                        border-radius: 12px;
-                        animation: submitPulse 0.8s ease-in-out infinite;
-                    ">
-                        <div style="font-size: 3em; font-weight: 700; color: #58a6ff; margin-bottom: 0.5em;">{st.session_state.current_guess}</div>
-                        <div style="font-size: 1.2em; color: #c9d1d9; font-weight: 600;">Submitting your guess...</div>
-                        <div style="margin-top: 1em; color: #6e7681; font-size: 0.9em;">⏳ Please wait</div>
-                    </div>
-                    <style>
-                        @keyframes submitPulse {{
-                            0%, 100% {{ opacity: 1; transform: scale(1); }}
-                            50% {{ opacity: 0.8; transform: scale(1.01); }}
-                        }}
-                    </style>""",
-                    unsafe_allow_html=True,
-                )
-            else:
-                # Scroll wheel year picker
-                components.html(
-                    scroll_wheel_year_picker(
-                        st.session_state.current_guess, start_year, end_year, is_locked
-                    ),
-                    height=220,
-                )
+                # Show submitting status with visual feedback
+                st.markdown(f'''
+                        <div style="
+                            text-align: center;
+                            padding: 1.1em 2em;
+                            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+                            border-radius: 16px;
+                            box-shadow: 0 8px 24px rgba(34, 211, 238, 0.4);
+                            animation: submitPulse 0.8s ease-in-out infinite;
+                            border: 2px solid rgba(34, 211, 238, 0.3);
+                        ">
+                            <div style="font-size: 1.3em; font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; gap: 0.5em;">
+                                <span style="animation: spin 1s linear infinite;">⏳</span>
+                                <span>Submitting {st.session_state.current_guess}...</span>
+                            </div>
+                        </div>
+                        <style>
+                            @keyframes submitPulse {{
+                                0%, 100% {{ 
+                                    opacity: 1;
+                                    transform: scale(1);
+                                }}
+                                50% {{ 
+                                    opacity: 0.9;
+                                    transform: scale(1.02);
+                                }}
+                            }}
+                            @keyframes spin {{
+                                from {{ transform: rotate(0deg); }}
+                                to {{ transform: rotate(360deg); }}
+                            }}
+                        </style>
+                    ''', unsafe_allow_html=True)
+            elif is_locked:
+                # Time's up - urgent button
+                button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
 
-                # Submit button with selected year
-                button_text = f"Submit {st.session_state.current_guess}"
+                if st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent"):
+                    st.session_state.submitting_guess = True
+                    st.session_state.guess_timed_out = True
+                    st.rerun()
 
-                # Custom urgent button when time is up
-                if is_locked:
-                    button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
-
-                    if st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent"):
-                        st.session_state.submitting_guess = True
-                        st.session_state.guess_timed_out = True
-                        st.rerun()
-
-                    # Add subtle pulsing animation to draw attention
-                    st.markdown(f'''
+                # Add moderate pulsing animation
+                st.markdown(f'''
                         <style>
                             button[key="submit_guess_urgent"] {{
-                                animation: subtlePulse 1.5s ease-in-out infinite !important;
-                                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-                                font-size: 1.3em !important;
-                                font-weight: 700 !important;
+                                animation: urgentPulse 1s ease-in-out infinite !important;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+                                font-size: 1.35em !important;
+                                font-weight: 800 !important;
+                                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4) !important;
                             }}
-                            @keyframes subtlePulse {{
+                            @keyframes urgentPulse {{
                                 0%, 100% {{
-                                    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4),
-                                               0 2px 8px rgba(0, 0, 0, 0.2),
-                                               inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                                    transform: scale(1);
+                                    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
                                 }}
                                 50% {{
-                                    box-shadow: 0 10px 28px rgba(245, 158, 11, 0.5),
-                                               0 4px 12px rgba(0, 0, 0, 0.25),
-                                               inset 0 1px 0 rgba(255, 255, 255, 0.4);
+                                    transform: scale(1.03);
+                                    box-shadow: 0 12px 32px rgba(239, 68, 68, 0.6);
                                 }}
                             }}
                         </style>
                     ''', unsafe_allow_html=True)
-                else:
-                    if st.button(button_text, type="primary", use_container_width=True, key="submit_guess"):
-                        st.session_state.submitting_guess = True
-                        st.session_state.guess_timed_out = is_locked
-                        st.rerun()
+            else:
+                # Normal button with improved styling
+                if st.button(button_text, type="primary", use_container_width=True, key="submit_guess"):
+                    st.session_state.submitting_guess = True
+                    st.session_state.guess_timed_out = is_locked
+                    st.rerun()
+                
+                # Enhanced button styling - happy medium between bland and flashy
+                st.markdown(f'''
+                        <style>
+                            button[key="submit_guess"] {{
+                                background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
+                                color: white !important;
+                                font-size: 1.25em !important;
+                                font-weight: 700 !important;
+                                padding: 0.95em 2em !important;
+                                border-radius: 16px !important;
+                                border: none !important;
+                                box-shadow: 
+                                    0 6px 20px rgba(34, 211, 238, 0.35),
+                                    0 2px 8px rgba(0, 0, 0, 0.2),
+                                    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+                                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+                                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                            }}
+                            button[key="submit_guess"]:hover:not(:disabled) {{
+                                background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%) !important;
+                                box-shadow: 
+                                    0 10px 28px rgba(34, 211, 238, 0.45),
+                                    0 4px 12px rgba(0, 0, 0, 0.25),
+                                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+                                transform: translateY(-2px) scale(1.02) !important;
+                            }}
+                            button[key="submit_guess"]:active:not(:disabled) {{
+                                transform: translateY(0) scale(0.98) !important;
+                                box-shadow: 
+                                    0 4px 12px rgba(34, 211, 238, 0.3),
+                                    0 1px 4px rgba(0, 0, 0, 0.2) !important;
+                            }}
+                        </style>
+                    ''', unsafe_allow_html=True)
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)

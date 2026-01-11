@@ -1208,7 +1208,7 @@ def scroll_wheel_year_picker(
         padding: 0.5em 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         {locked_style}
-    ">
+    " data-locked="{str(locked).lower()}">
         <div style="color: #6e7681; text-transform: uppercase; letter-spacing: 2px; font-size: 0.65em; margin-bottom: 0.6em; font-weight: 500;">
             Select release year
         </div>
@@ -1269,8 +1269,20 @@ def scroll_wheel_year_picker(
         const track = document.getElementById('year-track');
         const itemHeight = 46;
 
-        if (isLocked) {{
+        // Set cursor and pointer-events based on lock state
+        // Also check wrapper for lock state to ensure proper initialization
+        const wrapper = document.getElementById('year-picker-wrapper');
+        const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
+        const actuallyLocked = isLocked || wrapperLocked;
+        
+        if (actuallyLocked) {{
             container.style.cursor = 'not-allowed';
+            container.style.pointerEvents = 'none';
+            if (wrapper) wrapper.style.pointerEvents = 'none';
+        }} else {{
+            container.style.cursor = 'ns-resize';
+            container.style.pointerEvents = 'auto';
+            if (wrapper) wrapper.style.pointerEvents = 'auto';
         }}
 
         function buildYearTrack() {{
@@ -1302,11 +1314,16 @@ def scroll_wheel_year_picker(
             if (!animate) track.style.transition = 'none';
             else track.style.transition = 'transform 0.08s ease-out';
 
+            // Check lock state from wrapper as well
+            const wrapper = document.getElementById('year-picker-wrapper');
+            const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
+            const actuallyLocked = isLocked || wrapperLocked;
+            
             document.querySelectorAll('.year-item').forEach(item => {{
                 const year = parseInt(item.dataset.year);
                 const distance = Math.abs(year - currentYear);
                 if (distance === 0) {{
-                    item.style.color = isLocked ? '#d29922' : '#58a6ff';
+                    item.style.color = actuallyLocked ? '#d29922' : '#58a6ff';
                     item.style.transform = 'scale(1.1)';
                 }} else if (distance === 1) {{
                     item.style.color = '#6e7681';
@@ -1330,7 +1347,10 @@ def scroll_wheel_year_picker(
         }}
 
         function setYear(year) {{
-            if (isLocked) return;
+            // Check both isLocked and wrapper state
+            const wrapper = document.getElementById('year-picker-wrapper');
+            const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
+            if (isLocked || wrapperLocked) return;
             const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
             if (newYear !== currentYear) {{
                 currentYear = newYear;
@@ -1339,7 +1359,10 @@ def scroll_wheel_year_picker(
             }}
         }}
 
-        if (!isLocked) {{
+        // Only add event listeners if not locked
+        const wrapper = document.getElementById('year-picker-wrapper');
+        const wrapperLocked = wrapper && wrapper.getAttribute('data-locked') === 'true';
+        if (!isLocked && !wrapperLocked) {{
             container.addEventListener('wheel', (e) => {{
                 e.preventDefault();
                 const delta = Math.sign(e.deltaY);
