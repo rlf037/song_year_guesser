@@ -74,6 +74,10 @@ MAIN_CSS = """
         border-radius: 8px;
         border: 1px solid rgba(71, 85, 105, 0.3);
         backdrop-filter: blur(10px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
     }
 
     .header-item-label {
