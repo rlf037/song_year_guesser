@@ -1992,16 +1992,14 @@ def spotify_button(url: str) -> str:
 def how_to_play() -> str:
     """Generate the how to play section"""
     return """
-    <div class="how-to-play" style="font-size:1.02em; margin: 0.6em 0 1.2em 0; color:#cbd5ff;">
+    <div class="how-to-play" style="font-size:1.02em; margin: 0.6em auto 1.2em auto; color:#cbd5ff; max-width: 720px; width: min(92vw, 720px);">
         <h3 style="margin:0 0 0.4em 0; color:#e6edf3; font-weight:700;">How to Play</h3>
         <ol style="text-align: left; margin: 0 1em 0 1.2em; padding-left: 1.1em; line-height: 1.5; color:#cbd5ff;">
-            <li>Listen to the 30‑second preview and try to recall when the song was released.</li>
-            <li>Use the scroll wheel, drag, or arrow keys to select the year you think is correct.</li>
-            <li>Submit your guess before the timer ends — speed gives a bonus, accuracy gives the most points.</li>
-            <li>As time passes the album art becomes clearer; use it as a visual hint if needed.</li>
-            <li>Play multiple rounds to accumulate points and climb the leaderboard.</li>
+            <li>Listen to the 30‑second preview and recall the song's release year.</li>
+            <li>Use the scroll wheel, drag, or arrow keys to select the year.</li>
+            <li>Submit your guess before the timer runs out.</li>
+            <li>Play multiple rounds to earn points and climb the leaderboard.</li>
         </ol>
-        <div style="text-align:center; margin-top:0.6em; color:#9fb1ff; font-size:0.92em;">Tip: try guessing early for a speed bonus, but watch for subtle visual clues!</div>
     </div>
     """
 
