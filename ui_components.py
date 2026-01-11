@@ -1970,17 +1970,8 @@ def spotify_button(url: str) -> str:
 def how_to_play() -> str:
     """Generate the how to play section"""
     return """
-    <div class="how-to-play">
-        <h3>How to Play</h3>
-        <ol>
-            <li>Listen to a 30-second preview of a mystery song.</li>
-            <li>Use the scroll wheel or arrows to select the year you think the song was released.</li>
-            <li>Submit your guess before time runs out! The faster and more accurate you are, the higher your score.</li>
-            <li>Watch as the album art gradually becomes clearer, giving you a visual hint as time passes.</li>
-        </ol>
-        <div class="how-to-play-tip">
-            <b>Tip:</b> The album cover starts fully blurred and sharpens as the timer counts down. Try to guess early for a speed bonus!
-        </div>
+    <div class="how-to-play" style="text-align:center; font-size:1.08em; margin: 0.7em 0 1.2em 0; color:#a5b4fc; font-weight:500;">
+        Listen, pick the year with the scroll wheel, and submit before time runs out. Faster and closer = higher score!
     </div>
     """
 
