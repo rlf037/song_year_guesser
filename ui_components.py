@@ -17,38 +17,47 @@ MAIN_CSS = """
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Dark professional theme - slate/charcoal */
+    /* Import Inter font for modern typography */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    /* Modern dark theme - sophisticated charcoal with indigo accents */
     .stApp {
-        background: linear-gradient(160deg, #0f1318 0%, #161b22 50%, #0d1117 100%);
+        background: linear-gradient(135deg, #0a0e14 0%, #111827 35%, #1e293b 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #e2e8f0;
+        line-height: 1.6;
     }
 
     /* ===== HEADER SECTION ===== */
     .game-header {
-        background: rgba(13, 17, 23, 0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(48, 54, 61, 0.8);
-        padding: 0.8em 1.5em;
-        margin: -1em -1em 1.5em -1em;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+        padding: 1em 2em;
+        margin: -1em -1em 2em -1em;
         display: flex;
         justify-content: center;
         align-items: center;
         flex-wrap: wrap;
         gap: 2em;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
     .header-title {
-        font-size: 1.8em;
-        font-weight: 700;
-        color: #58a6ff;
+        font-size: 1.6em;
+        font-weight: 600;
+        color: #818cf8;
         display: flex;
         align-items: center;
-        gap: 0.3em;
+        gap: 0.5em;
+        letter-spacing: -0.02em;
     }
 
     .header-controls {
         display: flex;
         align-items: center;
-        gap: 1.5em;
+        gap: 2em;
         flex-wrap: wrap;
     }
 
@@ -56,19 +65,25 @@ MAIN_CSS = """
         display: flex;
         align-items: center;
         gap: 0.5em;
-        color: #8b949e;
+        color: #94a3b8;
         font-size: 0.9em;
+        padding: 0.5em 1em;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 8px;
+        border: 1px solid rgba(71, 85, 105, 0.3);
+        backdrop-filter: blur(10px);
     }
 
     .header-item-label {
-        color: #6e7681;
-        font-size: 0.75em;
+        color: #64748b;
+        font-size: 0.7em;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.05em;
+        font-weight: 500;
     }
 
     .header-item-value {
-        color: #c9d1d9;
+        color: #f1f5f9;
         font-weight: 600;
     }
 
@@ -97,10 +112,11 @@ MAIN_CSS = """
     }
 
     .main-title .gradient-text {
-        background: linear-gradient(135deg, #58a6ff 0%, #22d3ee 100%);
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        text-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
     }
 
     .main-title .subtitle {
@@ -146,14 +162,17 @@ MAIN_CSS = """
     
     /* ===== SONG INFO CARD ===== */
     .song-info-card {
-        background: rgba(22, 27, 34, 0.8);
-        border: 1px solid rgba(48, 54, 61, 0.8);
-        border-radius: 12px;
-        padding: 0.8em 1em;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(71, 85, 105, 0.4);
+        border-radius: 16px;
+        padding: 1.2em 1.5em;
         max-width: 450px;
         width: 100%;
         margin-top: 0.5em;
         box-sizing: border-box;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
 
     .song-info-item {
@@ -265,24 +284,27 @@ MAIN_CSS = """
     /* ===== YEAR PICKER ===== */
     .year-picker-label {
         font-size: 0.9em;
-        color: #6e7681;
+        color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 0.1em;
         text-align: center;
         margin-bottom: 0.5em;
+        font-weight: 500;
     }
 
     .year-display {
         font-size: 4em;
         font-weight: 700;
-        color: #e6edf3;
+        color: #f1f5f9;
         text-align: center;
         font-family: 'SF Mono', Monaco, Consolas, monospace;
         margin: 0.2em 0 0.5em 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.02em;
     }
 
     .year-display.locked {
-        color: #8b949e;
+        color: #64748b;
     }
 
     /* ===== YEAR WHEEL (legacy) ===== */
@@ -402,15 +424,17 @@ MAIN_CSS = """
     .timer-seconds {
         font-size: 4em;
         font-weight: 800;
-        color: #e6edf3;
+        color: #f1f5f9;
         line-height: 1;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
-    
+
     .timer-label {
         font-size: 0.9em;
-        color: #666;
+        color: #94a3b8;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 0.1em;
+        font-weight: 500;
         margin-top: 0.3em;
     }
     
@@ -442,45 +466,47 @@ MAIN_CSS = """
         transform: translateY(-1px);
     }
 
-    /* Main submit button styling - cyan gradient with depth */
+    /* Main submit button styling - modern indigo gradient with depth */
     .stButton > button[kind="primary"][data-testid="baseButton-primary"] {
-        background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+        background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
         color: white;
         font-size: 1.2em;
-        font-weight: 700;
-        padding: 0.9em 2em;
-        border-radius: 16px;
+        font-weight: 600;
+        padding: 0.9em 2.5em;
+        border-radius: 12px;
         border: none;
         box-shadow:
-            0 8px 20px rgba(34, 211, 238, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            0 8px 25px rgba(99, 102, 241, 0.3),
+            0 2px 10px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.02em;
     }
 
     .stButton > button[kind="primary"][data-testid="baseButton-primary"]:hover:not(:disabled) {
-        background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+        background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
         box-shadow:
-            0 12px 28px rgba(34, 211, 238, 0.4),
-            0 4px 12px rgba(0, 0, 0, 0.25),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            0 12px 35px rgba(99, 102, 241, 0.4),
+            0 4px 15px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
         transform: translateY(-2px) scale(1.02);
     }
 
     .stButton > button[kind="primary"][data-testid="baseButton-primary"]:active:not(:disabled) {
         transform: translateY(0) scale(0.98);
         box-shadow:
-            0 4px 12px rgba(34, 211, 238, 0.3),
-            0 1px 4px rgba(0, 0, 0, 0.2);
+            0 4px 15px rgba(99, 102, 241, 0.3),
+            0 1px 6px rgba(0, 0, 0, 0.2);
+        transition: all 0.1s ease;
     }
 
     /* Urgent submit button when time is up - applied via JavaScript */
     .stButton > button.urgent-submit {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%) !important;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #c2410c 100%) !important;
         color: white !important;
         font-size: 1.4em !important;
-        font-weight: 800 !important;
+        font-weight: 700 !important;
         padding: 1.1em 2.5em !important;
         border-radius: 20px !important;
         border: none !important;
@@ -571,7 +597,7 @@ MAIN_CSS = """
     .correct-answer {
         font-size: 1.8em;
         font-weight: 700;
-        color: #58a6ff;
+        color: #818cf8;
         text-align: center;
         margin: 0.5em 0;
     }
@@ -615,7 +641,7 @@ MAIN_CSS = """
     }
 
     .answer-value.guess {
-        color: #58a6ff;
+        color: #818cf8;
     }
 
     .answer-diff {
@@ -713,7 +739,7 @@ MAIN_CSS = """
     }
     
     .history-score {
-        color: #22d3ee;
+        color: #a78bfa;
         font-weight: 600;
         min-width: 45px;
         text-align: right;
@@ -766,23 +792,25 @@ MAIN_CSS = """
     
     /* ===== LEADERBOARD ===== */
     .leaderboard {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        padding: 1em 1.5em;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 1.5em 2em;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        color: #f1f5f9;
+        border: 1px solid rgba(71, 85, 105, 0.4);
         margin: 0.5em auto;
         max-width: 600px;
     }
-    
+
     .leaderboard-header {
         text-align: center;
-        font-size: 1.3em;
-        font-weight: 700;
-        color: #7b9ae0;
-        margin-bottom: 1em;
+        font-size: 1.4em;
+        font-weight: 600;
+        color: #818cf8;
+        margin-bottom: 1.2em;
+        letter-spacing: -0.02em;
     }
     
     /* ===== CONTENT CONTAINER ===== */
@@ -929,7 +957,7 @@ MAIN_CSS = """
         border-radius: 20px;
         margin: 0.5em auto;
         font-size: 0.95em;
-        color: #22d3ee;
+        color: #a78bfa;
         max-width: 350px;
         border: 1px solid rgba(34, 211, 238, 0.2);
     }
@@ -1212,7 +1240,7 @@ def scroll_wheel_year_picker(
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         {locked_style}
     " data-locked="{str(locked).lower()}">
-        <div style="color: #6e7681; text-transform: uppercase; letter-spacing: 2px; font-size: 0.65em; margin-bottom: 0.6em; font-weight: 500;">
+        <div style="color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;">
             Select release year
         </div>
 
@@ -1223,12 +1251,12 @@ def scroll_wheel_year_picker(
             overflow: hidden;
             cursor: ns-resize;
             background: linear-gradient(180deg,
-                rgba(13,17,23,1) 0%,
-                rgba(13,17,23,0.9) 15%,
+                rgba(15,23,42,1) 0%,
+                rgba(15,23,42,0.9) 15%,
                 transparent 35%,
                 transparent 65%,
-                rgba(13,17,23,0.9) 85%,
-                rgba(13,17,23,1) 100%);
+                rgba(15,23,42,0.9) 85%,
+                rgba(15,23,42,1) 100%);
             border-radius: 12px;
             border: 1px solid {locked_border};
             touch-action: none;
@@ -1344,7 +1372,7 @@ def scroll_wheel_year_picker(
                     const year = parseInt(item.dataset.year);
                     const distance = Math.abs(year - currentYear);
                     if (distance === 0) {{
-                        item.style.color = actuallyLocked ? '#d29922' : '#58a6ff';
+                        item.style.color = actuallyLocked ? '#f59e0b' : '#818cf8';
                         item.style.transform = 'scale(1.1)';
                         item.style.opacity = '1';
                     }} else if (distance === 1) {{
@@ -1575,7 +1603,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             <svg width="190" height="190" viewBox="0 0 190 190" style="transform: rotate(-90deg);">
                 <defs>
                     <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:1" />
+                        <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
                         <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
                     </linearGradient>
                 </defs>
@@ -1753,10 +1781,10 @@ def static_timer(seconds: int = 30) -> str:
         <div style="position: relative; width: 200px; height: 200px;">
             <svg width="200" height="200" viewBox="0 0 200 200" style="transform: rotate(-90deg);">
                 <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
-                <circle cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#818cf8" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
             </svg>
             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                <div style="font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1;">{seconds}</div>
+                <div style="font-size: 4em; font-weight: 800; color: #818cf8; line-height: 1;">{seconds}</div>
                 <div style="font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em;">sec</div>
             </div>
         </div>
@@ -1833,7 +1861,7 @@ def year_scroll_wheel(
             cursor: pointer;
         }}
         .wheel-item.selected {{
-            color: #22d3ee;
+            color: #a78bfa;
             font-size: 2.8em;
             text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
         }}
