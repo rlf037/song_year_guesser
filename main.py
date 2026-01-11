@@ -367,31 +367,61 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
     client = get_supabase_client()
     if not client:
         # No Supabase client available - use session state
-        print("WARNING: No Supabase client - check secrets configuration")
+        error_details = []
+        if not SUPABASE_AVAILABLE:
+            error_details.append("Supabase library not installed")
+        else:
+            # Check what went wrong
+            try:
+                if hasattr(st.secrets, "supabase"):
+                    has_url = hasattr(st.secrets.supabase, "SUPABASE_URL")
+                    has_key = hasattr(st.secrets.supabase, "SUPABASE_KEY")
+                    error_details.append(f"Secrets check: URL={has_url}, KEY={has_key}")
+                elif "supabase" in st.secrets:
+                    has_url = "SUPABASE_URL" in st.secrets["supabase"]
+                    has_key = "SUPABASE_KEY" in st.secrets["supabase"]
+                    error_details.append(f"Secrets dict check: URL={has_url}, KEY={has_key}")
+                else:
+                    error_details.append("No [supabase] section in secrets")
+            except Exception as e:
+                error_details.append(f"Error checking secrets: {e}")
+        
+        print(f"WARNING: No Supabase client - {', '.join(error_details)}")
         leaderboard = load_leaderboard()
         leaderboard.append(entry)
         save_leaderboard(leaderboard)
-        return (False, "⚠️ Database not configured - saved locally only")
+        return (False, f"⚠️ Database not configured - {', '.join(error_details)}")
     
     try:
         print(f"DEBUG: Attempting to insert entry: {entry}")
+        print(f"DEBUG: Client type: {type(client)}")
+        
+        # Try the insert
         response = client.table("leaderboard").insert(entry).execute()
-        print(f"DEBUG: Insert response: {response}")
+        print(f"DEBUG: Insert response type: {type(response)}")
+        print(f"DEBUG: Insert response data: {response.data}")
+        print(f"DEBUG: Insert response status: {getattr(response, 'status_code', 'N/A')}")
+        
         # Check if insert was successful
         # Supabase returns data if successful, but some configs might return empty
-        if response.data is not None:
+        if hasattr(response, 'data') and response.data is not None:
             # Successfully saved to database
-            print("DEBUG: Successfully saved to database")
+            print("DEBUG: Successfully saved to database - response.data exists")
+            return (True, "✅ Score saved to database!")
+        elif hasattr(response, 'status_code') and response.status_code in [200, 201]:
+            # HTTP success status
+            print("DEBUG: Insert completed with success status code")
             return (True, "✅ Score saved to database!")
         else:
             # Insert might have succeeded but no data returned (check response status)
             # Assume success if no exception was raised
-            print("DEBUG: Insert completed (no data returned, but no error)")
+            print(f"DEBUG: Insert completed (no data returned, response: {response})")
             return (True, "✅ Score saved to database!")
     except Exception as e:
         error_msg = str(e)
         error_type = type(e).__name__
         print(f"ERROR saving to Supabase: {error_type}: {error_msg}")
+        print(f"ERROR full details: {repr(e)}")
         import traceback
         traceback.print_exc()
         
@@ -400,15 +430,17 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
         leaderboard.append(entry)
         save_leaderboard(leaderboard)
         
-        # Provide user-friendly error message
+        # Provide user-friendly error message with more details
         if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
             return (False, "⚠️ Score already exists in database")
-        elif "permission" in error_msg.lower() or "policy" in error_msg.lower() or "RLS" in error_msg:
-            return (False, "⚠️ Database permission denied - check RLS policies")
-        elif "relation" in error_msg.lower() or "does not exist" in error_msg.lower():
-            return (False, "⚠️ Table 'leaderboard' doesn't exist - run supabase_setup.sql")
+        elif "permission" in error_msg.lower() or "policy" in error_msg.lower() or "RLS" in error_msg or "row-level security" in error_msg.lower():
+            return (False, "⚠️ Database permission denied - check RLS policies in Supabase")
+        elif "relation" in error_msg.lower() or "does not exist" in error_msg.lower() or "table" in error_msg.lower():
+            return (False, "⚠️ Table 'leaderboard' doesn't exist - run supabase_setup.sql in SQL Editor")
+        elif "connection" in error_msg.lower() or "network" in error_msg.lower() or "timeout" in error_msg.lower():
+            return (False, "⚠️ Database connection failed - check network/Supabase status")
         else:
-            return (False, f"⚠️ Database error: {error_type} - saved locally only")
+            return (False, f"⚠️ Database error ({error_type}): {error_msg[:100]}")
 
 
 def search_top_hits_playlist(year: int, token: str) -> str | None:
@@ -699,6 +731,7 @@ def get_random_song(
 
 def blur_image(image_url: str, blur_amount: int) -> str:
     """Download image and apply blur effect, return as base64."""
+    # Always use the exact blur amount requested - don't use cached unblurred versions
     cache_key = f"{image_url}_{blur_amount}"
 
     if cache_key in _image_cache:
@@ -716,8 +749,10 @@ def blur_image(image_url: str, blur_amount: int) -> str:
             img.save(buffered, format="PNG")
             _image_cache[original_key] = base64.b64encode(buffered.getvalue()).decode()
 
+        # Always apply blur if requested, even if blur_amount is 0 (for consistency)
         if blur_amount > 0:
             img = img.filter(ImageFilter.GaussianBlur(radius=blur_amount))
+        # If blur_amount is 0, return unblurred (but still cached separately)
 
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
@@ -827,7 +862,10 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
         st.session_state.played_song_keys.add(song["song_key"])
 
     if song.get("image_url"):
+        # Pre-cache both blurred and unblurred versions
+        # Start with blurred to ensure it's ready first
         blur_image(song["image_url"], 25)
+        # Cache unblurred for later (when game ends)
         blur_image(song["image_url"], 0)
 
     st.session_state.current_round += 1
@@ -945,7 +983,9 @@ def render_game_interface():
         st.rerun()
 
     # Calculate blur amount - always start fully blurred
+    # Ensure blur is always applied from the start, even before audio starts
     if not st.session_state.game_over:
+        # Always use maximum blur until audio has been playing for at least 1 second
         if not st.session_state.audio_started:
             # Before audio starts, keep everything fully blurred
             current_blur = 25
@@ -956,7 +996,7 @@ def render_game_interface():
             current_blur = min(st.session_state.blur_level, time_based_blur)
             hint_blur = max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME))
         else:
-            # Audio just started - keep fully blurred
+            # Audio just started or elapsed time is 0 - keep fully blurred
             current_blur = 25
             hint_blur = 8
     else:
@@ -971,8 +1011,15 @@ def render_game_interface():
 
         with main_left:
             # Album artwork (much larger - 450px)
+            # Always apply blur - ensure it's fully blurred at start
             if song["image_url"]:
-                blurred_image = blur_image(song["image_url"], int(current_blur))
+                # Always use current_blur - it's already set to 25 if audio hasn't started
+                # Don't use cached unblurred version
+                applied_blur = int(current_blur)
+                # Ensure minimum blur of 25 if audio hasn't started
+                if not st.session_state.audio_started:
+                    applied_blur = max(25, applied_blur)
+                blurred_image = blur_image(song["image_url"], applied_blur)
                 if blurred_image:
                     st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
 
@@ -1385,6 +1432,23 @@ def main():
         status_placeholder = st.empty()
         status_placeholder.info("💾 Connecting to database...")
         
+        # Test database connection first
+        test_client = get_supabase_client()
+        if test_client:
+            try:
+                # Try a simple select to verify connection and table exists
+                test_result = test_client.table("leaderboard").select("id").limit(1).execute()
+                status_placeholder.info("💾 Database connected - saving score...")
+            except Exception as test_e:
+                error_msg = str(test_e)
+                status_placeholder.error(f"⚠️ Database connection failed: {error_msg[:150]}")
+                if "relation" in error_msg.lower() or "does not exist" in error_msg.lower():
+                    status_placeholder.error("⚠️ Table 'leaderboard' doesn't exist. Run supabase_setup.sql in Supabase SQL Editor.")
+                time.sleep(3)
+        else:
+            status_placeholder.error("⚠️ Database not available - check Streamlit Cloud secrets configuration")
+            time.sleep(2)
+        
         total_score = get_total_score()
         songs_played = len(
             [
@@ -1406,14 +1470,15 @@ def main():
                 st.session_state.selected_genre,
             )
             
-            # Show result
+            # Show result with detailed error if failed
             if success:
                 status_placeholder.success(message)
             else:
-                status_placeholder.warning(message)
+                # Show error with more details
+                status_placeholder.error(f"{message}\n\nCheck Streamlit Cloud logs (Manage app → Logs) for full error details.")
             
             # Small delay to show the message
-            time.sleep(1.5)
+            time.sleep(2)
         else:
             status_placeholder.warning("⚠️ No songs played - nothing to save")
             time.sleep(1)
