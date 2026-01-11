@@ -21,7 +21,7 @@ try:
 except ImportError:
     SUPABASE_AVAILABLE = False
 
-# Import UI components
+# Import UI components (explicit)
 from ui_components import (
     MAIN_CSS,
     album_image,
@@ -939,6 +939,7 @@ def get_total_score() -> int:
 def render_game_interface():
     """Render the main game interface"""
 
+    global st
     # Always unlock scroll wheel at the start of a new round
     if st.session_state.game_active and not st.session_state.game_over:
         st.session_state.time_locked = False
@@ -1202,15 +1203,16 @@ def render_game_interface():
                 )
             else:
                 # Normal button with immediate feedback
+
                 import streamlit as st
-                import time
+
                 button_clicked = st.button(
                     button_text, type="primary", use_container_width=True, key="submit_guess"
                 )
                 if button_clicked:
                     st.session_state.submitting_guess = True
                     st.markdown(
-                        f"""
+                        """
                         <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: 2px solid #0ea5e9; border-radius: 16px; color: #fff; font-weight: 700; font-size: 1.1em;">
                             <span style='font-size:1.3em;'>✅</span> Guess submitted!
                         </div>
