@@ -72,11 +72,7 @@ streamlit run main.py
 ```
 song_year_guesser/
 ├── main.py            # Main application
-├── ui_components.py   # UI components and HTML templates
-├── requirements.txt   # Python dependencies
-├── packages.txt       # System dependencies for Pillow
-├── README.md          # Project documentation
-└── LICENSE            # License
+└── ui_components.py   # UI components and HTML templates
 ```
 
 ## Troubleshooting
