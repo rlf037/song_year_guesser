@@ -853,24 +853,24 @@ def render_game_interface():
         st.session_state.time_locked = True
         st.rerun()
 
-    # Calculate blur amount
+    # Calculate blur amount - always start fully blurred
     if not st.session_state.game_over:
-        if st.session_state.audio_started and (
-            st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0
-        ):
+        if not st.session_state.audio_started:
+            # Before audio starts, keep everything fully blurred
+            current_blur = 25
+            hint_blur = 8
+        elif st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0:
+            # Audio is playing, gradually reduce blur
             time_based_blur = max(0, 25 - (elapsed_float * 25 / HINT_REVEAL_TIME))
             current_blur = min(st.session_state.blur_level, time_based_blur)
+            hint_blur = max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME))
         else:
+            # Fallback - keep blurred
             current_blur = st.session_state.blur_level
+            hint_blur = 8
     else:
         current_blur = 0
-
-    hint_blur = (
-        max(0, 8 - (elapsed_float * 8 / HINT_REVEAL_TIME))
-        if st.session_state.audio_started
-        and (st.session_state.elapsed_playing_time > 0 or elapsed_float < 1.0)
-        else 8
-    )
+        hint_blur = 0
 
     # === MAIN GAME LAYOUT - CENTERED ===
 
