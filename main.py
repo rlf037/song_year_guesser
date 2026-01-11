@@ -253,8 +253,11 @@ def get_supabase_client() -> "Client | None":
         url = st.secrets.get("SUPABASE_URL", "")
         key = st.secrets.get("SUPABASE_KEY", "")
         if url and key:
-            return create_client(url, key)
-    except Exception:
+            client = create_client(url, key)
+            # Test connection by trying to access the table
+            return client
+    except Exception as e:
+        print(f"Error creating Supabase client: {e}")
         pass
     return None
 
@@ -275,8 +278,11 @@ def load_leaderboard() -> list[dict]:
             response = client.table("leaderboard").select("*").order(
                 "total_score", desc=True
             ).limit(MAX_LEADERBOARD_ENTRIES).execute()
-            return response.data if response.data else []
-        except Exception:
+            if response.data:
+                return response.data
+        except Exception as e:
+            # Log error but continue to fallback
+            print(f"Error loading leaderboard from Supabase: {e}")
             pass
 
     # Fall back to session state
@@ -292,8 +298,12 @@ def save_leaderboard(leaderboard: list[dict]):
     st.session_state.leaderboard = sorted_lb
 
 
-def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str):
-    """Add a game session to the leaderboard"""
+def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: str) -> tuple[bool, str]:
+    """Add a game session to the leaderboard
+    
+    Returns:
+        tuple[bool, str]: (success, message) - success indicates if saved to Supabase, message describes the result
+    """
     # Use AEDT timezone (UTC+11)
     aedt = timezone(timedelta(hours=11))
     now_aedt = datetime.now(aedt)
@@ -306,19 +316,40 @@ def add_to_leaderboard(player: str, total_score: int, songs_played: int, genre: 
         "date": now_aedt.strftime("%b %d"),
     }
 
-    # Try to save to Supabase
+    # Try to save to Supabase first
     client = get_supabase_client()
     if client:
         try:
-            client.table("leaderboard").insert(entry).execute()
-            return  # Success - Supabase handles storage
-        except Exception:
-            pass  # Fall back to session state
+            response = client.table("leaderboard").insert(entry).execute()
+            # Check if insert was successful
+            # Supabase returns data if successful, but some configs might return empty
+            if response.data is not None:
+                # Successfully saved to database
+                return (True, "✅ Score saved to database!")
+            else:
+                # Insert might have succeeded but no data returned (check response status)
+                # Assume success if no exception was raised
+                return (True, "✅ Score saved to database!")
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Error saving to Supabase: {error_msg}")
+            # Fall back to session state
+            leaderboard = load_leaderboard()
+            leaderboard.append(entry)
+            save_leaderboard(leaderboard)
+            # Provide user-friendly error message
+            if "duplicate" in error_msg.lower() or "unique" in error_msg.lower():
+                return (False, "⚠️ Score already exists in database")
+            elif "permission" in error_msg.lower() or "policy" in error_msg.lower():
+                return (False, "⚠️ Database permission denied - saved locally")
+            else:
+                return (False, "⚠️ Database error - saved locally only")
 
-    # Fall back to session state
+    # No Supabase client available - use session state
     leaderboard = load_leaderboard()
     leaderboard.append(entry)
     save_leaderboard(leaderboard)
+    return (False, "⚠️ Database not configured - saved locally only")
 
 
 def search_top_hits_playlist(year: int, token: str) -> str | None:
@@ -1152,6 +1183,7 @@ def render_game_interface():
 
 def render_leaderboard():
     """Display the persistent leaderboard (round-based)"""
+    # Always reload from database to get latest scores
     leaderboard = load_leaderboard()
 
     if not leaderboard:
@@ -1159,7 +1191,8 @@ def render_leaderboard():
         return
 
     st.markdown(leaderboard_header(), unsafe_allow_html=True)
-    sorted_lb = sorted(leaderboard, key=lambda x: x["total_score"], reverse=True)
+    # Leaderboard is already sorted by load_leaderboard, but ensure it's sorted
+    sorted_lb = sorted(leaderboard, key=lambda x: x.get("total_score", 0), reverse=True)
     for idx, entry in enumerate(sorted_lb[:10], 1):
         st.markdown(leaderboard_entry(idx, entry), unsafe_allow_html=True)
 
@@ -1282,32 +1315,54 @@ def main():
     # Handle saving to leaderboard
     if st.session_state.saving_to_leaderboard:
         st.markdown(main_title(), unsafe_allow_html=True)
-        with st.spinner("💾 Saving your score to the leaderboard..."):
-            total_score = get_total_score()
-            songs_played = len(
-                [
-                    s
-                    for s in st.session_state.player_scores
-                    if s["player"] == st.session_state.current_player
-                ]
+        
+        # Show saving status
+        status_placeholder = st.empty()
+        status_placeholder.info("💾 Connecting to database...")
+        
+        total_score = get_total_score()
+        songs_played = len(
+            [
+                s
+                for s in st.session_state.player_scores
+                if s["player"] == st.session_state.current_player
+            ]
+        )
+        
+        if songs_played > 0:
+            # Update status
+            status_placeholder.info("💾 Saving your score to the leaderboard...")
+            
+            # Save to leaderboard and get result
+            success, message = add_to_leaderboard(
+                st.session_state.current_player,
+                total_score,
+                songs_played,
+                st.session_state.selected_genre,
             )
-            if songs_played > 0:
-                add_to_leaderboard(
-                    st.session_state.current_player,
-                    total_score,
-                    songs_played,
-                    st.session_state.selected_genre,
-                )
-            # Reset game state
-            st.session_state.game_active = False
-            st.session_state.game_over = False
-            st.session_state.current_round = 0
-            st.session_state.player_scores = []
-            st.session_state.played_song_ids = set()
-            st.session_state.played_song_keys = set()
-            st.session_state.next_song_cache = None
-            st.session_state.saving_to_leaderboard = False
-            st.rerun()
+            
+            # Show result
+            if success:
+                status_placeholder.success(message)
+            else:
+                status_placeholder.warning(message)
+            
+            # Small delay to show the message
+            time.sleep(1.5)
+        else:
+            status_placeholder.warning("⚠️ No songs played - nothing to save")
+            time.sleep(1)
+        
+        # Reset game state
+        st.session_state.game_active = False
+        st.session_state.game_over = False
+        st.session_state.current_round = 0
+        st.session_state.player_scores = []
+        st.session_state.played_song_ids = set()
+        st.session_state.played_song_keys = set()
+        st.session_state.next_song_cache = None
+        st.session_state.saving_to_leaderboard = False
+        st.rerun()
         return
 
     if not st.session_state.game_active:
