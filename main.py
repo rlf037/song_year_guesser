@@ -1075,6 +1075,10 @@ def render_game_interface():
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
                 if st.button("▶️ Next Song", type="primary", use_container_width=True, key="next_song"):
+                    # Reset time lock immediately before loading new song
+                    st.session_state.time_locked = False
+                    st.session_state.submitting_guess = False
+                    st.session_state.guess_timed_out = False
                     st.session_state.loading_game = True
                     st.rerun()
 
