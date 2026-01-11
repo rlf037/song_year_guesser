@@ -994,7 +994,9 @@ def render_game_interface():
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
             if st.session_state.audio_started:
-                components.html(timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=2), height=220)
+                # Only delay on the first song of the round
+                delay = 2 if st.session_state.current_round == 1 else 0
+                components.html(timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay), height=220)
             else:
                 st.markdown(static_timer(30), unsafe_allow_html=True)
 

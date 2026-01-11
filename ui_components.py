@@ -415,8 +415,10 @@ MAIN_CSS = """
     .stButton > button {
         min-height: 3em;
         font-weight: 600;
-        border-radius: 8px;
-        transition: all 0.15s ease;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
     }
 
     .stButton > button:disabled {
@@ -425,51 +427,109 @@ MAIN_CSS = """
     }
 
     .stButton > button[kind="primary"] {
-        background: #238636;
+        background: linear-gradient(135deg, #2ea043 0%, #238636 100%);
         color: white;
-        border: 1px solid rgba(35, 134, 54, 0.6);
+        border: none;
+        box-shadow: 0 4px 12px rgba(35, 134, 54, 0.3);
     }
 
     .stButton > button[kind="primary"]:hover:not(:disabled) {
-        background: #2ea043;
-        border-color: rgba(46, 160, 67, 0.8);
+        background: linear-gradient(135deg, #3cb04c 0%, #2ea043 100%);
+        box-shadow: 0 6px 20px rgba(35, 134, 54, 0.4);
+        transform: translateY(-1px);
     }
 
-    .submit-btn {
-        background: #238636 !important;
-        font-size: 1.1em !important;
-        padding: 0.8em 2em !important;
+    /* Main submit button styling - cyan gradient with depth */
+    .stButton > button[kind="primary"][data-testid="baseButton-primary"] {
+        background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+        color: white;
+        font-size: 1.2em;
+        font-weight: 700;
+        padding: 0.9em 2em;
+        border-radius: 16px;
+        border: none;
+        box-shadow:
+            0 8px 20px rgba(34, 211, 238, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .submit-btn:hover:not(:disabled) {
-        background: #2ea043 !important;
+    .stButton > button[kind="primary"][data-testid="baseButton-primary"]:hover:not(:disabled) {
+        background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+        box-shadow:
+            0 12px 28px rgba(34, 211, 238, 0.4),
+            0 4px 12px rgba(0, 0, 0, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px) scale(1.02);
+    }
+
+    .stButton > button[kind="primary"][data-testid="baseButton-primary"]:active:not(:disabled) {
+        transform: translateY(0) scale(0.98);
+        box-shadow:
+            0 4px 12px rgba(34, 211, 238, 0.3),
+            0 1px 4px rgba(0, 0, 0, 0.2);
     }
 
     /* Urgent submit button when time is up - applied via JavaScript */
     .stButton > button.urgent-submit {
-        background: linear-gradient(135deg, #da3633, #f85149) !important;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%) !important;
         color: white !important;
-        font-size: 1.3em !important;
+        font-size: 1.4em !important;
         font-weight: 800 !important;
-        padding: 1.2em 2em !important;
-        animation: urgentPulse 1s ease-in-out infinite !important;
-        border: 3px solid #f85149 !important;
-        box-shadow: 0 0 30px rgba(248, 81, 73, 0.6) !important;
+        padding: 1.1em 2.5em !important;
+        border-radius: 20px !important;
+        border: none !important;
+        box-shadow:
+            0 0 40px rgba(239, 68, 68, 0.6),
+            0 8px 24px rgba(220, 38, 38, 0.4),
+            0 4px 12px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3),
+            inset 0 -2px 8px rgba(0, 0, 0, 0.2) !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        animation: urgentPulse 0.8s ease-in-out infinite !important;
+        position: relative !important;
+    }
+
+    .stButton > button.urgent-submit::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+        border-radius: 20px;
+        pointer-events: none;
     }
 
     .stButton > button.urgent-submit:hover:not(:disabled) {
-        background: linear-gradient(135deg, #f85149, #ff6b6b) !important;
-        transform: scale(1.03) !important;
+        background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%) !important;
+        transform: translateY(-2px) scale(1.05) !important;
+        box-shadow:
+            0 0 50px rgba(239, 68, 68, 0.8),
+            0 12px 32px rgba(220, 38, 38, 0.5),
+            0 6px 16px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
     }
 
     @keyframes urgentPulse {
         0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 0 20px rgba(248, 81, 73, 0.4);
+            transform: scale(1) translateY(0);
+            box-shadow:
+                0 0 35px rgba(239, 68, 68, 0.5),
+                0 8px 24px rgba(220, 38, 38, 0.35),
+                0 4px 12px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         50% {
-            transform: scale(1.02);
-            box-shadow: 0 0 35px rgba(248, 81, 73, 0.7);
+            transform: scale(1.06) translateY(-3px);
+            box-shadow:
+                0 0 50px rgba(239, 68, 68, 0.8),
+                0 12px 32px rgba(220, 38, 38, 0.5),
+                0 6px 16px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
         }
     }
 
@@ -650,7 +710,7 @@ MAIN_CSS = """
     }
     
     .history-score {
-        color: #4a9eff;
+        color: #22d3ee;
         font-weight: 600;
         min-width: 45px;
         text-align: right;
@@ -866,7 +926,7 @@ MAIN_CSS = """
         border-radius: 20px;
         margin: 0.5em auto;
         font-size: 0.95em;
-        color: #4a9eff;
+        color: #22d3ee;
         max-width: 350px;
         border: 1px solid rgba(34, 211, 238, 0.2);
     }
@@ -945,7 +1005,7 @@ MAIN_CSS = """
     .stNumberInput input {
         background: rgba(255, 255, 255, 0.08) !important;
         border: 2px solid rgba(139, 92, 246, 0.3) !important;
-        color: #4a9eff !important;
+        color: #22d3ee !important;
         font-size: 3em !important;
         font-weight: 700 !important;
         text-align: center !important;
@@ -1389,37 +1449,86 @@ def scroll_wheel_year_picker(
     """
 
 
-def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 1) -> str:
+def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) -> str:
     """Generate the countdown timer with dynamic animations that intensify as time runs out"""
     return f"""
     <style>
         body {{ margin: 0; padding: 0; background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
         .timer-container {{ display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }}
-        .timer-ring {{ position: relative; width: 180px; height: 180px; transition: opacity 0.3s ease; }}
-        .timer-ring.paused {{ opacity: 0.5; }}
-        .timer-ring.warning {{ animation: warningPulse 1s ease-in-out infinite; }}
-        .timer-ring.danger {{ animation: dangerPulse 0.5s ease-in-out infinite; }}
-        .timer-ring.critical {{ animation: criticalPulse 0.3s ease-in-out infinite; }}
+        .timer-ring {{
+            position: relative;
+            width: 190px;
+            height: 190px;
+            transition: opacity 0.3s ease;
+            filter: drop-shadow(0 4px 12px rgba(34, 211, 238, 0.2));
+        }}
+        .timer-ring.paused {{ opacity: 0.5; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3)); }}
+        .timer-ring.warning {{
+            animation: warningPulse 1s ease-in-out infinite;
+            filter: drop-shadow(0 6px 16px rgba(251, 191, 36, 0.4));
+        }}
+        .timer-ring.danger {{
+            animation: dangerPulse 0.6s ease-in-out infinite;
+            filter: drop-shadow(0 8px 20px rgba(251, 146, 60, 0.5));
+        }}
+        .timer-ring.critical {{
+            animation: criticalPulse 0.4s ease-in-out infinite;
+            filter: drop-shadow(0 10px 28px rgba(239, 68, 68, 0.7));
+        }}
         .timer-text {{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }}
-        .timer-seconds {{ font-size: 3.5em; font-weight: 700; line-height: 1; transition: color 0.15s ease, transform 0.1s ease; font-family: 'SF Mono', Monaco, Consolas, monospace; }}
-        .timer-seconds.pulse {{ animation: numberPulse 0.5s ease-in-out; }}
-        .timer-label {{ font-size: 0.85em; color: #6e7681; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em; transition: color 0.2s ease; }}
-        .timer-label.paused {{ color: #8b949e; font-weight: 600; }}
-        .timer-label.urgent {{ color: #da3633; font-weight: 600; }}
-        @keyframes warningPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.01); }} }}
-        @keyframes dangerPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.02); }} }}
-        @keyframes criticalPulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.03); }} }}
-        @keyframes numberPulse {{ 0% {{ transform: scale(1); }} 50% {{ transform: scale(1.05); }} 100% {{ transform: scale(1); }} }}
-        .glow-effect {{ }}
+        .timer-seconds {{
+            font-size: 3.8em;
+            font-weight: 800;
+            line-height: 1;
+            transition: color 0.2s ease, transform 0.15s ease;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }}
+        .timer-seconds.pulse {{ animation: numberPulse 0.4s ease-out; }}
+        .timer-label {{
+            font-size: 0.85em;
+            color: #6e7681;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0.4em;
+            transition: color 0.2s ease;
+            font-weight: 600;
+        }}
+        .timer-label.paused {{ color: #8b949e; }}
+        .timer-label.urgent {{ color: #ef4444; font-weight: 700; }}
+        @keyframes warningPulse {{
+            0%, 100% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.02); }}
+        }}
+        @keyframes dangerPulse {{
+            0%, 100% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.04); }}
+        }}
+        @keyframes criticalPulse {{
+            0%, 100% {{ transform: scale(1) rotate(0deg); }}
+            25% {{ transform: scale(1.05) rotate(-1deg); }}
+            75% {{ transform: scale(1.05) rotate(1deg); }}
+        }}
+        @keyframes numberPulse {{
+            0% {{ transform: scale(1); }}
+            40% {{ transform: scale(1.15); }}
+            100% {{ transform: scale(1); }}
+        }}
     </style>
     <div class="timer-container">
         <div class="timer-ring" id="timer-ring">
-            <svg width="180" height="180" viewBox="0 0 180 180" style="transform: rotate(-90deg);">
-                <circle cx="90" cy="90" r="80" fill="none" stroke="#21262d" stroke-width="8"/>
-                <circle id="timer-bg" cx="90" cy="90" r="80" fill="none" stroke="#30363d" stroke-width="8" opacity="0.3"/>
-                <circle id="timer-circle" cx="90" cy="90" r="80" fill="none" stroke="#8b949e" stroke-width="8"
+            <svg width="190" height="190" viewBox="0 0 190 190" style="transform: rotate(-90deg);">
+                <defs>
+                    <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="95" cy="95" r="80" fill="none" stroke="#21262d" stroke-width="10"/>
+                <circle id="timer-bg" cx="95" cy="95" r="80" fill="none" stroke="#30363d" stroke-width="10" opacity="0.3"/>
+                <circle id="timer-circle" cx="95" cy="95" r="80" fill="none" stroke="url(#timerGradient)" stroke-width="10"
                     stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="0"
-                    style="transition: stroke-dashoffset 0.1s linear, stroke 0.15s ease;"/>
+                    style="transition: stroke-dashoffset 0.1s linear, stroke 0.2s ease; filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.6));"/>
             </svg>
             <div class="timer-text">
                 <div id="timer-seconds" class="timer-seconds" style="color: #c9d1d9;">{max_time}</div>
@@ -1589,10 +1698,10 @@ def static_timer(seconds: int = 30) -> str:
         <div style="position: relative; width: 200px; height: 200px;">
             <svg width="200" height="200" viewBox="0 0 200 200" style="transform: rotate(-90deg);">
                 <circle cx="100" cy="100" r="90" fill="none" stroke="#1e1e3f" stroke-width="10"/>
-                <circle cx="100" cy="100" r="90" fill="none" stroke="#4a9eff" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#22d3ee" stroke-width="10" stroke-dasharray="565" stroke-linecap="round"/>
             </svg>
             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                <div style="font-size: 4em; font-weight: 800; color: #4a9eff; line-height: 1;">{seconds}</div>
+                <div style="font-size: 4em; font-weight: 800; color: #22d3ee; line-height: 1;">{seconds}</div>
                 <div style="font-size: 0.9em; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-top: 0.3em;">sec</div>
             </div>
         </div>
@@ -1669,7 +1778,7 @@ def year_scroll_wheel(
             cursor: pointer;
         }}
         .wheel-item.selected {{
-            color: #4a9eff;
+            color: #22d3ee;
             font-size: 2.8em;
             text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
         }}
