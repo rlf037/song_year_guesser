@@ -247,70 +247,107 @@ MAX_LEADERBOARD_ENTRIES = 20
 
 def get_supabase_client() -> "Client | None":
     """Get Supabase client if configured"""
+    print("=== SUPABASE CLIENT DEBUG ===")
+
     if not SUPABASE_AVAILABLE:
-        print("ERROR: Supabase library not available - install with: pip install supabase")
+        print("❌ Supabase library not available")
         return None
-    
-    url = ""
-    key = ""
-    
+
     try:
-        # Try to access secrets in different ways
+        # Debug: Print all secrets structure (safely)
+        print("🔍 Checking secrets structure...")
+        try:
+            if hasattr(st.secrets, 'keys'):
+                keys = list(st.secrets.keys())
+                print(f"📋 Available secret keys: {keys}")
+            else:
+                print("⚠️ st.secrets has no keys method")
+        except Exception as e:
+            print(f"❌ Error accessing secrets: {e}")
+
+        # Try the most direct approach first
         url = ""
         key = ""
 
-        # Method 1: Check if supabase is in secrets as a nested section
-        if "supabase" in st.secrets:
-            print("DEBUG: Found 'supabase' in st.secrets")
-            try:
-                # Try attribute access (Streamlit Cloud)
+        # Method 1: Direct attribute access (most common in Streamlit Cloud)
+        try:
+            if hasattr(st.secrets, 'supabase'):
                 url = st.secrets.supabase.SUPABASE_URL
                 key = st.secrets.supabase.SUPABASE_KEY
-                print("DEBUG: Successfully accessed via st.secrets.supabase.SUPABASE_URL")
-            except AttributeError:
-                try:
-                    # Try dict access
-                    url = st.secrets["supabase"]["SUPABASE_URL"]
-                    key = st.secrets["supabase"]["SUPABASE_KEY"]
-                    print("DEBUG: Successfully accessed via st.secrets['supabase']['SUPABASE_URL']")
-                except (KeyError, TypeError) as e:
-                    print(f"DEBUG: Dict access failed: {e}")
-                    # Try get() method
-                    url = st.secrets["supabase"].get("SUPABASE_URL", "")
-                    key = st.secrets["supabase"].get("SUPABASE_KEY", "")
-                    if url and key:
-                        print("DEBUG: Successfully accessed via st.secrets['supabase'].get()")
-        else:
-            # Method 2: Check for top-level keys
-            print("DEBUG: No 'supabase' section found, trying top-level keys")
-            url = st.secrets.get("SUPABASE_URL", "")
-            key = st.secrets.get("SUPABASE_KEY", "")
+                print("✅ Got credentials via st.secrets.supabase.SUPABASE_*")
+        except AttributeError:
+            print("⚠️ Attribute access failed, trying alternatives...")
 
-        # Final check
+            # Method 2: Dict access
+            try:
+                if "supabase" in st.secrets:
+                    supabase_dict = st.secrets["supabase"]
+                    url = supabase_dict.get("SUPABASE_URL", "")
+                    key = supabase_dict.get("SUPABASE_KEY", "")
+                    if url and key:
+                        print("✅ Got credentials via st.secrets['supabase'].get()")
+                    else:
+                        print("❌ Dict access returned empty values")
+                else:
+                    print("❌ No 'supabase' key in st.secrets")
+            except Exception as e2:
+                print(f"❌ Dict access failed: {e2}")
+
+        # Method 3: Top-level keys (fallback)
+        if not url or not key:
+            try:
+                url = st.secrets.get("SUPABASE_URL", "")
+                key = st.secrets.get("SUPABASE_KEY", "")
+                if url and key:
+                    print("✅ Got credentials via top-level keys")
+            except Exception as e3:
+                print(f"❌ Top-level access failed: {e3}")
+
+        # Validate credentials
         if not url:
-            print("ERROR: SUPABASE_URL not found in secrets")
-            print(f"DEBUG: Available secrets keys: {list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else 'N/A'}")
+            print("❌ SUPABASE_URL is empty or missing")
             return None
 
         if not key:
-            print("ERROR: SUPABASE_KEY not found in secrets")
+            print("❌ SUPABASE_KEY is empty or missing")
             return None
-        
-        print(f"DEBUG: Creating Supabase client with URL={url[:30]}... and KEY={key[:10]}...")
+
+        print(f"✅ Credentials found: URL starts with {url[:30]}...")
+        print(f"✅ Key type check: starts with {key[:15]}...")
+
+        # Check key type - might be service role instead of anon
+        if key.startswith("sb_secret_"):
+            print("⚠️ WARNING: Using service_role key - should use anon key for security")
+
+        # Create client
+        print("🔧 Creating Supabase client...")
         client = create_client(url, key)
-        print(f"DEBUG: Supabase client created successfully")
-        
-        # Test connection by trying a simple query
+        print("✅ Supabase client created successfully")
+
+        # Test connection
+        print("🔍 Testing database connection...")
         try:
-            test_response = client.table("leaderboard").select("id").limit(1).execute()
-            print(f"DEBUG: Connection test successful")
+            test_response = client.table("leaderboard").select("count", count="exact").execute()
+            print("✅ Database connection successful - table exists")
         except Exception as test_e:
-            print(f"WARNING: Connection test failed (table might not exist): {test_e}")
-            # Still return client - table might just not exist yet
-        
+            error_str = str(test_e).lower()
+            print(f"⚠️ Connection test failed: {test_e}")
+
+            if "relation" in error_str or "does not exist" in error_str:
+                print("❌ TABLE DOES NOT EXIST - Run supabase_setup.sql in SQL Editor")
+                # Still return client so insert can fail gracefully
+            elif "permission" in error_str or "policy" in error_str:
+                print("❌ PERMISSION DENIED - Check RLS policies in Supabase")
+            elif "unauthorized" in error_str or "invalid" in error_str:
+                print("❌ INVALID KEY - Use anon public key, not service_role")
+            else:
+                print("❌ UNKNOWN CONNECTION ERROR")
+
+        print("🎯 Returning client")
         return client
+
     except Exception as e:
-        print(f"ERROR creating Supabase client: {type(e).__name__}: {e}")
+        print(f"❌ CRITICAL ERROR creating Supabase client: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -824,6 +861,7 @@ def initialize_game_state():
         "submitting_guess": False,
         "guess_timed_out": False,
         "saving_to_leaderboard": False,
+        "debug_mode": False,  # Add debug mode
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -1515,6 +1553,57 @@ def main():
         st.markdown(how_to_play(), unsafe_allow_html=True)
 
         st.write("")
+
+        # Debug section (collapsible)
+        with st.expander("🔧 Debug & Diagnostics", expanded=st.session_state.get("debug_mode", False)):
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🧪 Test Database Connection", use_container_width=True):
+                    st.session_state.debug_mode = True
+                    st.rerun()
+            with col2:
+                if st.button("🔄 Reset Debug", use_container_width=True):
+                    st.session_state.debug_mode = False
+                    st.rerun()
+
+            if st.session_state.get("debug_mode", False):
+                st.markdown("### Database Diagnostics")
+                with st.spinner("Testing database connection..."):
+                    client = get_supabase_client()
+                    if client:
+                        st.success("✅ Database client created successfully")
+                        try:
+                            # Test table access
+                            response = client.table("leaderboard").select("count", count="exact").execute()
+                            st.success(f"✅ Table access successful - found {response.count} records")
+                        except Exception as e:
+                            st.error(f"❌ Table access failed: {e}")
+                            if "relation" in str(e).lower() or "does not exist" in str(e).lower():
+                                st.info("💡 **Solution**: Run `supabase_setup.sql` in your Supabase SQL Editor")
+                    else:
+                        st.error("❌ Database client creation failed")
+                        st.info("💡 Check your Streamlit Cloud secrets configuration")
+
+                st.markdown("### Secrets Check")
+                try:
+                    secrets_keys = list(st.secrets.keys()) if hasattr(st.secrets, 'keys') else []
+                    st.write(f"Available secret keys: {secrets_keys}")
+
+                    if "supabase" in st.secrets:
+                        st.success("✅ Found 'supabase' section")
+                        try:
+                            url = st.secrets.supabase.SUPABASE_URL
+                            key = st.secrets.supabase.SUPABASE_KEY
+                            st.write(f"URL: {url[:30]}..." if url else "URL: ❌ Missing")
+                            st.write(f"Key: {key[:15]}..." if key else "Key: ❌ Missing")
+                            if key and key.startswith("sb_secret_"):
+                                st.warning("⚠️ Using service_role key - should use anon public key")
+                        except:
+                            st.error("❌ Cannot access supabase section values")
+                    else:
+                        st.error("❌ No 'supabase' section found")
+                except Exception as e:
+                    st.error(f"❌ Secrets access error: {e}")
 
         # Start button - centered
         col1, col2, col3 = st.columns([1, 2, 1])
