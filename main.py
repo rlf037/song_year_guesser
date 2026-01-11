@@ -1131,31 +1131,37 @@ def render_game_interface():
 
             # Check if currently submitting to show status
             if st.session_state.get("submitting_guess", False):
-                # Show submitting status with visual feedback
+                # Show submitting status with visual feedback - make it more prominent
                 st.markdown(f'''
                         <div style="
                             text-align: center;
-                            padding: 1.1em 2em;
+                            padding: 1.2em 2.5em;
                             background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
-                            border-radius: 16px;
-                            box-shadow: 0 8px 24px rgba(34, 211, 238, 0.4);
-                            animation: submitPulse 0.8s ease-in-out infinite;
-                            border: 2px solid rgba(34, 211, 238, 0.3);
+                            border-radius: 18px;
+                            box-shadow: 0 12px 32px rgba(34, 211, 238, 0.5);
+                            animation: submitPulse 1s ease-in-out infinite;
+                            border: 3px solid rgba(34, 211, 238, 0.4);
+                            margin: 0.5em 0;
                         ">
-                            <div style="font-size: 1.3em; font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; gap: 0.5em;">
-                                <span style="animation: spin 1s linear infinite;">⏳</span>
-                                <span>Submitting {st.session_state.current_guess}...</span>
+                            <div style="font-size: 1.4em; font-weight: 800; color: white; display: flex; align-items: center; justify-content: center; gap: 0.5em;">
+                                <span style="animation: spin 1s linear infinite; font-size: 1.2em;">⏳</span>
+                                <span>Processing {st.session_state.current_guess}...</span>
+                            </div>
+                            <div style="font-size: 0.9em; color: rgba(255,255,255,0.8); margin-top: 0.3em;">
+                                Please wait while we save your score
                             </div>
                         </div>
                         <style>
                             @keyframes submitPulse {{
-                                0%, 100% {{ 
+                                0%, 100% {{
                                     opacity: 1;
                                     transform: scale(1);
+                                    box-shadow: 0 12px 32px rgba(34, 211, 238, 0.5);
                                 }}
-                                50% {{ 
-                                    opacity: 0.9;
-                                    transform: scale(1.02);
+                                50% {{
+                                    opacity: 0.95;
+                                    transform: scale(1.03);
+                                    box-shadow: 0 16px 40px rgba(34, 211, 238, 0.7);
                                 }}
                             }}
                             @keyframes spin {{
@@ -1165,10 +1171,20 @@ def render_game_interface():
                         </style>
                     ''', unsafe_allow_html=True)
             elif is_locked:
-                # Time's up - urgent button
+                # Time's up - urgent button with immediate feedback
                 button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
 
-                if st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent"):
+                # Check if button was just clicked (before showing it)
+                button_clicked = st.button(button_text_urgent, type="primary", use_container_width=True, key="submit_guess_urgent", disabled=st.session_state.get("submitting_guess", False))
+
+                if button_clicked:
+                    # Immediately show processing feedback
+                    st.markdown(f'''
+                        <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 12px; color: #ef4444; font-weight: 600;">
+                            🚨 Time's up! Processing your final guess...
+                        </div>
+                    ''', unsafe_allow_html=True)
+                    # Set processing state
                     st.session_state.submitting_guess = True
                     st.session_state.guess_timed_out = True
                     st.rerun()
@@ -1193,20 +1209,30 @@ def render_game_interface():
                                     box-shadow: 0 12px 32px rgba(239, 68, 68, 0.6);
                                 }}
                             }}
+                            button[key="submit_guess_urgent"]:disabled {{
+                                opacity: 0.6 !important;
+                                cursor: not-allowed !important;
+                                animation: none !important;
+                                transform: none !important;
+                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                            }}
                         </style>
                     ''', unsafe_allow_html=True)
             else:
-                # Normal button - show status immediately on click
-                button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess")
+                # Normal button with immediate feedback
+                button_clicked = st.button(button_text, type="primary", use_container_width=True, key="submit_guess", disabled=st.session_state.get("submitting_guess", False))
+
                 if button_clicked:
-                    # Set submitting state immediately
+                    # Immediately show processing feedback
+                    st.markdown(f'''
+                        <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(34, 211, 238, 0.1); border: 2px solid #22d3ee; border-radius: 12px; color: #22d3ee; font-weight: 600;">
+                            ⚡ Processing your guess of {st.session_state.current_guess}...
+                        </div>
+                    ''', unsafe_allow_html=True)
+                    # Set processing state
                     st.session_state.submitting_guess = True
                     st.session_state.guess_timed_out = is_locked
                     st.rerun()
-                
-                # Show status if submitting (this will show on the rerun)
-                if st.session_state.get("submitting_guess", False) and not is_locked:
-                    st.info(f"⏳ Submitting {st.session_state.current_guess}...")
                 
                 # Enhanced button styling - happy medium between bland and flashy
                 st.markdown(f'''
@@ -1236,9 +1262,15 @@ def render_game_interface():
                             }}
                             button[key="submit_guess"]:active:not(:disabled) {{
                                 transform: translateY(0) scale(0.98) !important;
-                                box-shadow: 
+                                box-shadow:
                                     0 4px 12px rgba(34, 211, 238, 0.3),
                                     0 1px 4px rgba(0, 0, 0, 0.2) !important;
+                            }}
+                            button[key="submit_guess"]:disabled {{
+                                opacity: 0.6 !important;
+                                cursor: not-allowed !important;
+                                transform: none !important;
+                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
                             }}
                         </style>
                     ''', unsafe_allow_html=True)
