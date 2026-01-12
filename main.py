@@ -939,7 +939,6 @@ def get_total_score() -> int:
 def render_game_interface():
     """Render the main game interface"""
 
-    global st
     # Always unlock scroll wheel at the start of a new round
     if st.session_state.game_active and not st.session_state.game_over:
         st.session_state.time_locked = False
@@ -1034,10 +1033,9 @@ def render_game_interface():
 
         with main_left:
             # Album artwork (much larger - 450px)
-            # ALWAYS start with maximum blur - no exceptions
             if song["image_url"]:
-                # Force maximum blur initially, regardless of any other logic
-                applied_blur = max(25, int(current_blur))
+                # Apply calculated blur (starts at 25, decreases over time)
+                applied_blur = max(0, int(current_blur))
                 blurred_image = blur_image(song["image_url"], applied_blur)
                 if blurred_image:
                     st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
@@ -1202,9 +1200,6 @@ def render_game_interface():
                 )
             else:
                 # Normal button with immediate feedback
-
-                import streamlit as st
-
                 button_clicked = st.button(
                     button_text, type="primary", use_container_width=True, key="submit_guess"
                 )
@@ -1221,7 +1216,7 @@ def render_game_interface():
                     make_guess(st.session_state.current_guess, timed_out=False)
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
-                    st.experimental_rerun()
+                    st.rerun()
 
                 # Enhanced button styling with clear pressed indicator
                 st.markdown(
