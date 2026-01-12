@@ -272,7 +272,7 @@ MAIN_CSS = """
 
     .audio-viz-bar {
         width: 5px;
-        background: linear-gradient(to top, #484f58, #6e7681);
+        background: linear-gradient(to top, #5558b0, #818cf8);
         border-radius: 2px;
         animation: audioViz 0.5s ease-in-out infinite alternate;
     }
