@@ -1358,33 +1358,61 @@ def scroll_wheel_year_picker(
             buildYearTrack();
             updatePosition();
             if (!isLocked) {{
-                let scrollVelocity = 0;
-                let lastScrollTime = 0;
-                let inertiaFrame = null;
-                const SCROLL_SENSITIVITY = 5; // Lower = much faster
-                const INERTIA_DECAY = 0.85;
-                function applyInertia() {{
-                    if (Math.abs(scrollVelocity) < 0.01) {{ scrollVelocity = 0; inertiaFrame = null; return; }}
-                    setYear(currentYear + scrollVelocity);
-                    scrollVelocity *= INERTIA_DECAY;
-                    inertiaFrame = requestAnimationFrame(applyInertia);
-                }}
+                // Mouse wheel scrolling (slowed down)
+                let accumulatedDelta = 0;
+                const SCROLL_THRESHOLD = 50; // Pixels needed to change 1 year
                 container.addEventListener('wheel', function(e) {{
                     e.preventDefault();
-                    let now = Date.now();
-                    let delta = e.deltaY / SCROLL_SENSITIVITY;
-                    // Clamp delta for huge trackpad swipes
-                    delta = Math.max(-10, Math.min(10, delta));
-                    scrollVelocity += delta;
-                    setYear(currentYear + delta);
-                    if (!inertiaFrame) inertiaFrame = requestAnimationFrame(applyInertia);
-                    lastScrollTime = now;
+                    accumulatedDelta += e.deltaY;
+                    if (Math.abs(accumulatedDelta) >= SCROLL_THRESHOLD) {{
+                        const years = Math.sign(accumulatedDelta);
+                        setYear(currentYear + years);
+                        accumulatedDelta = 0;
+                    }}
                 }}, {{ passive: false }});
+
+                // Mouse drag support
+                let isDragging = false;
+                let dragStartY = 0;
+                let dragStartYear = currentYear;
+                container.addEventListener('mousedown', function(e) {{
+                    isDragging = true;
+                    dragStartY = e.clientY;
+                    dragStartYear = currentYear;
+                    container.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }});
+                document.addEventListener('mousemove', function(e) {{
+                    if (!isDragging) return;
+                    const deltaY = dragStartY - e.clientY;
+                    const yearDelta = Math.round(deltaY / 30); // 30px per year
+                    setYear(dragStartYear + yearDelta);
+                }});
+                document.addEventListener('mouseup', function() {{
+                    isDragging = false;
+                    container.style.cursor = 'ns-resize';
+                }});
+
+                // Click on year item
                 container.addEventListener('click', function(e) {{
                     if (e.target.classList.contains('year-item')) {{
                         setYear(parseInt(e.target.dataset.year));
                     }}
                 }});
+
+                // Arrow key support
+                container.setAttribute('tabindex', '0');
+                container.addEventListener('keydown', function(e) {{
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {{
+                        e.preventDefault();
+                        setYear(currentYear - 1);
+                    }} else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {{
+                        e.preventDefault();
+                        setYear(currentYear + 1);
+                    }}
+                }});
+                // Focus container for keyboard input
+                container.focus();
             }}
         }}
         setTimeout(init, 0);
