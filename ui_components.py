@@ -2004,7 +2004,7 @@ def how_to_play() -> str:
             <li>Submit your guess before the timer runs out.</li>
             <li>Play multiple rounds to earn points and climb the leaderboard.</li>
         </ol>
-            <div class="how-to-play-tip" style="margin-top:0.6em;">Tip: The album cover starts blurred and sharpens as the timer counts down — guessing early can earn a speed bonus.</div>
+            <div class="how-to-play-tip" style="margin-top:0.6em;">Tip: Guess early for a speed bonus!</div>
         </div>
     """
 

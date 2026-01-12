@@ -1454,6 +1454,9 @@ def render_settings_panel():
         )
         st.session_state.current_player = player_name
 
+    # Spacing between inputs and slider
+    st.markdown("<div style='height: 1.5em;'></div>", unsafe_allow_html=True)
+
     # Row 2: Year range slider (full width)
     year_range = st.slider(
         "Year Range",
