@@ -821,6 +821,7 @@ def initialize_game_state():
         "submitting_guess": False,
         "guess_timed_out": False,
         "saving_to_leaderboard": False,
+        "loading_next_song": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -889,6 +890,7 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     st.session_state.elapsed_playing_time = 0
     st.session_state.submitting_guess = False
     st.session_state.guess_timed_out = False
+    st.session_state.loading_next_song = False
 
     prefetch_next_song(start_year, end_year, genre_query)
 
@@ -1085,15 +1087,13 @@ def render_game_interface():
                 with contextlib.suppress(ValueError, TypeError):
                     st.session_state.elapsed_playing_time = float(elapsed_from_url)
 
-            # Scroll wheel year picker - include round number to force re-render with new lock state
+            # Scroll wheel year picker - include lock state and timestamp to force re-render
             scroll_wheel_html = scroll_wheel_year_picker(
                 st.session_state.current_guess, start_year, end_year, is_locked
             )
-            # Add hidden round marker to force component refresh (content change forces re-render)
-            scroll_wheel_html += (
-                f"<!-- round:{st.session_state.current_round} locked:{is_locked} -->"
-            )
-            # Note: components.html doesn't support key parameter, but content changes force re-render
+            # Add unique marker to force iframe recreation when lock state changes
+            lock_key = f"locked_{is_locked}_{st.session_state.current_round}"
+            scroll_wheel_html += f"<!-- {lock_key} ts:{int(time.time()) if is_locked else 0} -->"
             components.html(scroll_wheel_html, height=220)
 
             # Submit button with selected year
@@ -1348,16 +1348,29 @@ def render_game_interface():
             # Action buttons - horizontally aligned
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
-                if st.button(
+                # Show loading state if already clicked
+                if st.session_state.get("loading_next_song", False):
+                    st.markdown(
+                        """
+                        <div style="text-align: center; padding: 0.8em; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 12px; color: white; font-weight: 600;">
+                            <span style="animation: spin 1s linear infinite; display: inline-block;">🎵</span> Loading next song...
+                        </div>
+                        <style>@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                elif st.button(
                     "▶️ Next Song", type="primary", use_container_width=True, key="next_song"
                 ):
+                    # Show loading state immediately
+                    st.session_state.loading_next_song = True
                     # Always reset scroll picker lock and related state for next round
                     st.session_state.time_locked = False
                     st.session_state.timed_out = False
                     st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
                     st.session_state.loading_game = True
-                    # Removed extra st.rerun() to prevent double refresh
+                    st.rerun()
 
             with btn_col2:
                 if st.button("🏁 End Game", use_container_width=True, key="end_game"):
