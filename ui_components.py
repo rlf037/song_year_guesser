@@ -252,10 +252,13 @@ MAIN_CSS = """
         border-radius: 12px;
         box-shadow: 0 12px 40px rgba(0,0,0,0.5);
         border: 2px solid rgba(48, 54, 61, 0.8);
-        transition: filter 0.3s ease;
+        transition: opacity 0.2s ease;
         display: block;
-        max-width: 100%;
-        height: auto;
+        opacity: 0;
+    }
+
+    .album-art.loaded {
+        opacity: 1;
     }
 
     /* ===== AUDIO VISUALIZER ===== */
@@ -1207,10 +1210,10 @@ def song_info_card(song: dict, blur_amount: float) -> str:
 
 
 def album_image(image_url: str, width: int = 280) -> str:
-    """Generate album image HTML"""
+    """Generate album image HTML with fade-in to prevent unblurred flash"""
     return f"""
     <div class="album-container">
-        <img src="{image_url}" width="{width}" height="{width}" class="album-art">
+        <img src="{image_url}" width="{width}" height="{width}" class="album-art" onload="this.classList.add('loaded')">
     </div>
     """
 
@@ -1246,7 +1249,7 @@ def song_history_item(song: dict) -> str:
     <div class="history-item {accuracy_class}">
         <span class="history-accuracy">{accuracy_icon}</span>
         <span class="history-song">{song["song_name"]} - {song["artist"]}</span>
-        <span class="history-years">{song["guess"]} / {song["actual"]}</span>
+        <span class="history-years"><span style="color:#94a3b8;font-size:0.75em;">guess:</span>{song["guess"]} <span style="color:#64748b;">/</span> <span style="color:#94a3b8;font-size:0.75em;">actual:</span>{song["actual"]}</span>
         <span class="history-score">+{song["score"]}</span>
     </div>
     """
@@ -1296,10 +1299,19 @@ def scroll_wheel_year_picker(
     (function() {{
         const minYear = {int(start_year)};
         const maxYear = {int(end_year)};
-        let currentYear = {int(current_year)};
         const isLocked = {str(locked).lower()};
         let container, track;
         const itemHeight = 46;
+
+        // Read year from URL first to preserve user selection across rerenders
+        let currentYear = {int(current_year)};
+        try {{
+            const urlParams = new URLSearchParams(window.parent.location.search);
+            const urlYear = parseInt(urlParams.get('yr'));
+            if (urlYear && urlYear >= minYear && urlYear <= maxYear) {{
+                currentYear = urlYear;
+            }}
+        }} catch(e) {{}}
         function buildYearTrack() {{
             track.innerHTML = '';
             for (let year = minYear; year <= maxYear; year++) {{

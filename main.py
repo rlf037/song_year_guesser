@@ -1031,6 +1031,12 @@ def render_game_interface():
 
     # === TWO COLUMN: Album+Audio LEFT, Year Picker RIGHT ===
     if not st.session_state.game_over:
+        # Song info card ABOVE the two columns, centered
+        st.markdown(
+            f'<div style="display: flex; justify-content: center; margin-bottom: 1em;">{song_info_card(song, hint_blur if st.session_state.audio_started else 8)}</div>',
+            unsafe_allow_html=True,
+        )
+
         col1, main_left, main_right, col4 = st.columns([0.1, 1.2, 0.8, 0.1])
 
         with main_left:
@@ -1059,12 +1065,6 @@ def render_game_interface():
                     st.session_state.audio_started = True
                     st.session_state.start_time = time.time()
                     st.rerun()
-
-            # Song info card below audio
-            st.markdown(
-                song_info_card(song, hint_blur if st.session_state.audio_started else 8),
-                unsafe_allow_html=True,
-            )
 
         with main_right:
             start_year = st.session_state.start_year
@@ -1144,77 +1144,56 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             elif is_locked:
-                # Time's up - urgent button with immediate feedback
-                button_text_urgent = f"⏰ Submit {st.session_state.current_guess}"
+                # Time's up - urgent button with wiggle animation
+                st.markdown(
+                    """<div style="text-align: center; color: #ef4444; font-weight: 700; font-size: 1.1em; margin-bottom: 0.5em; animation: blink 0.8s ease-in-out infinite;">
+                        ⚠️ TIME'S UP! Click to submit your guess ⚠️
+                    </div>
+                    <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }</style>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                button_clicked = st.button(
-                    button_text_urgent,
+                if st.button(
+                    f"🚨 SUBMIT {st.session_state.current_guess}",
                     type="primary",
                     use_container_width=True,
                     key="submit_guess_urgent",
-                )
-                if button_clicked:
-                    st.markdown(
-                        """
-                        <div style="text-align: center; margin: 0.5em 0; padding: 0.8em; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 12px; color: #ef4444; font-weight: 600;">
-                            🚨 Time's up! Processing your final guess...
-                        </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
-                    make_guess(st.session_state.current_guess, timed_out=True)
-                    st.session_state.submitting_guess = False
-                    st.session_state.guess_timed_out = False
+                ):
+                    st.session_state.submitting_guess = True
+                    st.session_state.guess_timed_out = True
                     st.rerun()
 
                 st.markdown(
                     """
                         <style>
                             button[key="submit_guess_urgent"] {
-                                animation: urgentPulse 1s ease-in-out infinite !important;
+                                animation: wiggle 0.5s ease-in-out infinite !important;
                                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-                                font-size: 1.35em !important;
+                                font-size: 1.4em !important;
                                 font-weight: 800 !important;
-                                box-shadow:0 8px 24px rgba(239, 68, 68, 0.4) !important;
+                                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5) !important;
+                                border: 3px solid #fca5a5 !important;
                             }
-                            @keyframes urgentPulse {
-                                0%, 100% {
-                                    transform: scale(1);
-                                    box-shadow:0 8px 24px rgba(239, 68, 68, 0.4);
-                                }
-                                50% {
-                                    transform: scale(1.03);
-                                    box-shadow:0 12px 32px rgba(239, 68, 68, 0.6);
-                                }
-                            }
-                            button[key="submit_guess_urgent"]:disabled {
-                                opacity: 0.6 !important;
-                                cursor: not-allowed !important;
-                                animation: none !important;
-                                transform: none !important;
-                                box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                            @keyframes wiggle {
+                                0%, 100% { transform: rotate(-1deg) scale(1.02); }
+                                25% { transform: rotate(1deg) scale(1.04); }
+                                50% { transform: rotate(-1deg) scale(1.02); }
+                                75% { transform: rotate(1deg) scale(1.04); }
                             }
                         </style>
                     """,
                     unsafe_allow_html=True,
                 )
             else:
-                # Normal button with immediate feedback
-                button_clicked = st.button(
-                    button_text, type="primary", use_container_width=True, key="submit_guess"
-                )
-                if button_clicked:
+                # Normal button - shows year prominently with click instruction
+                if st.button(
+                    f"🎯 Submit {st.session_state.current_guess}",
+                    type="primary",
+                    use_container_width=True,
+                    key="submit_guess",
+                ):
                     st.session_state.submitting_guess = True
-                    st.markdown(
-                        """
-                        <div style="text-align: center; margin: 0.5em 0; padding: 1em; background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: 2px solid #0ea5e9; border-radius: 16px; color: #fff; font-weight: 700; font-size: 1.1em;">
-                            <span style='font-size:1.3em;'>✅</span> Guess submitted!
-                        </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
-                    make_guess(st.session_state.current_guess, timed_out=False)
-                    st.session_state.submitting_guess = False
                     st.session_state.guess_timed_out = False
                     st.rerun()
 
