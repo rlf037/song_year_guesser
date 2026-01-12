@@ -50,6 +50,7 @@ MAIN_CSS = """
         align-items: center;
         gap: 0.5em;
         letter-spacing: -0.02em;
+        margin-bottom: 0.8em;
     }
 
     .header-controls {
