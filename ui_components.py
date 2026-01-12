@@ -54,33 +54,29 @@ MAIN_CSS = """
 
     .header-controls {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
         align-items: center;
-        gap: 1.2em;
+        gap: 0.8em;
         width: 100%;
         margin: 0 auto;
-        max-width: 900px;
+        max-width: 1100px;
     }
 
     .header-item {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5em;
+        gap: 0.4em;
         color: #94a3b8;
-        font-size: 0.95em;
-        padding: 0.5em 1.2em;
+        font-size: 0.9em;
+        padding: 0.4em 0.9em;
         background: rgba(30, 41, 59, 0.6);
         border-radius: 8px;
         border: 1px solid rgba(71, 85, 105, 0.3);
         backdrop-filter: blur(10px);
-        min-width: 90px;
-        max-width: 100%;
-        word-break: break-word;
-        white-space: normal;
-        text-align: center;
-        flex: 1 1 120px;
+        white-space: nowrap;
+        flex: 0 0 auto;
     }
 
     .header-item-label {
