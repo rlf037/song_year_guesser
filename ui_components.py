@@ -1289,10 +1289,15 @@ def scroll_wheel_year_picker(
     locked_border = "rgba(248, 81, 73, 0.4)" if locked else "rgba(48, 54, 61, 0.8)"
     return f"""
     <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; padding: 0.5em 0; margin-top: 0.6em; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; {locked_style}' data-locked='{str(locked).lower()}'>
-        <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
-        <div id='scroll-container' style='position: relative; height: 180px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
-            <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
-            <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};'></div>
+        <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>{"⬆ Scroll to select year ⬇" if not locked else "🔒 Selection locked"}</div>
+        <div style='display: flex; align-items: center; gap: 8px;'>
+            <div id='scroll-container' style='position: relative; height: 180px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
+                <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
+                <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};'></div>
+            </div>
+            <div id='scrollbar-track' style='width: 6px; height: 160px; background: rgba(48, 54, 61, 0.5); border-radius: 3px; position: relative;'>
+                <div id='scrollbar-thumb' style='width: 6px; height: 30px; background: {"#818cf8" if not locked else "#f59e0b"}; border-radius: 3px; position: absolute; top: 0; transition: top 0.1s ease-out;'></div>
+            </div>
         </div>
     </div>
     <script>
@@ -1346,6 +1351,16 @@ def scroll_wheel_year_picker(
                     item.style.opacity = '0.3';
                 }}
             }});
+            // Update scrollbar thumb position
+            const scrollThumb = document.getElementById('scrollbar-thumb');
+            if (scrollThumb) {{
+                const totalYears = maxYear - minYear;
+                const progress = (currentYear - minYear) / totalYears;
+                const trackHeight = 160;
+                const thumbHeight = 30;
+                const maxTop = trackHeight - thumbHeight;
+                scrollThumb.style.top = (progress * maxTop) + 'px';
+            }}
         }}
         function setYear(year) {{
             if (isLocked) return;
@@ -1369,10 +1384,10 @@ def scroll_wheel_year_picker(
             try {{
                 const buttons = window.parent.document.querySelectorAll('button[data-testid="baseButton-primary"]');
                 buttons.forEach(btn => {{
-                    if (btn.textContent.includes('Submit')) {{
-                        btn.textContent = btn.textContent.includes('⏰')
-                            ? '⏰ Submit ' + currentYear
-                            : 'Submit ' + currentYear;
+                    // Only update if it looks like a year (4 digits)
+                    const text = btn.textContent.trim();
+                    if (/^\d{{4}}$/.test(text) || text.includes('SUBMIT')) {{
+                        btn.textContent = currentYear.toString();
                     }}
                 }});
             }} catch(e) {{}}

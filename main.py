@@ -1146,16 +1146,16 @@ def render_game_interface():
             elif is_locked:
                 # Time's up - urgent button with wiggle animation
                 st.markdown(
-                    """<div style="text-align: center; color: #ef4444; font-weight: 700; font-size: 1.1em; margin-bottom: 0.5em; animation: blink 0.8s ease-in-out infinite;">
-                        ⚠️ TIME'S UP! Click to submit your guess ⚠️
+                    """<div style="text-align: center; color: #ef4444; font-weight: 700; font-size: 1.2em; margin-bottom: 0.3em; animation: blink 0.6s ease-in-out infinite;">
+                        ⚠️ TIME'S UP! CLICK TO SUBMIT ⬇️
                     </div>
-                    <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }</style>
+                    <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }</style>
                     """,
                     unsafe_allow_html=True,
                 )
 
                 if st.button(
-                    f"🚨 SUBMIT {st.session_state.current_guess}",
+                    str(st.session_state.current_guess),
                     type="primary",
                     use_container_width=True,
                     key="submit_guess_urgent",
@@ -1168,27 +1168,31 @@ def render_game_interface():
                     """
                         <style>
                             button[key="submit_guess_urgent"] {
-                                animation: wiggle 0.5s ease-in-out infinite !important;
+                                animation: wiggle 0.4s ease-in-out infinite !important;
                                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-                                font-size: 1.4em !important;
-                                font-weight: 800 !important;
-                                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5) !important;
-                                border: 3px solid #fca5a5 !important;
+                                font-size: 2.5em !important;
+                                font-weight: 900 !important;
+                                padding: 0.6em 1em !important;
+                                box-shadow: 0 8px 30px rgba(239, 68, 68, 0.6) !important;
+                                border: 4px solid #fca5a5 !important;
+                                font-family: 'SF Mono', Monaco, Consolas, monospace !important;
                             }
                             @keyframes wiggle {
-                                0%, 100% { transform: rotate(-1deg) scale(1.02); }
-                                25% { transform: rotate(1deg) scale(1.04); }
-                                50% { transform: rotate(-1deg) scale(1.02); }
-                                75% { transform: rotate(1deg) scale(1.04); }
+                                0%, 100% { transform: rotate(-2deg) scale(1.02); }
+                                50% { transform: rotate(2deg) scale(1.05); }
                             }
                         </style>
                     """,
                     unsafe_allow_html=True,
                 )
             else:
-                # Normal button - shows year prominently with click instruction
+                # Normal button - year only with "Click to Submit" label above
+                st.markdown(
+                    '<div style="text-align: center; color: #64748b; font-size: 0.85em; margin-bottom: 0.3em; text-transform: uppercase; letter-spacing: 0.1em;">Click to Submit</div>',
+                    unsafe_allow_html=True,
+                )
                 if st.button(
-                    f"🎯 Submit {st.session_state.current_guess}",
+                    str(st.session_state.current_guess),
                     type="primary",
                     use_container_width=True,
                     key="submit_guess",
@@ -1197,53 +1201,37 @@ def render_game_interface():
                     st.session_state.guess_timed_out = False
                     st.rerun()
 
-                # Enhanced button styling with clear pressed indicator
+                # Enhanced button styling - year displayed prominently
                 st.markdown(
                     """
                         <style>
                             button[key="submit_guess"] {
-                                background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
+                                background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%) !important;
                                 color: white !important;
-                                font-size: 1.25em !important;
-                                font-weight: 700 !important;
-                                padding: 0.95em 2em !important;
+                                font-size: 2.2em !important;
+                                font-weight: 800 !important;
+                                font-family: 'SF Mono', Monaco, Consolas, monospace !important;
+                                padding: 0.5em 1.5em !important;
                                 border-radius: 16px !important;
-                                border: none !important;
-                                box-shadow:
-                                    0 6px 20px rgba(34, 211, 238, 0.35),
-                                    0 2px 8px rgba(0, 0, 0, 0.2),
-                                    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
-                                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-                                transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                                border: 3px solid rgba(129, 140, 248, 0.5) !important;
+                                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4) !important;
+                                transition: all 0.15s ease !important;
                             }
                             button[key="submit_guess"]:hover:not(:disabled) {
-                                background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%) !important;
-                                box-shadow:
-                                    0 10px 28px rgba(34, 211, 238, 0.45),
-                                    0 4px 12px rgba(0, 0, 0, 0.25),
-                                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-                                transform: translateY(-2px) scale(1.04) !important;
+                                background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+                                box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5) !important;
+                                transform: translateY(-2px) scale(1.03) !important;
                             }
                             button[key="submit_guess"]:active:not(:disabled) {
-                                background: linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%) !important;
-                                transform: scale(0.96) !important;
-                                box-shadow:
-                                    0 2px 8px rgba(34, 211, 238, 0.18),
-                                    0 1px 4px rgba(0, 0, 0, 0.15) !important;
-                            }
-                            button[key="submit_guess"]:disabled {
-                                opacity: 0.6 !important;
-                                cursor: not-allowed !important;
-                                transform: none !important;
-                                box-shadow:0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                                transform: scale(0.97) !important;
+                                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
                             }
                         </style>
                     """,
                     unsafe_allow_html=True,
                 )
 
-            # Timer in right column - compact
-            st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
+            # Timer in right column - positioned higher
             if st.session_state.audio_started:
                 # Only delay on the first song of the round
                 delay = 2 if st.session_state.current_round == 1 else 0
