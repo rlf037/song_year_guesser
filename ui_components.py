@@ -1349,6 +1349,20 @@ def scroll_wheel_year_picker(
                 const url = new URL(window.parent.location.href);
                 url.searchParams.set('yr', currentYear.toString());
                 window.parent.history.replaceState(null, '', url.toString());
+                // Update submit button text immediately for better UX
+                updateSubmitButton();
+            }} catch(e) {{}}
+        }}
+        function updateSubmitButton() {{
+            try {{
+                const buttons = window.parent.document.querySelectorAll('button[data-testid="baseButton-primary"]');
+                buttons.forEach(btn => {{
+                    if (btn.textContent.includes('Submit')) {{
+                        btn.textContent = btn.textContent.includes('⏰')
+                            ? '⏰ Submit ' + currentYear
+                            : 'Submit ' + currentYear;
+                    }}
+                }});
             }} catch(e) {{}}
         }}
         function init() {{
@@ -1522,6 +1536,10 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             var accumulatedPausedTime = 0;
 
             function pause() {{
+                // Don't allow pausing if time has already elapsed
+                var elapsed = getElapsedTime();
+                if (elapsed >= maxTime) return;
+
                 if (!isPaused) {{
                     isPaused = true;
                     pausedAt = Date.now();
