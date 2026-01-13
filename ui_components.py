@@ -2066,7 +2066,13 @@ def correct_answer_with_diff(actual_year: int, guessed_year: int) -> str:
 
 def score_card(score: int) -> str:
     """Generate the score card display - compact single line"""
-    return f'<div class="score-card"><span style="font-size: 1.2em;">&#x1F3AF;</span> You earned <strong>{score} points</strong> this round</div>'
+    # Wrap the text in a no-wrap span so the message always stays on one line
+    return (
+        f'<div class="score-card">'
+        f'<span style="font-size: 1.2em;">&#x1F3AF;</span> '
+        f'<span style="white-space:nowrap;">You earned <strong>{score} points</strong> this round</span>'
+        f'</div>'
+    )
 
 
 def status_line(message: str) -> str:
