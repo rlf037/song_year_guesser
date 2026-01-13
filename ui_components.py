@@ -1289,7 +1289,7 @@ def scroll_wheel_year_picker(
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
         <div id='scroll-container' style='position: relative; height: 600px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
-            <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};'></div>
+            <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.03)" if locked else "transparent"}; z-index: 1;'></div>
         </div>
     </div>
     <script>
@@ -1306,7 +1306,7 @@ def scroll_wheel_year_picker(
                 const div = document.createElement('div');
                 div.className = 'year-item';
                 div.dataset.year = year;
-                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; display: flex; align-items: center; justify-content: center; width: 100%; position: relative;';
+                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2;';
                 div.textContent = year.toString();
                 track.appendChild(div);
             }}
