@@ -1348,6 +1348,10 @@ def render_game_interface():
                 if blurred_image:
                     st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
 
+            # Audio visualizer under album in results (keep synth visible)
+            is_playing_result = bool(song.get("preview_url"))
+            st.markdown(audio_visualizer(is_playing=is_playing_result), unsafe_allow_html=True)
+
             # Audio player under album in results too
             if song["preview_url"]:
                 components.html(
