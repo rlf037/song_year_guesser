@@ -2,6 +2,8 @@
 
 A multiplayer web game where players listen to song previews and guess the release year. Built with Streamlit.
 
+<!-- Redeploy trigger: updated 2026-01-13 to refresh Streamlit Cloud build assets -->
+
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://song-year-game.streamlit.app)
 
 ## Features
