@@ -1287,7 +1287,7 @@ def scroll_wheel_year_picker(
     return f"""
     <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; padding: 0.5em 0; margin-top: 0.6em; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; {locked_style}' data-locked='{str(locked).lower()}'>
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
-        <div id='scroll-container' style='position: relative; height: 180px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
+        <div id='scroll-container' style='position: relative; height: 320px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
             <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};'></div>
         </div>
@@ -1313,7 +1313,7 @@ def scroll_wheel_year_picker(
         }}
         function updatePosition() {{
             const offset = (currentYear - minYear) * itemHeight;
-            const containerHeight = 180;
+            const containerHeight = 320;
             const centerOffset = (containerHeight / 2) - (itemHeight / 2);
             track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
             const yearItems = track.querySelectorAll('.year-item');
