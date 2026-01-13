@@ -1003,11 +1003,20 @@ def render_game_interface():
     )
     if time_expired and not st.session_state.time_locked:
         st.session_state.time_locked = True
-        # Lock input and mark that the guess timed out. Do NOT auto-submit on server.
-        # Showing an urgent submit UI is more reliable and prevents unexpected automatic submissions.
-        st.session_state.guess_timed_out = True
-        # Let the UI render the urgent submit button for the user to confirm.
-        # Avoid forcing a rerun here to prevent accidental double submissions.
+        # Auto-submit when timeout occurs to guarantee the guess is processed
+        # This covers cases where the client's click doesn't reach the server.
+        try:
+            if not st.session_state.submitting_guess and not st.session_state.game_over:
+                st.session_state.submitting_guess = True
+                st.session_state.guess_timed_out = True
+                make_guess(st.session_state.current_guess, timed_out=True)
+                st.session_state.submitting_guess = False
+                st.session_state.guess_timed_out = False
+        except Exception:
+            # If auto-submit fails for any reason, fall back to showing urgent button
+            pass
+        # Force immediate re-render to lock scroll wheel and update UI
+        st.rerun()
 
     # Calculate blur amount - ALWAYS start with maximum blur to prevent flash
     if not st.session_state.game_over:
@@ -1100,11 +1109,12 @@ def render_game_interface():
             # Add unique marker to force iframe recreation when lock state changes
             lock_key = f"locked_{is_locked}_{st.session_state.current_round}"
             scroll_wheel_html += f"<!-- {lock_key} ts:{int(time.time()) if is_locked else 0} -->"
-            # Scroll wheel iframe height reduced by 50% per design request
-            components.html(scroll_wheel_html, height=200)
+            # Slightly increase iframe height so the scroll wheel shows more rows
+            # and the submit button renders slightly lower on the page (~10%).
+            components.html(scroll_wheel_html, height=400)
 
-            # Submit button with selected year - use icon-only button and separate label
-            button_icon = "✔"
+            # Submit button shows only the selected year from the scroll wheel
+            button_label = f"Submit {st.session_state.current_guess}"
 
             # Check if currently submitting to show status
             if st.session_state.get("submitting_guess", False):
@@ -1151,19 +1161,13 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             elif is_locked:
-                # Time's up - urgent icon button with explicit label
-                button_icon_urgent = "⏰"
-
-                # Render the icon-only button
+                # Time's up - show the selected year prominently on the urgent submit button
                 button_clicked = st.button(
-                    button_icon_urgent,
+                    button_label,
                     type="primary",
                     use_container_width=False,
                     key="submit_guess_urgent",
                 )
-
-                # Provide a nearby label so the user knows the button submits the year for review
-                st.markdown('<div style="text-align:center;margin-top:0.5em;color:#ef4444;font-weight:700;">Submit year for review</div>', unsafe_allow_html=True)
                 if button_clicked:
                     st.markdown(
                         """
@@ -1178,11 +1182,7 @@ def render_game_interface():
                     st.session_state.guess_timed_out = False
                     st.rerun()
 
-                # Fallback HTML link to trigger a query-param based submit if button clicks aren't received
-                st.markdown(
-                    '<div style="text-align:center;margin-top:0.6em;"><a href="?submit=1" style="color:#ef4444;font-weight:700;">Click here to submit (fallback)</a></div>',
-                    unsafe_allow_html=True,
-                )
+                # (Removed fallback link) rely on urgent submit button instead
 
                 st.markdown(
                     """
@@ -1216,11 +1216,10 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             else:
-                # Normal icon-only submit button with label
+                # Normal submit button: show selected year only
                 button_clicked = st.button(
-                    button_icon, type="primary", use_container_width=False, key="submit_guess"
+                    button_label, type="primary", use_container_width=False, key="submit_guess"
                 )
-                st.markdown('<div style="text-align:center;margin-top:0.4em;color:#94a3b8;font-weight:600;">Submit year for review</div>', unsafe_allow_html=True)
                 if button_clicked:
                     st.session_state.submitting_guess = True
                     st.markdown(

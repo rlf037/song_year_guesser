@@ -180,8 +180,8 @@ MAIN_CSS = """
         gap: 2em;
         width: 100%;
         margin: 1em 0;
-        /* Force a slightly taller row so timer/submit can be positioned lower (~10% up) */
-        min-height: 400px;
+        /* Force a much taller row so timer/submit can be positioned lower */
+        min-height: 700px;
     }
 
     @media (max-width: 600px) {
@@ -199,9 +199,7 @@ MAIN_CSS = """
         flex-direction: column;
         justify-content: space-between;
         /* Ensure both columns meet the forced row height so bottoms align (slightly increased) */
-        min-height: 400px;
-        /* allow absolute positioning of children relative to each column */
-        position: relative;
+        min-height: 700px;
     }
 
     /* ===== SONG INFO CARD ===== */
@@ -466,15 +464,6 @@ MAIN_CSS = """
         width: 100%;
     }
 
-    /* Position timer 75% down inside its column */
-    .game-row > div .timer-container {
-        position: absolute;
-        top: 75%;
-        left: 50%;
-        transform: translate(-50%, 0);
-        width: auto;
-    }
-
     .timer-ring {
         position: relative;
         width: 200px;
@@ -516,6 +505,15 @@ MAIN_CSS = """
         overflow: hidden;
     }
 
+    /* Center the score message used in the status area */
+    .score-card {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
     .stButton > button:disabled {
         opacity: 0.4;
         cursor: not-allowed;
@@ -552,12 +550,12 @@ MAIN_CSS = """
         letter-spacing: 0.02em;
     }
 
-    /* Move primary submit button 75% down within its column */
+    /* Move primary submit button much lower within its column so the scroll wheel is visible */
     .game-row > div .stButton > button[data-testid="baseButton-primary"] {
         position: absolute;
-        top: 75%;
+        top: 92%;
         left: 50%;
-        transform: translate(-50%, 0);
+        transform: translate(-50%, -50%);
     }
 
     .stButton > button[kind="primary"][data-testid="baseButton-primary"]:hover:not(:disabled) {
@@ -1339,7 +1337,7 @@ def scroll_wheel_year_picker(
     return f"""
     <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; padding: 0.5em 0; margin-top: 0.6em; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; {locked_style}' data-locked='{str(locked).lower()}'>
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
-        <div id='scroll-container' style='position: relative; height: 600px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
+        <div id='scroll-container' style='position: relative; height: 100%; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
             <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.03)" if locked else "transparent"}; z-index: 1;'></div>
         </div>
@@ -1351,7 +1349,7 @@ def scroll_wheel_year_picker(
         let currentYear = {int(current_year)};
         const isLocked = {str(locked).lower()};
         let container, track;
-        const itemHeight = 46;
+        let itemHeight = 46; // will be recalculated based on container height
         function buildYearTrack() {{
             track.innerHTML = '';
             for (let year = minYear; year <= maxYear; year++) {{
@@ -1364,8 +1362,10 @@ def scroll_wheel_year_picker(
             }}
         }}
         function updatePosition() {{
+            const containerHeight = 400; // fixed height for scroll wheel
+            // Recalculate itemHeight in case the iframe size changed
+            itemHeight = Math.max(28, Math.round(containerHeight / 5));
             const offset = (currentYear - minYear) * itemHeight;
-            const containerHeight = 600;
             const centerOffset = (containerHeight / 2) - (itemHeight / 2);
             track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
             const yearItems = track.querySelectorAll('.year-item');
@@ -1426,7 +1426,7 @@ def scroll_wheel_year_picker(
             if (!isLocked) {{
                 // Mouse wheel scrolling (slowed down)
                 let accumulatedDelta = 0;
-                const SCROLL_THRESHOLD = 50; // Pixels needed to change 1 year
+                const SCROLL_THRESHOLD = Math.max(24, itemHeight * 0.9); // dynamic threshold
                 container.addEventListener('wheel', function(e) {{
                     e.preventDefault();
                     accumulatedDelta += e.deltaY;
@@ -1479,6 +1479,8 @@ def scroll_wheel_year_picker(
                 }});
                 // Focus container for keyboard input
                 container.focus();
+                // Ensure initial sizing and rendering
+                updatePosition();
             }}
         }}
         setTimeout(init, 0);
@@ -2071,7 +2073,7 @@ def score_card(score: int) -> str:
         f'<div class="score-card">'
         f'<span style="font-size: 1.2em;">&#x1F3AF;</span> '
         f'<span style="white-space:nowrap;">You earned <strong>{score} points</strong> this round</span>'
-        f'</div>'
+        f"</div>"
     )
 
 
