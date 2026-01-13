@@ -361,7 +361,8 @@ MAIN_CSS = """
     }
 
     .year-wheel {
-        height: 150px;
+        /* Increased height to reveal more of the wheel so users can scroll comfortably */
+        height: 360px;
         overflow: hidden;
         position: relative;
         cursor: ns-resize;
@@ -372,6 +373,9 @@ MAIN_CSS = """
     /* Ensure extra spacing above the year picker for clearer separation */
     #year-picker-wrapper {
         margin-top: 2.4em !important;
+        /* Add substantial bottom space so the submit button renders well below the wheel */
+        margin-bottom: 6.0em !important;
+        padding-bottom: 0.6em;
     }
     @media (max-width: 600px) {
         #year-picker-wrapper { margin-top: 1.2em !important; }
@@ -386,7 +390,7 @@ MAIN_CSS = """
     }
 
     .year-wheel-item {
-        height: 50px;
+        height: 70px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -403,9 +407,9 @@ MAIN_CSS = """
     }
 
     .year-wheel-item.selected {
-        font-size: 2.8em;
+        font-size: 3.6em;
         color: #e6edf3;
-        text-shadow: 0 0 20px rgba(230, 237, 243, 0.3);
+        text-shadow: 0 0 20px rgba(230, 237, 243, 0.35);
     }
 
     .year-wheel-item.selected.locked {

@@ -1167,6 +1167,12 @@ def render_game_interface():
                     st.session_state.guess_timed_out = False
                     st.rerun()
 
+                # Fallback HTML link to trigger a query-param based submit if button clicks aren't received
+                st.markdown(
+                    '<div style="text-align:center;margin-top:0.6em;"><a href="?submit=1" style="color:#ef4444;font-weight:700;">Click here to submit (fallback)</a></div>',
+                    unsafe_allow_html=True,
+                )
+
                 st.markdown(
                     """
                         <style>
@@ -1495,6 +1501,24 @@ def render_settings_panel():
 def main():
     """Main application"""
     initialize_game_state()
+
+    # Fallback: process query-param triggered submit (useful when button clicks fail due to client issues)
+    try:
+        params = st.experimental_get_query_params()
+        if params and "submit" in params and params.get("submit") and st.session_state.time_locked:
+            # Only process once
+            try:
+                make_guess(st.session_state.current_guess, timed_out=True)
+            except Exception:
+                pass
+            # Clear the param to avoid re-processing
+            try:
+                st.experimental_set_query_params()
+            except Exception:
+                pass
+            st.rerun()
+    except Exception:
+        pass
 
     # Handle loading state - show spinner while fetching song
     if st.session_state.loading_game:
