@@ -1389,29 +1389,37 @@ def scroll_wheel_year_picker(
         let currentYear = {int(current_year)};
         const isLocked = {str(locked).lower()};
         let container, track;
-        let itemHeight = 46; // will be recalculated based on container height
+        let itemHeight = 80; // Initial guess
+        let cachedItems = {{}};
+
         function buildYearTrack() {{
             track.innerHTML = '';
+            cachedItems = {{}};
+            const containerHeight = 350; // Match container's height
+            itemHeight = Math.round(containerHeight / 5);
+
             for (let year = minYear; year <= maxYear; year++) {{
                 const div = document.createElement('div');
                 div.className = 'year-item';
                 div.dataset.year = year;
-                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2;';
+                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease;';
                 div.textContent = year.toString();
                 track.appendChild(div);
+                cachedItems[year] = div;
             }}
         }}
+
         function updatePosition() {{
-            const containerHeight = 400;
-            // Recalculate itemHeight in case the iframe size changed
-            itemHeight = Math.max(28, Math.round(containerHeight / 5));
+            const containerHeight = 350;
             const offset = (currentYear - minYear) * itemHeight;
             const centerOffset = (containerHeight / 2) - (itemHeight / 2);
             track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
-            const yearItems = track.querySelectorAll('.year-item');
-            yearItems.forEach(item => {{
-                const year = parseInt(item.dataset.year);
+
+            Object.keys(cachedItems).forEach(yearStr => {{
+                const year = parseInt(yearStr);
+                const item = cachedItems[year];
                 const distance = Math.abs(year - currentYear);
+
                 if (distance === 0) {{
                     item.style.color = isLocked ? '#f59e0b' : '#818cf8';
                     item.style.transform = 'scale(1.1)';
@@ -1427,6 +1435,7 @@ def scroll_wheel_year_picker(
                 }}
             }});
         }}
+
         function setYear(year) {{
             if (isLocked) return;
             const newYear = Math.max(minYear, Math.min(maxYear, Math.round(year)));
@@ -1447,16 +1456,13 @@ def scroll_wheel_year_picker(
         }}
         function updateSubmitButton() {{
             try {{
-                // Find all buttons and update submit button text
-                const allButtons = window.parent.document.querySelectorAll('button');
-                allButtons.forEach(btn => {{
-                    const text = btn.textContent || '';
-                    // Look for submit button (key="submit_guess" or key="submit_guess_urgent")
-                    if (text.includes('Submit') && !text.includes('Processing')) {{
-                        const hasTimer = text.includes('⏰');
-                        btn.textContent = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
-                    }}
-                }});
+                // Find primary buttons more efficiently
+                const submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+                if (submitBtn) {{
+                    const text = submitBtn.textContent || '';
+                    const hasTimer = text.includes('⏰');
+                    submitBtn.textContent = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
+                }}
             }} catch(e) {{}}
         }}
         function init() {{
@@ -1466,9 +1472,9 @@ def scroll_wheel_year_picker(
             buildYearTrack();
             updatePosition();
             if (!isLocked) {{
-                // Mouse wheel scrolling (slowed down)
+                // Mouse wheel scrolling - more responsive
                 let accumulatedDelta = 0;
-                const SCROLL_THRESHOLD = Math.max(24, itemHeight * 0.9); // dynamic threshold
+                const SCROLL_THRESHOLD = 15; // Lower threshold for more responsive feel
                 container.addEventListener('wheel', function(e) {{
                     e.preventDefault();
                     accumulatedDelta += e.deltaY;
@@ -1531,7 +1537,7 @@ def scroll_wheel_year_picker(
 """
 
 
-def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, initially_paused: bool = False) -> str:
+def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) -> str:
     """Generate the countdown timer with dynamic animations that intensify as time runs out"""
     return f"""
     <style>
@@ -1619,7 +1625,6 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, in
             var startTime = {start_timestamp};
             var maxTime = {max_time};
             var delaySeconds = {delay_seconds};
-            var initiallyPaused = {str(initially_paused).lower()};
             var circle = document.getElementById('timer-circle');
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
@@ -1628,8 +1633,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, in
             var lastSecond = maxTime;
 
             // Pause tracking
-            var isPaused = initiallyPaused;
-            var pausedAt = initiallyPaused ? Date.now() : null;
+            var isPaused = false;
+            var pausedAt = null;
             var accumulatedPausedTime = 0;
 
             function pause() {{
@@ -1766,13 +1771,6 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, in
                 resume: resume,
                 getElapsedTime: getElapsedTime
             }};
-
-            // Apply initial state
-            if (initiallyPaused) {{
-                ring.classList.add('paused');
-                labelEl.textContent = 'paused';
-                labelEl.classList.add('paused');
-            }}
 
             updateTimer();
             setInterval(updateTimer, 100);

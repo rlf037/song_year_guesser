@@ -1079,6 +1079,30 @@ def render_game_interface():
                     audio_player(song["preview_url"], song["id"], autoplay=True), height=70
                 )
 
+                # Detect when audio actually starts playing
+                components.html(f"""
+                <script>
+                    (function() {{
+                        var songId = '{song["id"]}';
+                        var checkInterval = setInterval(function() {{
+                            try {{
+                                var audioStartedKey = 'audio_started_' + songId;
+                                var isStarted = localStorage.getItem(audioStartedKey) === 'true';
+                                if (isStarted) {{
+                                    clearInterval(checkInterval);
+                                    // Set query param to signal Streamlit
+                                    var url = new URL(window.parent.location.href);
+                                    if (url.searchParams.get('as') !== 'true') {{
+                                        url.searchParams.set('as', 'true');
+                                        window.parent.history.replaceState(null, '', url.toString());
+                                    }}
+                                }}
+                            }} catch(e) {{}}
+                        }}, 100);
+                    }})();
+                </script>
+                """, height=0)
+
             # Song info card below audio
             st.markdown(
                 song_info_card(song, hint_blur if st.session_state.audio_started else 8),
@@ -1099,6 +1123,12 @@ def render_game_interface():
                         st.session_state.current_guess = url_year
                 except (ValueError, TypeError):
                     pass
+
+            # Check if audio has started (set by audio start detector JS)
+            if st.query_params.get("as") == "true" and not st.session_state.audio_started:
+                st.session_state.audio_started = True
+                st.session_state.start_time = time.time()
+                st.rerun()
 
             # Read elapsed time from query params (set by timer JS)
             elapsed_from_url = st.query_params.get("et")
@@ -1288,12 +1318,14 @@ def render_game_interface():
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 0.2em;"></div>', unsafe_allow_html=True)
-            # Always render the dynamic timer - it will start in paused state
-            # The audio player's JS will call timerControl.resume() when audio plays
-            delay = 2 if st.session_state.current_round == 1 else 0
-            components.html(
-                timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, initially_paused=True), height=220
-            )
+            # Only render dynamic timer when audio is playing
+            if st.session_state.audio_started:
+                delay = 2 if st.session_state.current_round == 1 else 0
+                components.html(
+                    timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay), height=220
+                )
+            else:
+                st.markdown(static_timer(30), unsafe_allow_html=True)
 
     # === GAME OVER DISPLAY ===
     if st.session_state.game_over:
