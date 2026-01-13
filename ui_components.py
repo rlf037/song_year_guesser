@@ -1377,7 +1377,7 @@ def scroll_wheel_year_picker(
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
         <div id='scroll-container' style='flex: 1; width: 260px; min-height: 350px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none; position: relative;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
-            <div id='selection-box' style='position: absolute; top: 50%; left: 15px; right: 15px; height: 56px; transform: translateY(-50%); border: 2px solid {"rgba(248, 81, 73, 0.6)" if locked else "rgba(88, 166, 255, 0.5)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"}; z-index: 1;'></div>
+            <div id='selection-box' style='position: absolute; top: 50%; left: 20px; right: 20px; height: 50px; transform: translateY(-50%); border: 2px solid {"rgba(248, 81, 73, 0.6)" if locked else "rgba(88, 166, 255, 0.5)"}; border-radius: 6px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"}; z-index: 1;'></div>
         </div>
     </div>
     </body>
@@ -1462,24 +1462,39 @@ def scroll_wheel_year_picker(
         }}
         function updateSubmitButton() {{
             try {{
-                // Find primary buttons more efficiently - check multiple selectors
-                let submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+                // Try multiple strategies to find the submit button
+                let submitBtn = null;
 
+                // Strategy 1: Find by data-testid
+                submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+
+                // Strategy 2: Find by text content (more reliable for subsequent songs)
                 if (!submitBtn) {{
-                    // Fallback: find by text content
                     const allButtons = window.parent.document.querySelectorAll('button');
                     for (let btn of allButtons) {{
-                        if (btn.textContent.includes('Submit')) {{
+                        const text = btn.textContent || '';
+                        if (text.includes('Submit') && !text.includes('Processing')) {{
                             submitBtn = btn;
                             break;
                         }}
                     }}
                 }}
 
+                // Strategy 3: Find the last primary button (submit is usually last)
+                if (!submitBtn) {{
+                    const allPrimaryButtons = window.parent.document.querySelectorAll('button');
+                    if (allPrimaryButtons.length > 0) {{
+                        submitBtn = allPrimaryButtons[allPrimaryButtons.length - 1];
+                    }}
+                }}
+
                 if (submitBtn) {{
                     const text = submitBtn.textContent || '';
                     const hasTimer = text.includes('⏰');
-                    submitBtn.textContent = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
+                    const newText = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
+                    if (submitBtn.textContent !== newText) {{
+                        submitBtn.textContent = newText;
+                    }}
                 }}
             }} catch(e) {{}}
         }}
@@ -1547,6 +1562,18 @@ def scroll_wheel_year_picker(
                 container.focus();
                 // Ensure initial sizing and rendering
                 updatePosition();
+                // Update button text immediately on init
+                updateSubmitButton();
+                // Retry button update a few times as page might still be loading
+                let retries = 0;
+                const retryInterval = setInterval(function() {{
+                    if (retries < 5) {{
+                        updateSubmitButton();
+                        retries++;
+                    }} else {{
+                        clearInterval(retryInterval);
+                    }}
+                }}, 200);
             }}
         }}
         setTimeout(init, 0);
