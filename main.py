@@ -1349,7 +1349,9 @@ def render_game_interface():
                     st.markdown(album_image(blurred_image, 450), unsafe_allow_html=True)
 
             # Audio visualizer under album in results (keep synth visible)
-            is_playing_result = bool(song.get("preview_url"))
+            # Start as static (not moving) unless the audio is actually playing.
+            # The embedded audio player's JS will toggle the visualizer when play/pause occurs.
+            is_playing_result = False
             st.markdown(audio_visualizer(is_playing=is_playing_result), unsafe_allow_html=True)
 
             # Audio player under album in results too
