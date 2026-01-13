@@ -944,6 +944,9 @@ def get_total_score() -> int:
 def render_game_interface():
     """Render the main game interface"""
 
+    # Reset time lock for new rounds
+    st.session_state.time_locked = False
+
     # Always unlock scroll wheel at the start of a new round
     if st.session_state.game_active and not st.session_state.game_over:
         st.session_state.time_locked = False
@@ -1114,7 +1117,7 @@ def render_game_interface():
             components.html(scroll_wheel_html, height=400)
 
             # Submit button shows only the selected year from the scroll wheel
-            button_label = f"Submit {st.session_state.current_guess}"
+            button_label = str(st.session_state.get("current_guess") or "")
 
             # Check if currently submitting to show status
             if st.session_state.get("submitting_guess", False):
@@ -1162,10 +1165,11 @@ def render_game_interface():
                 )
             elif is_locked:
                 # Time's up - show the selected year prominently on the urgent submit button
+                st.markdown("**Submit your guess:**")
                 button_clicked = st.button(
                     button_label,
                     type="primary",
-                    use_container_width=False,
+                    use_container_width=True,
                     key="submit_guess_urgent",
                 )
                 if button_clicked:
@@ -1217,8 +1221,9 @@ def render_game_interface():
                 )
             else:
                 # Normal submit button: show selected year only
+                st.markdown("**Submit your guess:**")
                 button_clicked = st.button(
-                    button_label, type="primary", use_container_width=False, key="submit_guess"
+                    button_label, type="primary", use_container_width=True, key="submit_guess"
                 )
                 if button_clicked:
                     st.session_state.submitting_guess = True

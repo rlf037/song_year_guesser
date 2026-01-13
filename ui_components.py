@@ -199,7 +199,8 @@ MAIN_CSS = """
         flex-direction: column;
         justify-content: space-between;
         /* Ensure both columns meet the forced row height so bottoms align (slightly increased) */
-        min-height: 700px;
+        min-height: 650px;
+        padding-bottom: 0;
     }
 
     /* ===== SONG INFO CARD ===== */
@@ -457,7 +458,7 @@ MAIN_CSS = """
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 0 auto;
+        margin: 0 auto 0 auto;
         /* Nudge timer upward slightly to move it up by roughly 2% */
         transform: translateY(-2%);
         padding: 0.5em;
@@ -536,18 +537,19 @@ MAIN_CSS = """
     .stButton > button[kind="primary"][data-testid="baseButton-primary"] {
         background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
         color: white;
-        font-size: 1.2em;
-        font-weight: 600;
-        padding: 0.9em 2.5em;
-        border-radius: 12px;
+        font-size: 2em;
+        font-weight: 800;
+        padding: 1.2em 2.5em;
+        border-radius: 16px;
         border: none;
         box-shadow:
-            0 8px 25px rgba(99, 102, 241, 0.3),
-            0 2px 10px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            0 12px 35px rgba(99, 102, 241, 0.4),
+            0 4px 15px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         letter-spacing: 0.02em;
+        min-height: 4em;
     }
 
     /* Move primary submit button much lower within its column so the scroll wheel is visible */
@@ -640,17 +642,45 @@ MAIN_CSS = """
 
     /* ===== SCORE CARD ===== */
     .score-card {
-        background: rgba(35, 134, 54, 0.15);
-        border: 1px solid rgba(35, 134, 54, 0.4);
         padding: 0.8em 1.5em;
         border-radius: 8px;
         text-align: center;
-        color: #3fb950;
-        font-size: 1em;
-        font-weight: 500;
-        margin: 0.8em auto;
-        max-width: 400px;
+        font-size: 2em;
+        font-weight: 700;
+        margin: 0.8em 0;
         line-height: 1.4;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .score-excellent {
+        color: #22c55e; /* green */
+        background: rgba(34, 197, 94, 0.15);
+        border: 2px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .score-great {
+        color: #3b82f6; /* blue */
+        background: rgba(59, 130, 246, 0.15);
+        border: 2px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .score-good {
+        color: #eab308; /* yellow */
+        background: rgba(234, 179, 8, 0.15);
+        border: 2px solid rgba(234, 179, 8, 0.4);
+    }
+
+    .score-okay {
+        color: #f97316; /* orange */
+        background: rgba(249, 115, 22, 0.15);
+        border: 2px solid rgba(249, 115, 22, 0.4);
+    }
+
+    .score-poor {
+        color: #ef4444; /* red */
+        background: rgba(239, 68, 68, 0.15);
+        border: 2px solid rgba(239, 68, 68, 0.4);
     }
 
     /* ===== CORRECT ANSWER ===== */
@@ -1335,7 +1365,7 @@ def scroll_wheel_year_picker(
     locked_style = "opacity: 0.6; pointer-events: none;" if locked else ""
     locked_border = "rgba(248, 81, 73, 0.4)" if locked else "rgba(48, 54, 61, 0.8)"
     return f"""
-    <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; padding: 0.5em 0; margin-top: 0.6em; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; {locked_style}' data-locked='{str(locked).lower()}'>
+    <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; margin-top: 0.6em; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 400px; {locked_style}' data-locked='{str(locked).lower()}'>
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
         <div id='scroll-container' style='position: relative; height: 100%; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
@@ -1356,13 +1386,13 @@ def scroll_wheel_year_picker(
                 const div = document.createElement('div');
                 div.className = 'year-item';
                 div.dataset.year = year;
-                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #30363d; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2;';
+                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2;';
                 div.textContent = year.toString();
                 track.appendChild(div);
             }}
         }}
         function updatePosition() {{
-            const containerHeight = 400; // fixed height for scroll wheel
+            const containerHeight = 400;
             // Recalculate itemHeight in case the iframe size changed
             itemHeight = Math.max(28, Math.round(containerHeight / 5));
             const offset = (currentYear - minYear) * itemHeight;
@@ -2067,13 +2097,25 @@ def correct_answer_with_diff(actual_year: int, guessed_year: int) -> str:
 
 
 def score_card(score: int) -> str:
-    """Generate the score card display - compact single line"""
-    # Wrap the text in a no-wrap span so the message always stays on one line
+    """Generate the score card display - points gained with color coding"""
+    if score >= 800:
+        score_class = "score-excellent"
+        emoji = "🎉"
+    elif score >= 600:
+        score_class = "score-great"
+        emoji = "👍"
+    elif score >= 400:
+        score_class = "score-good"
+        emoji = "👌"
+    elif score >= 200:
+        score_class = "score-okay"
+        emoji = "🤔"
+    else:
+        score_class = "score-poor"
+        emoji = "😞"
+
     return (
-        f'<div class="score-card">'
-        f'<span style="font-size: 1.2em;">&#x1F3AF;</span> '
-        f'<span style="white-space:nowrap;">You earned <strong>{score} points</strong> this round</span>'
-        f"</div>"
+        f'<div class="score-card"><span class="{score_class}">{emoji} +{score} points!</span></div>'
     )
 
 
