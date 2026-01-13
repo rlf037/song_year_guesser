@@ -1108,7 +1108,7 @@ def render_game_interface():
             scroll_wheel_html += f"<!-- {lock_key} ts:{int(time.time()) if is_locked else 0} -->"
             # Increase iframe height so the scroll wheel shows more rows
             # and the submit button renders significantly lower on the page.
-            components.html(scroll_wheel_html, height=720)
+            components.html(scroll_wheel_html, height=360)
 
             # Submit button with selected year
             button_text = f"Submit {st.session_state.current_guess}"
