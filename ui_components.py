@@ -1462,24 +1462,39 @@ def scroll_wheel_year_picker(
         }}
         function updateSubmitButton() {{
             try {{
-                // Find primary buttons more efficiently - check multiple selectors
-                let submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+                // Try multiple strategies to find the submit button
+                let submitBtn = null;
 
+                // Strategy 1: Find by data-testid
+                submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+
+                // Strategy 2: Find by text content (more reliable for subsequent songs)
                 if (!submitBtn) {{
-                    // Fallback: find by text content
                     const allButtons = window.parent.document.querySelectorAll('button');
                     for (let btn of allButtons) {{
-                        if (btn.textContent.includes('Submit')) {{
+                        const text = btn.textContent || '';
+                        if (text.includes('Submit') && !text.includes('Processing')) {{
                             submitBtn = btn;
                             break;
                         }}
                     }}
                 }}
 
+                // Strategy 3: Find the last primary button (submit is usually last)
+                if (!submitBtn) {{
+                    const allPrimaryButtons = window.parent.document.querySelectorAll('button');
+                    if (allPrimaryButtons.length > 0) {{
+                        submitBtn = allPrimaryButtons[allPrimaryButtons.length - 1];
+                    }}
+                }}
+
                 if (submitBtn) {{
                     const text = submitBtn.textContent || '';
                     const hasTimer = text.includes('⏰');
-                    submitBtn.textContent = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
+                    const newText = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
+                    if (submitBtn.textContent !== newText) {{
+                        submitBtn.textContent = newText;
+                    }}
                 }}
             }} catch(e) {{}}
         }}
@@ -1547,6 +1562,18 @@ def scroll_wheel_year_picker(
                 container.focus();
                 // Ensure initial sizing and rendering
                 updatePosition();
+                // Update button text immediately on init
+                updateSubmitButton();
+                // Retry button update a few times as page might still be loading
+                let retries = 0;
+                const retryInterval = setInterval(function() {{
+                    if (retries < 5) {{
+                        updateSubmitButton();
+                        retries++;
+                    }} else {{
+                        clearInterval(retryInterval);
+                    }}
+                }}, 200);
             }}
         }}
         setTimeout(init, 0);
