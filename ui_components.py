@@ -619,21 +619,7 @@ MAIN_CSS = """
         }
     }
 
-    /* JavaScript to apply urgent styling */
-    <script>
-        (function styleUrgentButtons() {
-            const buttons = document.querySelectorAll('.stButton > button[data-testid="baseButton-primary"]');
-            buttons.forEach(btn => {
-                if (btn.textContent.includes('NOW!')) {
-                    btn.classList.add('urgent-submit');
-                } else {
-                    btn.classList.remove('urgent-submit');
-                }
-            });
-            // Run periodically to catch updates
-            setTimeout(styleUrgentButtons, 100);
-        })();
-    </script>
+    /* JavaScript to apply urgent styling removed from CSS; use URGENT_BUTTON_SCRIPT for injection */
 
     /* ===== SCORE CARD ===== */
     .score-card {
@@ -1142,6 +1128,33 @@ MAIN_CSS = """
     }
 </style>
 """
+
+# Small JS snippet to apply urgent-submit styling reliably.
+# Inject into the page using `components.html(URGENT_BUTTON_SCRIPT, height=0)` from the main app.
+URGENT_BUTTON_SCRIPT = '''
+<script>
+;(function(){
+    function styleUrgentButtons(){
+        try{
+            const buttons = document.querySelectorAll('.stButton > button[data-testid="baseButton-primary"]');
+            buttons.forEach(btn => {
+                if (btn.textContent && btn.textContent.includes('NOW!')) {
+                    btn.classList.add('urgent-submit');
+                } else {
+                    btn.classList.remove('urgent-submit');
+                }
+            });
+        }catch(e){console.warn('urgent style error',e)}
+    }
+    document.addEventListener('DOMContentLoaded', ()=>{
+        styleUrgentButtons();
+        setInterval(styleUrgentButtons, 250);
+    });
+    // run once immediately in case script loads after DOMContentLoaded
+    styleUrgentButtons();
+})();
+</script>
+'''
 
 # =============================================================================
 # HTML TEMPLATE FUNCTIONS

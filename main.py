@@ -44,6 +44,7 @@ from ui_components import (
     spotify_button,
     static_timer,
     timer_html,
+    URGENT_BUTTON_SCRIPT,
 )
 
 # Pre-compiled regex patterns for performance
@@ -61,6 +62,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 st.markdown(MAIN_CSS, unsafe_allow_html=True)
+# Inject small JS separately so it's executed reliably in deployed environments
+components.html(URGENT_BUTTON_SCRIPT, height=0)
 
 
 COMPILATION_KEYWORDS = [
