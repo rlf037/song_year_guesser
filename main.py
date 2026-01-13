@@ -1000,7 +1000,19 @@ def render_game_interface():
     )
     if time_expired and not st.session_state.time_locked:
         st.session_state.time_locked = True
-        # Force immediate re-render to lock scroll wheel
+        # Auto-submit when timeout occurs to guarantee the guess is processed
+        # This covers cases where the client's click doesn't reach the server.
+        try:
+            if not st.session_state.submitting_guess and not st.session_state.game_over:
+                st.session_state.submitting_guess = True
+                st.session_state.guess_timed_out = True
+                make_guess(st.session_state.current_guess, timed_out=True)
+                st.session_state.submitting_guess = False
+                st.session_state.guess_timed_out = False
+        except Exception:
+            # If auto-submit fails for any reason, fall back to showing urgent button
+            pass
+        # Force immediate re-render to lock scroll wheel and update UI
         st.rerun()
 
     # Calculate blur amount - ALWAYS start with maximum blur to prevent flash
