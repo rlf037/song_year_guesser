@@ -1106,9 +1106,8 @@ def render_game_interface():
             # Add unique marker to force iframe recreation when lock state changes
             lock_key = f"locked_{is_locked}_{st.session_state.current_round}"
             scroll_wheel_html += f"<!-- {lock_key} ts:{int(time.time()) if is_locked else 0} -->"
-            # Slightly increase iframe height so the scroll wheel shows more rows
-            # and the submit button renders slightly lower on the page (~10%).
-            components.html(scroll_wheel_html, height=400)
+            # Scroll wheel iframe height reduced by 50% per design request
+            components.html(scroll_wheel_html, height=200)
 
             # Submit button with selected year
             button_text = f"Submit {st.session_state.current_guess}"

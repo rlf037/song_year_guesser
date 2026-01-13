@@ -375,8 +375,8 @@ MAIN_CSS = """
     }
 
     .year-wheel {
-        /* Increased height to reveal more of the wheel so users can scroll comfortably */
-        height: 360px;
+        /* Reduced height (50%) so the wheel takes less vertical space */
+        height: 180px;
         overflow: hidden;
         position: relative;
         cursor: ns-resize;
@@ -404,7 +404,7 @@ MAIN_CSS = """
     }
 
     .year-wheel-item {
-        height: 70px;
+        height: 35px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -421,7 +421,7 @@ MAIN_CSS = """
     }
 
     .year-wheel-item.selected {
-        font-size: 3.6em;
+        font-size: 1.8em;
         color: #e6edf3;
         text-shadow: 0 0 20px rgba(230, 237, 243, 0.35);
     }
@@ -458,6 +458,8 @@ MAIN_CSS = """
         justify-content: center;
         align-items: center;
         margin: 0 auto;
+        /* Nudge timer upward slightly to move it up by roughly 2% */
+        transform: translateY(-2%);
         padding: 0.5em;
         width: 100%;
     }
