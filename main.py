@@ -1317,7 +1317,7 @@ def render_game_interface():
                 )
 
             # Timer in right column - compact
-            st.markdown('<div style="margin-top: 0.2em;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-top: -0.5em;"></div>', unsafe_allow_html=True)
             # Only render dynamic timer when audio is playing
             if st.session_state.audio_started:
                 delay = 2 if st.session_state.current_round == 1 else 0

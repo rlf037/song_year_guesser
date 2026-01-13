@@ -1377,7 +1377,7 @@ def scroll_wheel_year_picker(
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
         <div id='scroll-container' style='flex: 1; width: 260px; min-height: 350px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none; position: relative;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
-            <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.03)" if locked else "transparent"}; z-index: 1;'></div>
+            <div id='selection-box' style='position: absolute; top: 50%; left: 15px; right: 15px; height: 56px; transform: translateY(-50%); border: 2px solid {"rgba(248, 81, 73, 0.6)" if locked else "rgba(88, 166, 255, 0.5)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"}; z-index: 1;'></div>
         </div>
     </div>
     </body>
@@ -1396,13 +1396,13 @@ def scroll_wheel_year_picker(
             track.innerHTML = '';
             cachedItems = {{}};
             const containerHeight = 350; // Match container's height
-            itemHeight = Math.round(containerHeight / 5);
+            itemHeight = Math.round(containerHeight / 7); // Show 7 items for tighter spacing
 
             for (let year = minYear; year <= maxYear; year++) {{
                 const div = document.createElement('div');
                 div.className = 'year-item';
                 div.dataset.year = year;
-                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 2em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease;';
+                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 1.8em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease;';
                 div.textContent = year.toString();
                 track.appendChild(div);
                 cachedItems[year] = div;
@@ -1414,6 +1414,12 @@ def scroll_wheel_year_picker(
             const offset = (currentYear - minYear) * itemHeight;
             const centerOffset = (containerHeight / 2) - (itemHeight / 2);
             track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
+
+            // Update selection box height to match item height
+            const selectionBox = document.getElementById('selection-box');
+            if (selectionBox) {{
+                selectionBox.style.height = itemHeight + 'px';
+            }}
 
             Object.keys(cachedItems).forEach(yearStr => {{
                 const year = parseInt(yearStr);
@@ -1456,8 +1462,20 @@ def scroll_wheel_year_picker(
         }}
         function updateSubmitButton() {{
             try {{
-                // Find primary buttons more efficiently
-                const submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+                // Find primary buttons more efficiently - check multiple selectors
+                let submitBtn = window.parent.document.querySelector('button[data-testid="baseButton-primary"]');
+
+                if (!submitBtn) {{
+                    // Fallback: find by text content
+                    const allButtons = window.parent.document.querySelectorAll('button');
+                    for (let btn of allButtons) {{
+                        if (btn.textContent.includes('Submit')) {{
+                            submitBtn = btn;
+                            break;
+                        }}
+                    }}
+                }}
+
                 if (submitBtn) {{
                     const text = submitBtn.textContent || '';
                     const hasTimer = text.includes('⏰');
