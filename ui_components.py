@@ -175,7 +175,8 @@ MAIN_CSS = """
     .game-row {
         display: flex;
         justify-content: center;
-        align-items: flex-start;
+        /* Stretch columns to equal height so we can align bottoms */
+        align-items: stretch;
         gap: 2em;
         width: 100%;
         margin: 1em 0;
@@ -186,6 +187,15 @@ MAIN_CSS = """
             flex-direction: column;
             align-items: center;
         }
+    }
+
+    /* Make direct children of the main row behave as columns that distribute
+       space vertically. This ensures bottom-aligned elements (timer/submit)
+       sit aligned with the bottom of the song info card. */
+    .game-row > div {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
 
     /* ===== SONG INFO CARD ===== */
