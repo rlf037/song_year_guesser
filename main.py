@@ -851,6 +851,8 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
             del st.query_params["et"]
         if "yr" in st.query_params:
             del st.query_params["yr"]
+        if "as" in st.query_params:
+            del st.query_params["as"]
     except Exception:
         pass
 
@@ -893,9 +895,9 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     st.session_state.start_time = None
     st.session_state.game_over = False
     st.session_state.timed_out = False
+    st.session_state.audio_started = False
     st.session_state.time_locked = False  # Always unlock scroll wheel at new round
     st.session_state.blur_level = 25
-    st.session_state.audio_started = False
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Press play to start!"
     st.session_state.current_guess = (start_year + end_year) // 2
@@ -1317,7 +1319,7 @@ def render_game_interface():
                 )
 
             # Timer in right column - compact
-            st.markdown('<div style="margin-top: -0.5em;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-top: -1em;"></div>', unsafe_allow_html=True)
             # Only render dynamic timer when audio is playing
             if st.session_state.audio_started:
                 delay = 2 if st.session_state.current_round == 1 else 0
