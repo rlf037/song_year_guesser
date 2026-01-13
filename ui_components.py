@@ -1531,7 +1531,7 @@ def scroll_wheel_year_picker(
 """
 
 
-def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) -> str:
+def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, initially_paused: bool = False) -> str:
     """Generate the countdown timer with dynamic animations that intensify as time runs out"""
     return f"""
     <style>
@@ -1619,6 +1619,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             var startTime = {start_timestamp};
             var maxTime = {max_time};
             var delaySeconds = {delay_seconds};
+            var initiallyPaused = {str(initially_paused).lower()};
             var circle = document.getElementById('timer-circle');
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
@@ -1627,8 +1628,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             var lastSecond = maxTime;
 
             // Pause tracking
-            var isPaused = false;
-            var pausedAt = null;
+            var isPaused = initiallyPaused;
+            var pausedAt = initiallyPaused ? Date.now() : null;
             var accumulatedPausedTime = 0;
 
             function pause() {{
@@ -1765,6 +1766,13 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
                 resume: resume,
                 getElapsedTime: getElapsedTime
             }};
+
+            // Apply initial state
+            if (initiallyPaused) {{
+                ring.classList.add('paused');
+                labelEl.textContent = 'paused';
+                labelEl.classList.add('paused');
+            }}
 
             updateTimer();
             setInterval(updateTimer, 100);

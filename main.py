@@ -1078,14 +1078,6 @@ def render_game_interface():
                 components.html(
                     audio_player(song["preview_url"], song["id"], autoplay=True), height=70
                 )
-                if (
-                    not st.session_state.audio_started
-                    and st.session_state.song_loaded_time
-                    and (time.time() - st.session_state.song_loaded_time) > 1.0
-                ):
-                    st.session_state.audio_started = True
-                    st.session_state.start_time = time.time()
-                    st.rerun()
 
             # Song info card below audio
             st.markdown(
@@ -1296,14 +1288,12 @@ def render_game_interface():
 
             # Timer in right column - compact
             st.markdown('<div style="margin-top: 0.2em;"></div>', unsafe_allow_html=True)
-            if st.session_state.audio_started:
-                # Only delay on the first song of the round
-                delay = 2 if st.session_state.current_round == 1 else 0
-                components.html(
-                    timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay), height=220
-                )
-            else:
-                st.markdown(static_timer(30), unsafe_allow_html=True)
+            # Always render the dynamic timer - it will start in paused state
+            # The audio player's JS will call timerControl.resume() when audio plays
+            delay = 2 if st.session_state.current_round == 1 else 0
+            components.html(
+                timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, initially_paused=True), height=220
+            )
 
     # === GAME OVER DISPLAY ===
     if st.session_state.game_over:
