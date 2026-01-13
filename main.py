@@ -1504,7 +1504,7 @@ def main():
 
     # Fallback: process query-param triggered submit (useful when button clicks fail due to client issues)
     try:
-        params = st.experimental_get_query_params()
+        params = st.query_params
         if params and "submit" in params and params.get("submit") and st.session_state.time_locked:
             # Only process once
             try:
@@ -1513,7 +1513,8 @@ def main():
                 pass
             # Clear the param to avoid re-processing
             try:
-                st.experimental_set_query_params()
+                if "submit" in st.query_params:
+                    del st.query_params["submit"]
             except Exception:
                 pass
             st.rerun()
