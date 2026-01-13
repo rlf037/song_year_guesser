@@ -200,6 +200,8 @@ MAIN_CSS = """
         justify-content: space-between;
         /* Ensure both columns meet the forced row height so bottoms align (slightly increased) */
         min-height: 400px;
+        /* allow absolute positioning of children relative to each column */
+        position: relative;
     }
 
     /* ===== SONG INFO CARD ===== */
@@ -464,6 +466,15 @@ MAIN_CSS = """
         width: 100%;
     }
 
+    /* Position timer 75% down inside its column */
+    .game-row > div .timer-container {
+        position: absolute;
+        top: 75%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        width: auto;
+    }
+
     .timer-ring {
         position: relative;
         width: 200px;
@@ -539,6 +550,14 @@ MAIN_CSS = """
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         letter-spacing: 0.02em;
+    }
+
+    /* Move primary submit button 75% down within its column */
+    .game-row > div .stButton > button[data-testid="baseButton-primary"] {
+        position: absolute;
+        top: 75%;
+        left: 50%;
+        transform: translate(-50%, 0);
     }
 
     .stButton > button[kind="primary"][data-testid="baseButton-primary"]:hover:not(:disabled) {
@@ -1131,7 +1150,7 @@ MAIN_CSS = """
 
 # Small JS snippet to apply urgent-submit styling reliably.
 # Inject into the page using `components.html(URGENT_BUTTON_SCRIPT, height=0)` from the main app.
-URGENT_BUTTON_SCRIPT = '''
+URGENT_BUTTON_SCRIPT = """
 <script>
 ;(function(){
     function styleUrgentButtons(){
@@ -1154,7 +1173,7 @@ URGENT_BUTTON_SCRIPT = '''
     styleUrgentButtons();
 })();
 </script>
-'''
+"""
 
 # =============================================================================
 # HTML TEMPLATE FUNCTIONS
