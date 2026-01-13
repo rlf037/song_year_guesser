@@ -1287,7 +1287,7 @@ def scroll_wheel_year_picker(
     return f"""
     <div id='year-picker-wrapper' style='display: flex; flex-direction: column; align-items: center; padding: 0.5em 0; margin-top: 0.6em; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; {locked_style}' data-locked='{str(locked).lower()}'>
         <div style='color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.7em; margin-bottom: 0.6em; font-weight: 500;'>Select release year</div>
-        <div id='scroll-container' style='position: relative; height: 320px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
+        <div id='scroll-container' style='position: relative; height: 600px; width: 260px; overflow: hidden; cursor: ns-resize; background: linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.9) 15%, transparent 35%, transparent 65%, rgba(15,23,42,0.9) 85%, rgba(15,23,42,1) 100%); border-radius: 12px; border: 1px solid {locked_border}; touch-action: none; user-select: none; -webkit-user-select: none;'>
             <div id='year-track' style='position: absolute; width: 100%; text-align: center; transition: transform 0.08s ease-out; top: 0; left: 0;'></div>
             <div style='position: absolute; top: 50%; left: 10px; right: 10px; height: 50px; transform: translateY(-50%); border: 1px solid {"rgba(248, 81, 73, 0.5)" if locked else "rgba(88, 166, 255, 0.4)"}; border-radius: 8px; pointer-events: none; background: {"rgba(248, 81, 73, 0.05)" if locked else "rgba(88, 166, 255, 0.05)"};'></div>
         </div>
@@ -1313,7 +1313,7 @@ def scroll_wheel_year_picker(
         }}
         function updatePosition() {{
             const offset = (currentYear - minYear) * itemHeight;
-            const containerHeight = 320;
+            const containerHeight = 600;
             const centerOffset = (containerHeight / 2) - (itemHeight / 2);
             track.style.transform = 'translateY(' + (centerOffset - offset) + 'px)';
             const yearItems = track.querySelectorAll('.year-item');
@@ -2202,12 +2202,52 @@ def elapsed_time_receiver() -> str:
             var lastElapsed = 0;
 
             window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'timer:elapsed') {
-                    lastElapsed = event.data.elapsed;
-                    try {
-                        localStorage.setItem('gameTimerElapsed', lastElapsed.toString());
-                    } catch(e) {}
-                }
+                try {
+                    if (event.data && event.data.type === 'timer:elapsed') {
+                        lastElapsed = event.data.elapsed;
+                        try { localStorage.setItem('gameTimerElapsed', lastElapsed.toString()); } catch(e) {}
+                    } else if (event.data && event.data.type === 'year:selected') {
+                        try { localStorage.setItem('gameSelectedYear', event.data.year.toString()); } catch(e) {}
+                        // Show overlay label instantly
+                        try {
+                            const yearStr = event.data.year.toString();
+                            function attachOverlay() {
+                                const btn = document.querySelector('button[data-testid="baseButton-primary"]');
+                                if (!btn) return;
+                                let overlay = document.getElementById('submit-year-overlay');
+                                if (!overlay) {
+                                    overlay = document.createElement('div');
+                                    overlay.id = 'submit-year-overlay';
+                                    overlay.style.position = 'absolute';
+                                    overlay.style.pointerEvents = 'none';
+                                    overlay.style.zIndex = 9999;
+                                    overlay.style.display = 'flex';
+                                    overlay.style.alignItems = 'center';
+                                    overlay.style.justifyContent = 'center';
+                                    overlay.style.color = 'white';
+                                    overlay.style.fontWeight = '800';
+                                    overlay.style.fontFamily = "'SF Mono', Monaco, Consolas, monospace";
+                                    document.body.appendChild(overlay);
+                                }
+                                const rect = btn.getBoundingClientRect();
+                                overlay.style.left = (rect.left + window.scrollX) + 'px';
+                                overlay.style.top = (rect.top + window.scrollY) + 'px';
+                                overlay.style.width = rect.width + 'px';
+                                overlay.style.height = rect.height + 'px';
+                                overlay.style.fontSize = Math.max(16, Math.min(28, rect.height * 0.45)) + 'px';
+                                overlay.style.borderRadius = window.getComputedStyle(btn).borderRadius || '8px';
+                                overlay.style.boxSizing = 'border-box';
+                                overlay.textContent = yearStr;
+                            }
+                            attachOverlay();
+                        } catch(e) {}
+                    } else if (event.data && event.data.type === 'urgent:click') {
+                        try {
+                            const btn = document.querySelector('button[key="submit_guess_urgent"]') || document.querySelector('button[data-testid="baseButton-primary"]');
+                            if (btn && typeof btn.click === 'function') btn.click();
+                        } catch(e) {}
+                    }
+                } catch(e) {}
             });
 
             // Also check timer iframes directly
