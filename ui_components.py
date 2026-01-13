@@ -180,6 +180,8 @@ MAIN_CSS = """
         gap: 2em;
         width: 100%;
         margin: 1em 0;
+        /* Force a taller row so timer/submit can be positioned much lower */
+        min-height: 720px;
     }
 
     @media (max-width: 600px) {
@@ -196,6 +198,8 @@ MAIN_CSS = """
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        /* Ensure both columns meet the forced row height so bottoms align */
+        min-height: 720px;
     }
 
     /* ===== SONG INFO CARD ===== */
@@ -384,8 +388,8 @@ MAIN_CSS = """
     #year-picker-wrapper {
         margin-top: 2.4em !important;
         /* Add substantial bottom space so the submit button renders well below the wheel */
-        margin-bottom: 6.0em !important;
-        padding-bottom: 0.6em;
+        margin-bottom: 12.0em !important;
+        padding-bottom: 1.2em;
     }
     @media (max-width: 600px) {
         #year-picker-wrapper { margin-top: 1.2em !important; }
