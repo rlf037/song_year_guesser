@@ -845,6 +845,15 @@ def prefetch_next_song(start_year: int, end_year: int, genre_query: str = ""):
 
 def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     """Start a new game round"""
+    # Clear query params from previous song to prevent state carry-over
+    try:
+        if "et" in st.query_params:
+            del st.query_params["et"]
+        if "yr" in st.query_params:
+            del st.query_params["yr"]
+    except Exception:
+        pass
+
     song = st.session_state.get("next_song_cache")
 
     played_ids = st.session_state.get("played_song_ids", set())
@@ -1165,7 +1174,7 @@ def render_game_interface():
                 )
             elif is_locked:
                 # Time's up - show the selected year prominently on the urgent submit button
-                st.markdown("**Submit your guess:**")
+                st.markdown("<div style='text-align: center;'><strong>Submit your guess:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label,
                     type="primary",
@@ -1221,7 +1230,7 @@ def render_game_interface():
                 )
             else:
                 # Normal submit button: show selected year only
-                st.markdown("**Submit your guess:**")
+                st.markdown("<div style='text-align: center;'><strong>Submit your guess:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label, type="primary", use_container_width=True, key="submit_guess"
                 )
@@ -1286,7 +1295,7 @@ def render_game_interface():
                 )
 
             # Timer in right column - compact
-            st.markdown('<div style="margin-top: 1em;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-top: 0.2em;"></div>', unsafe_allow_html=True)
             if st.session_state.audio_started:
                 # Only delay on the first song of the round
                 delay = 2 if st.session_state.current_round == 1 else 0

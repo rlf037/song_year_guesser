@@ -555,7 +555,7 @@ MAIN_CSS = """
     /* Move primary submit button much lower within its column so the scroll wheel is visible */
     .game-row > div .stButton > button[data-testid="baseButton-primary"] {
         position: absolute;
-        top: 92%;
+        top: 80%;
         left: 50%;
         transform: translate(-50%, -50%);
     }
@@ -642,15 +642,16 @@ MAIN_CSS = """
 
     /* ===== SCORE CARD ===== */
     .score-card {
-        padding: 0.8em 1.5em;
-        border-radius: 8px;
+        padding: 0.4em 1.2em;
+        border-radius: 6px;
         text-align: center;
-        font-size: 2em;
+        font-size: 1.5em;
         font-weight: 700;
-        margin: 0.8em 0;
-        line-height: 1.4;
+        margin: 0.4em 0;
+        line-height: 1;
         width: 100%;
         box-sizing: border-box;
+        display: inline-block;
     }
 
     .score-excellent {
@@ -1437,12 +1438,14 @@ def scroll_wheel_year_picker(
         }}
         function updateSubmitButton() {{
             try {{
-                const buttons = window.parent.document.querySelectorAll('button[data-testid="baseButton-primary"]');
-                buttons.forEach(btn => {{
-                    if (btn.textContent.includes('Submit')) {{
-                        btn.textContent = btn.textContent.includes('⏰')
-                            ? '⏰ Submit ' + currentYear
-                            : 'Submit ' + currentYear;
+                // Find all buttons and update submit button text
+                const allButtons = window.parent.document.querySelectorAll('button');
+                allButtons.forEach(btn => {{
+                    const text = btn.textContent || '';
+                    // Look for submit button (key="submit_guess" or key="submit_guess_urgent")
+                    if (text.includes('Submit') && !text.includes('Processing')) {{
+                        const hasTimer = text.includes('⏰');
+                        btn.textContent = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
                     }}
                 }});
             }} catch(e) {{}}
@@ -2100,22 +2103,17 @@ def score_card(score: int) -> str:
     """Generate the score card display - points gained with color coding"""
     if score >= 800:
         score_class = "score-excellent"
-        emoji = "🎉"
     elif score >= 600:
         score_class = "score-great"
-        emoji = "👍"
     elif score >= 400:
         score_class = "score-good"
-        emoji = "👌"
     elif score >= 200:
         score_class = "score-okay"
-        emoji = "🤔"
     else:
         score_class = "score-poor"
-        emoji = "😞"
 
     return (
-        f'<div class="score-card"><span class="{score_class}">{emoji} +{score} points!</span></div>'
+        f'<div class="score-card"><span class="{score_class}">+{score} points</span></div>'
     )
 
 
