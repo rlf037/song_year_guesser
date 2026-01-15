@@ -831,6 +831,7 @@ def initialize_game_state():
         "guess_timed_out": False,
         "saving_to_leaderboard": False,
         "loading_next_song": False,
+        "time_expired_at": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -903,6 +904,7 @@ def start_new_game(start_year: int, end_year: int, genre_query: str = ""):
     st.session_state.timed_out = False
     st.session_state.audio_started = False
     st.session_state.time_locked = False  # Always unlock scroll wheel at new round
+    st.session_state.time_expired_at = None
     st.session_state.blur_level = 25
     st.session_state.song_loaded_time = time.time()
     st.session_state.status_message = "🎵 Press play to start!"
@@ -1021,21 +1023,25 @@ def render_game_interface():
         and st.session_state.audio_started
         and elapsed_seconds >= MAX_GUESS_TIME
     )
-    if time_expired and not st.session_state.time_locked:
+    if time_expired and st.session_state.time_expired_at is None:
+        # Record when time first expired
+        st.session_state.time_expired_at = time.time()
         st.session_state.time_locked = True
-        # Auto-submit when timeout occurs to guarantee the guess is processed
-        # This covers cases where the client's click doesn't reach the server.
-        try:
-            if not st.session_state.submitting_guess and not st.session_state.game_over:
-                st.session_state.submitting_guess = True
-                st.session_state.guess_timed_out = True
-                make_guess(st.session_state.current_guess, timed_out=True)
-                st.session_state.submitting_guess = False
-                st.session_state.guess_timed_out = False
-        except Exception:
-            # If auto-submit fails for any reason, fall back to showing urgent button
-            pass
-        # Force immediate re-render to lock scroll wheel and update UI
+        st.rerun()
+    elif (
+        time_expired
+        and st.session_state.time_expired_at is not None
+        and time.time() - st.session_state.time_expired_at >= 2.0
+        and not st.session_state.submitting_guess
+        and not st.session_state.game_over
+    ):
+        # 2 seconds have passed since time expired - auto-submit now
+        with contextlib.suppress(Exception):
+            st.session_state.submitting_guess = True
+            st.session_state.guess_timed_out = True
+            make_guess(st.session_state.current_guess, timed_out=True)
+            st.session_state.submitting_guess = False
+            st.session_state.guess_timed_out = False
         st.rerun()
 
     # Calculate blur amount - ALWAYS start with maximum blur to prevent flash
