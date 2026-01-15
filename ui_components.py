@@ -642,8 +642,6 @@ MAIN_CSS = """
 
     /* ===== SCORE CARD ===== */
     .score-card {
-        padding: 0.4em 1.2em;
-        border-radius: 6px;
         text-align: center;
         font-size: 1.5em;
         font-weight: 700;
@@ -652,6 +650,14 @@ MAIN_CSS = """
         width: 100%;
         box-sizing: border-box;
         display: block;
+    }
+
+    .score-card span {
+        display: block;
+        width: 100%;
+        padding: 0.4em 1.2em;
+        border-radius: 6px;
+        box-sizing: border-box;
     }
 
     .score-excellent {
