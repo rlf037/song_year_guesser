@@ -1705,7 +1705,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, so
     </div>
     <script>
         (function() {{
-            var startTime = {start_timestamp};
+            // Use current time if startTime is 0 (timer hasn't started yet)
+            var startTime = {start_timestamp} || Date.now();
             var maxTime = {max_time};
             var delaySeconds = {delay_seconds};
             var songId = '{song_id}';
