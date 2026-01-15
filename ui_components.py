@@ -249,7 +249,7 @@ MAIN_CSS = """
         font-weight: 500;
         font-size: 0.9em;
         flex: 1;
-        text-align: right;
+        text-align: center;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
