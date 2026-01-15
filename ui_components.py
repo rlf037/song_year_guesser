@@ -1885,6 +1885,17 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, so
             labelEl.textContent = 'paused';
             labelEl.classList.add('paused');
 
+            // Check if audio is already playing before first update
+            // This handles the case where audio starts before timer iframe loads
+            try {{
+                var audio = window.parent.document.querySelector('audio');
+                if (audio && !audio.paused && audio.currentTime > 0) {{
+                    // Audio is already playing, start timer immediately
+                    lastAudioState = true;
+                    resume();
+                }}
+            }} catch(e) {{}}
+
             updateTimer();
             setInterval(function() {{
                 checkAudioState();
