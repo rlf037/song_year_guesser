@@ -1343,9 +1343,10 @@ def render_game_interface():
             # Only render dynamic timer when audio is playing
             if st.session_state.audio_started:
                 delay = 2 if st.session_state.current_round == 1 else 0
-                components.html(
-                    timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay), height=220
-                )
+                # Include round and timestamp in HTML to force fresh render each song
+                timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay)
+                timer_content += f"<!-- round:{st.session_state.current_round} ts:{start_timestamp} -->"
+                components.html(timer_content, height=220)
             else:
                 st.markdown(static_timer(30), unsafe_allow_html=True)
 
