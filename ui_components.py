@@ -1402,7 +1402,7 @@ def scroll_wheel_year_picker(
                 const div = document.createElement('div');
                 div.className = 'year-item';
                 div.dataset.year = year;
-                div.style.cssText = 'height: ' + itemHeight + 'px; font-size: 1.8em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease; line-height: 1;';
+                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 1.8em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; text-align: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease;';
                 div.textContent = year.toString();
                 track.appendChild(div);
                 cachedItems[year] = div;
