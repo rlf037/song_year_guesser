@@ -1347,17 +1347,12 @@ def render_game_interface():
             # Timer in right column - compact
             st.markdown('<div style="margin-top: -1.5em;"></div>', unsafe_allow_html=True)
             # Only render dynamic timer when audio is playing
-            if st.session_state.audio_started:
-                # No delay - let timer count from the moment audio starts
-                # This ensures immediate countdown on all songs including the first
-                delay = 0
-                # Include round and timestamp in HTML to force fresh render each song
-                song_id = song.get("id", "")
-                timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, song_id=song_id)
-                timer_content += f"<!-- round:{st.session_state.current_round} ts:{start_timestamp} st:{st.session_state.start_time} elapsed:{elapsed_seconds} -->"
-                components.html(timer_content, height=220)
-            else:
-                st.markdown(static_timer(30), unsafe_allow_html=True)
+            # Always render dynamic timer - it will handle paused state if audio hasn't started
+            delay = 0
+            song_id = song.get("id", "")
+            timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, song_id=song_id)
+            timer_content += f"<!-- round:{st.session_state.current_round} ts:{start_timestamp} st:{st.session_state.start_time} elapsed:{elapsed_seconds} -->"
+            components.html(timer_content, height=220)
 
     # === GAME OVER DISPLAY ===
     if st.session_state.game_over:
