@@ -2321,6 +2321,17 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
             var audio = document.getElementById('gameAudio');
             if (!audio) return;
 
+            // Clear stale timer state from previous rounds when new song loads
+            try {{
+                localStorage.removeItem('gameTimerElapsed');
+                // Clear URL param to prevent stale reads
+                var url = new URL(window.parent.location.href);
+                if (url.searchParams.has('et')) {{
+                    url.searchParams.delete('et');
+                    window.parent.history.replaceState(null, '', url.toString());
+                }}
+            }} catch(e) {{}}
+
             // Find visualizer in parent document
             function getVizContainer() {{
                 try {{
