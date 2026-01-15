@@ -1140,15 +1140,17 @@ def render_game_interface():
 
             # Fallback: If audio autoplay is blocked, start timer after 0.5 seconds anyway
             # This ensures the timer shows even if browser blocks autoplay
-            if not st.session_state.audio_started and st.session_state.song_loaded_time:
-                # If 0.5 seconds have passed since song loaded, start the timer anyway
-                if time.time() - st.session_state.song_loaded_time > 0.5:
-                    st.session_state.audio_started = True
-                    # Set start_time to current time so the timer counts correctly
-                    # (don't use song_loaded_time as that would make the timer ahead)
-                    st.session_state.start_time = time.time()
-                    # Don't rerun - let the normal refresh cycle handle it
-                    # This prevents double-rerun if both JS detector and timer start simultaneously
+            if (
+                not st.session_state.audio_started
+                and st.session_state.song_loaded_time
+                and time.time() - st.session_state.song_loaded_time > 0.5
+            ):
+                st.session_state.audio_started = True
+                # Set start_time to current time so the timer counts correctly
+                # (don't use song_loaded_time as that would make the timer ahead)
+                st.session_state.start_time = time.time()
+                # Don't rerun - let the normal refresh cycle handle it
+                # This prevents double-rerun if both JS detector and timer start simultaneously
 
             # Read elapsed time from query params (set by timer JS)
             # Only read if audio has started to avoid stale values from previous round
@@ -1585,16 +1587,12 @@ def main():
         params = st.query_params
         if params and "submit" in params and params.get("submit") and st.session_state.time_locked:
             # Only process once
-            try:
+            with contextlib.suppress(Exception):
                 make_guess(st.session_state.current_guess, timed_out=True)
-            except Exception:
-                pass
             # Clear the param to avoid re-processing
-            try:
+            with contextlib.suppress(Exception):
                 if "submit" in st.query_params:
                     del st.query_params["submit"]
-            except Exception:
-                pass
             st.rerun()
     except Exception:
         pass
