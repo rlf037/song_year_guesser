@@ -983,9 +983,9 @@ def render_game_interface():
         unsafe_allow_html=True,
     )
 
-    # Auto-refresh for game state updates (optimized frequency)
-    if not st.session_state.game_over:
-        # Use a per-round key so each round's timer element is unique and never clashes
+    # Auto-refresh for game state updates (only when audio is playing)
+    if st.session_state.audio_started and not st.session_state.game_over:
+        # Only refresh when audio is playing to avoid unnecessary page refreshes
         st_autorefresh(interval=1000, key=f"game_timer_{st.session_state.current_round}")
 
     # Add elapsed time receiver component (hidden) - consolidated
