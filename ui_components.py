@@ -651,7 +651,7 @@ MAIN_CSS = """
         line-height: 1;
         width: 100%;
         box-sizing: border-box;
-        display: inline-block;
+        display: block;
     }
 
     .score-excellent {
@@ -1402,7 +1402,7 @@ def scroll_wheel_year_picker(
                 const div = document.createElement('div');
                 div.className = 'year-item';
                 div.dataset.year = year;
-                div.style.cssText = 'height: ' + itemHeight + 'px; line-height: ' + itemHeight + 'px; font-size: 1.8em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease;';
+                div.style.cssText = 'height: ' + itemHeight + 'px; font-size: 1.8em; font-weight: 600; font-family: "SF Mono", Monaco, Consolas, monospace; color: #ffffff; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 2; transition: color 0.05s ease, transform 0.05s ease, opacity 0.05s ease;';
                 div.textContent = year.toString();
                 track.appendChild(div);
                 cachedItems[year] = div;
@@ -1518,27 +1518,54 @@ def scroll_wheel_year_picker(
                     }}
                 }}, {{ passive: false }});
 
-                // Mouse drag support
+                // Mouse and touch drag support
                 let isDragging = false;
                 let dragStartY = 0;
                 let dragStartYear = currentYear;
-                container.addEventListener('mousedown', function(e) {{
+
+                function startDrag(y) {{
                     isDragging = true;
-                    dragStartY = e.clientY;
+                    dragStartY = y;
                     dragStartYear = currentYear;
                     container.style.cursor = 'grabbing';
-                    e.preventDefault();
-                }});
-                document.addEventListener('mousemove', function(e) {{
+                }}
+
+                function moveDrag(y) {{
                     if (!isDragging) return;
-                    const deltaY = dragStartY - e.clientY;
+                    const deltaY = dragStartY - y;
                     const yearDelta = Math.round(deltaY / 30); // 30px per year
                     setYear(dragStartYear + yearDelta);
-                }});
-                document.addEventListener('mouseup', function() {{
+                }}
+
+                function endDrag() {{
                     isDragging = false;
                     container.style.cursor = 'ns-resize';
+                }}
+
+                container.addEventListener('mousedown', function(e) {{
+                    startDrag(e.clientY);
+                    e.preventDefault();
                 }});
+
+                // Touch support for mobile
+                container.addEventListener('touchstart', function(e) {{
+                    startDrag(e.touches[0].clientY);
+                    e.preventDefault();
+                }}, {{ passive: false }});
+
+                document.addEventListener('mousemove', function(e) {{
+                    moveDrag(e.clientY);
+                }});
+
+                document.addEventListener('touchmove', function(e) {{
+                    if (isDragging) {{
+                        moveDrag(e.touches[0].clientY);
+                        e.preventDefault();
+                    }}
+                }}, {{ passive: false }});
+
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
 
                 // Click on year item
                 container.addEventListener('click', function(e) {{

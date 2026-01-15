@@ -983,9 +983,9 @@ def render_game_interface():
         unsafe_allow_html=True,
     )
 
-    # Auto-refresh for game state updates (optimized frequency)
-    if not st.session_state.game_over:
-        # Use a per-round key so each round's timer element is unique and never clashes
+    # Auto-refresh for game state updates (only when audio is playing)
+    if st.session_state.audio_started and not st.session_state.game_over:
+        # Only refresh when audio is playing to avoid unnecessary page refreshes
         st_autorefresh(interval=1000, key=f"game_timer_{st.session_state.current_round}")
 
     # Add elapsed time receiver component (hidden) - consolidated
@@ -1198,13 +1198,14 @@ def render_game_interface():
                 )
             elif is_locked:
                 # Time's up - show the selected year prominently on the urgent submit button
-                st.markdown("<div style='text-align: center;'><strong>Submit your guess:</strong></div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align: center; color: #ef4444; font-size: 0.95em; margin-bottom: 0.5em; font-weight: 600;'><strong>⏰ TIME'S UP - Click to submit:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label,
                     type="primary",
                     use_container_width=True,
                     key="submit_guess_urgent",
                 )
+
                 if button_clicked:
                     st.markdown(
                         """
@@ -1253,11 +1254,12 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             else:
-                # Normal submit button: show selected year only
-                st.markdown("<div style='text-align: center;'><strong>Submit your guess:</strong></div>", unsafe_allow_html=True)
+                # Normal submit button: show selected year only (button label is the year)
+                st.markdown("<div style='text-align: center; color: #9ca3af; font-size: 0.95em; margin-bottom: 0.5em;'><strong>Click to submit:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label, type="primary", use_container_width=True, key="submit_guess"
                 )
+
                 if button_clicked:
                     st.session_state.submitting_guess = True
                     st.markdown(
@@ -1319,7 +1321,7 @@ def render_game_interface():
                 )
 
             # Timer in right column - compact
-            st.markdown('<div style="margin-top: -1em;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-top: -1.5em;"></div>', unsafe_allow_html=True)
             # Only render dynamic timer when audio is playing
             if st.session_state.audio_started:
                 delay = 2 if st.session_state.current_round == 1 else 0
