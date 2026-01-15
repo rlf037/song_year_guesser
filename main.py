@@ -1198,13 +1198,31 @@ def render_game_interface():
                 )
             elif is_locked:
                 # Time's up - show the selected year prominently on the urgent submit button
-                st.markdown("<div style='text-align: center;'><strong>Submit your guess:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label,
                     type="primary",
                     use_container_width=True,
                     key="submit_guess_urgent",
                 )
+
+                # Add JavaScript for immediate visual feedback on click
+                st.markdown("""
+                <script>
+                    (function() {
+                        setTimeout(function() {
+                            const btn = document.querySelector('button[key="submit_guess_urgent"]');
+                            if (btn) {
+                                btn.addEventListener('click', function() {
+                                    // Immediate visual feedback
+                                    btn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                                    btn.style.transform = 'scale(0.96)';
+                                });
+                            }
+                        }, 100);
+                    })();
+                </script>
+                """, unsafe_allow_html=True)
+
                 if button_clicked:
                     st.markdown(
                         """
@@ -1253,11 +1271,30 @@ def render_game_interface():
                     unsafe_allow_html=True,
                 )
             else:
-                # Normal submit button: show selected year only
-                st.markdown("<div style='text-align: center;'><strong>Submit your guess:</strong></div>", unsafe_allow_html=True)
+                # Normal submit button: show selected year only (button label is the year)
                 button_clicked = st.button(
                     button_label, type="primary", use_container_width=True, key="submit_guess"
                 )
+
+                # Add JavaScript for immediate visual feedback on click
+                st.markdown("""
+                <script>
+                    (function() {
+                        setTimeout(function() {
+                            const btn = document.querySelector('button[key="submit_guess"]');
+                            if (btn) {
+                                btn.addEventListener('click', function() {
+                                    // Immediate visual feedback
+                                    btn.style.background = 'linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)';
+                                    btn.style.transform = 'scale(0.96)';
+                                    btn.style.boxShadow = '0 2px 8px rgba(34, 211, 238, 0.18), 0 1px 4px rgba(0, 0, 0, 0.15)';
+                                });
+                            }
+                        }, 100);
+                    })();
+                </script>
+                """, unsafe_allow_html=True)
+
                 if button_clicked:
                     st.session_state.submitting_guess = True
                     st.markdown(
