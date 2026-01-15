@@ -1154,7 +1154,7 @@ def render_game_interface():
             if st.query_params.get("as") == "true" and not st.session_state.audio_started:
                 st.session_state.audio_started = True
                 st.session_state.start_time = time.time()
-                st.rerun()
+                # Don't rerun - let the auto-refresh cycle handle it to avoid disrupting timer
             # Fallback: If song has been loaded for >0.3 seconds, assume autoplay started
             # (gives JS detector time to signal, but doesn't wait forever)
             elif (
@@ -1367,7 +1367,7 @@ def render_game_interface():
                 # Include round and timestamp in HTML to force fresh render each song
                 song_id = song.get("id", "")
                 timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, song_id=song_id)
-                timer_content += f"<!-- round:{st.session_state.current_round} ts:{start_timestamp} -->"
+                timer_content += f"<!-- round:{st.session_state.current_round} ts:{start_timestamp} st:{st.session_state.start_time} elapsed:{elapsed_seconds} -->"
                 components.html(timer_content, height=220)
             else:
                 st.markdown(static_timer(30), unsafe_allow_html=True)
