@@ -1771,7 +1771,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, so
                     totalPausedTime += (now - pausedAt);
                 }}
                 var elapsed = ((now - startTime) - totalPausedTime) / 1000 - delaySeconds;
-                return elapsed;
+                return Math.max(0, elapsed); // Never return negative elapsed time
             }}
 
             function lerpColor(color1, color2, t) {{
@@ -1893,6 +1893,8 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, so
                     // Audio is already playing, start timer immediately
                     lastAudioState = true;
                     resume();
+                    // Reset startTime to now so timer counts from this moment
+                    startTime = Date.now();
                 }}
             }} catch(e) {{}}
 

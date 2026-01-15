@@ -1150,23 +1150,10 @@ def render_game_interface():
                 except (ValueError, TypeError):
                     pass
 
-            # Check if audio has started - either via JS signal or by checking time elapsed
+            # Check if audio has started (set by audio start detector JS)
             if st.query_params.get("as") == "true" and not st.session_state.audio_started:
                 st.session_state.audio_started = True
                 st.session_state.start_time = time.time()
-                # Don't rerun - let the auto-refresh cycle handle it to avoid disrupting timer
-            # Fallback: If song has been loaded for >0.3 seconds, assume autoplay started
-            # (gives JS detector time to signal, but doesn't wait forever)
-            elif (
-                not st.session_state.audio_started
-                and st.session_state.song_loaded_time
-                and time.time() - st.session_state.song_loaded_time > 0.3
-            ):
-                st.session_state.audio_started = True
-                st.session_state.start_time = time.time()
-
-            # Don't start timer based on time elapsed since load - wait for actual audio playback
-            # The audio player will signal via 'as' query param when play event fires
 
             # Read elapsed time from query params (set by timer JS)
             # Only read if audio has started to avoid stale values from previous round
