@@ -1859,7 +1859,14 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, so
                     labelEl.textContent = remaining <= 5 ? 'hurry!' : 'seconds';
                 }}
 
+                // Only update URL if this timer still represents the current song
                 try {{
+                    // Check if a new song has been loaded by comparing with stored song ID
+                    var currentSongId = localStorage.getItem('currentGameSongId');
+                    if (currentSongId && currentSongId !== songId) {{
+                        // This is a stale timer from a previous round, stop updating
+                        return;
+                    }}
                     var url = new URL(window.parent.location.href);
                     url.searchParams.set('et', elapsed.toFixed(1));
                     window.parent.history.replaceState(null, '', url.toString());
@@ -2324,6 +2331,8 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
             // Clear stale timer state from previous rounds when new song loads
             try {{
                 localStorage.removeItem('gameTimerElapsed');
+                // Mark this song as the current active song (timer will use this to detect staleness)
+                localStorage.setItem('currentGameSongId', '{song_id}');
                 // Clear URL param to prevent stale reads
                 var url = new URL(window.parent.location.href);
                 if (url.searchParams.has('et')) {{
