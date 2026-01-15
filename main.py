@@ -1352,7 +1352,9 @@ def render_game_interface():
             st.markdown('<div style="margin-top: -1.5em;"></div>', unsafe_allow_html=True)
             # Only render dynamic timer when audio is playing
             if st.session_state.audio_started:
-                delay = 2 if st.session_state.current_round == 1 else 0
+                # No delay - let timer count from the moment audio starts
+                # This ensures immediate countdown on all songs including the first
+                delay = 0
                 # Include round and timestamp in HTML to force fresh render each song
                 song_id = song.get("id", "")
                 timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, song_id=song_id)
