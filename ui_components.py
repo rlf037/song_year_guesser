@@ -2334,10 +2334,16 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 localStorage.removeItem('gameTimerElapsed');
                 // Mark this song as the current active song (timer will use this to detect staleness)
                 localStorage.setItem('currentGameSongId', '{song_id}');
+                // Clear the audio_started flag for the new song to ensure fresh detection
+                localStorage.removeItem('audio_started_{song_id}');
                 // Clear URL param to prevent stale reads
                 var url = new URL(window.parent.location.href);
                 if (url.searchParams.has('et')) {{
                     url.searchParams.delete('et');
+                    window.parent.history.replaceState(null, '', url.toString());
+                }}
+                if (url.searchParams.has('as')) {{
+                    url.searchParams.delete('as');
                     window.parent.history.replaceState(null, '', url.toString());
                 }}
             }} catch(e) {{}}

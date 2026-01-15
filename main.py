@@ -1098,11 +1098,20 @@ def render_game_interface():
                 <script>
                     (function() {{
                         var songId = '{song["id"]}';
+                        var signalSent = false;
                         var checkInterval = setInterval(function() {{
                             try {{
+                                if (signalSent) return;
+
                                 var audioStartedKey = 'audio_started_' + songId;
                                 var isStarted = localStorage.getItem(audioStartedKey) === 'true';
-                                if (isStarted) {{
+
+                                // Also check if audio element is actually playing
+                                var audio = document.querySelector('audio');
+                                var isPlaying = audio && !audio.paused && audio.currentTime > 0;
+
+                                if (isStarted || isPlaying) {{
+                                    signalSent = true;
                                     clearInterval(checkInterval);
                                     // Set query param to signal Streamlit
                                     var url = new URL(window.parent.location.href);
@@ -1112,7 +1121,9 @@ def render_game_interface():
                                     }}
                                 }}
                             }} catch(e) {{}}
-                        }}, 100);
+                        }}, 50);
+                        // Stop after 60 seconds to prevent memory leak
+                        setTimeout(function() {{ clearInterval(checkInterval); }}, 60000);
                     }})();
                 </script>
                 """, height=0)
