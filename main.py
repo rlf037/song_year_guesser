@@ -1198,30 +1198,13 @@ def render_game_interface():
                 )
             elif is_locked:
                 # Time's up - show the selected year prominently on the urgent submit button
+                st.markdown("<div style='text-align: center; color: #ef4444; font-size: 0.95em; margin-bottom: 0.5em; font-weight: 600;'><strong>⏰ TIME'S UP - Click to submit:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label,
                     type="primary",
                     use_container_width=True,
                     key="submit_guess_urgent",
                 )
-
-                # Add JavaScript for immediate visual feedback on click
-                st.markdown("""
-                <script>
-                    (function() {
-                        setTimeout(function() {
-                            const btn = document.querySelector('button[key="submit_guess_urgent"]');
-                            if (btn) {
-                                btn.addEventListener('click', function() {
-                                    // Immediate visual feedback
-                                    btn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-                                    btn.style.transform = 'scale(0.96)';
-                                });
-                            }
-                        }, 100);
-                    })();
-                </script>
-                """, unsafe_allow_html=True)
 
                 if button_clicked:
                     st.markdown(
@@ -1272,28 +1255,10 @@ def render_game_interface():
                 )
             else:
                 # Normal submit button: show selected year only (button label is the year)
+                st.markdown("<div style='text-align: center; color: #9ca3af; font-size: 0.95em; margin-bottom: 0.5em;'><strong>Click to submit:</strong></div>", unsafe_allow_html=True)
                 button_clicked = st.button(
                     button_label, type="primary", use_container_width=True, key="submit_guess"
                 )
-
-                # Add JavaScript for immediate visual feedback on click
-                st.markdown("""
-                <script>
-                    (function() {
-                        setTimeout(function() {
-                            const btn = document.querySelector('button[key="submit_guess"]');
-                            if (btn) {
-                                btn.addEventListener('click', function() {
-                                    // Immediate visual feedback
-                                    btn.style.background = 'linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)';
-                                    btn.style.transform = 'scale(0.96)';
-                                    btn.style.boxShadow = '0 2px 8px rgba(34, 211, 238, 0.18), 0 1px 4px rgba(0, 0, 0, 0.15)';
-                                });
-                            }
-                        }, 100);
-                    })();
-                </script>
-                """, unsafe_allow_html=True)
 
                 if button_clicked:
                     st.session_state.submitting_guess = True
@@ -1356,7 +1321,7 @@ def render_game_interface():
                 )
 
             # Timer in right column - compact
-            st.markdown('<div style="margin-top: -1em;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-top: -1.5em;"></div>', unsafe_allow_html=True)
             # Only render dynamic timer when audio is playing
             if st.session_state.audio_started:
                 delay = 2 if st.session_state.current_round == 1 else 0
