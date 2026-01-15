@@ -1620,7 +1620,7 @@ def scroll_wheel_year_picker(
 """
 
 
-def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) -> str:
+def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, song_id: str = "") -> str:
     """Generate the countdown timer with dynamic animations that intensify as time runs out"""
     return f"""
     <style>
@@ -1708,6 +1708,7 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             var startTime = {start_timestamp};
             var maxTime = {max_time};
             var delaySeconds = {delay_seconds};
+            var songId = '{song_id}';
             var circle = document.getElementById('timer-circle');
             var secondsEl = document.getElementById('timer-seconds');
             var ring = document.getElementById('timer-ring');
@@ -1715,10 +1716,11 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
             var circumference = 2 * Math.PI * 80;
             var lastSecond = maxTime;
 
-            // Pause tracking
-            var isPaused = false;
-            var pausedAt = null;
+            // Pause tracking - start paused, wait for audio to play
+            var isPaused = true;
+            var pausedAt = Date.now();
             var accumulatedPausedTime = 0;
+            var lastAudioState = false;
 
             function pause() {{
                 // Don't allow pausing if time has already elapsed
@@ -1744,6 +1746,21 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
                     labelEl.textContent = 'seconds';
                     labelEl.classList.remove('paused');
                 }}
+            }}
+
+            // Poll localStorage for audio playing state
+            function checkAudioState() {{
+                try {{
+                    var isPlaying = localStorage.getItem('audio_playing_' + songId) === 'true';
+                    if (isPlaying !== lastAudioState) {{
+                        lastAudioState = isPlaying;
+                        if (isPlaying) {{
+                            resume();
+                        }} else {{
+                            pause();
+                        }}
+                    }}
+                }} catch(e) {{}}
             }}
 
             function getElapsedTime() {{
@@ -1855,8 +1872,16 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0) ->
                 getElapsedTime: getElapsedTime
             }};
 
+            // Initial state - show paused
+            ring.classList.add('paused');
+            labelEl.textContent = 'paused';
+            labelEl.classList.add('paused');
+
             updateTimer();
-            setInterval(updateTimer, 100);
+            setInterval(function() {{
+                checkAudioState();
+                updateTimer();
+            }}, 100);
         }})();
     </script>
 """
@@ -2305,28 +2330,10 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 }}
             }}
 
-            // Find timer iframe and access its control functions
-            function getTimerControl() {{
-                try {{
-                    var iframes = window.parent.document.querySelectorAll('iframe');
-                    for (var i = 0; i < iframes.length; i++) {{
-                        if (iframes[i].contentWindow && iframes[i].contentWindow.timerControl) {{
-                            return iframes[i].contentWindow.timerControl;
-                        }}
-                    }}
-                }} catch(e) {{
-                    return null;
-                }}
-                return null;
-            }}
-
             function notifyAutoplayStatus(blocked) {{
                 try {{
-                    // Directly set localStorage with song-specific key
                     localStorage.setItem('autoplayBlocked_{song_id}', blocked ? 'true' : 'false');
-                }} catch(e) {{
-                    console.log('Could not set autoplay status:', e);
-                }}
+                }} catch(e) {{}}
             }}
 
             function updateViz(playing) {{
@@ -2340,40 +2347,33 @@ def audio_player(preview_url: str, song_id: str, autoplay: bool = True) -> str:
                 }}
             }}
 
-            function updateTimer(playing) {{
-                var timerControl = getTimerControl();
-                if (timerControl) {{
-                    if (playing) {{
-                        timerControl.resume();
-                    }} else {{
-                        timerControl.pause();
-                    }}
-                }}
+            function setAudioPlaying(playing) {{
+                try {{
+                    localStorage.setItem('audio_playing_{song_id}', playing ? 'true' : 'false');
+                }} catch(e) {{}}
             }}
 
             audio.addEventListener('play', function() {{
                 updateViz(true);
-                updateTimer(true);
+                setAudioPlaying(true);
                 notifyAutoplayStatus(false);
 
                 // Signal to Streamlit that audio has started
                 try {{
                     localStorage.setItem('audio_started_{song_id}', 'true');
-                }} catch(e) {{
-                    console.log('Could not signal audio start:', e);
-                }}
+                }} catch(e) {{}}
             }});
             audio.addEventListener('pause', function() {{
                 // Only pause timer if audio was manually paused (not ended)
                 if (!audio.ended) {{
                     updateViz(false);
-                    updateTimer(false);
+                    setAudioPlaying(false);
                 }}
             }});
             audio.addEventListener('ended', function() {{
-                // Audio ended naturally - stop visualizer but DON'T pause timer
+                // Audio ended naturally - stop visualizer but keep timer running
                 updateViz(false);
-                // Timer continues running - user must submit before time runs out
+                // Don't set audio_playing to false - timer should keep running
             }});
 
             {'audio.volume = 1.0; audio.play().then(function() { notifyAutoplayStatus(false); }).catch(function(e) { console.log("Autoplay prevented:", e); notifyAutoplayStatus(true); });' if autoplay else ""}

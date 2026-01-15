@@ -1344,7 +1344,8 @@ def render_game_interface():
             if st.session_state.audio_started:
                 delay = 2 if st.session_state.current_round == 1 else 0
                 # Include round and timestamp in HTML to force fresh render each song
-                timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay)
+                song_id = song.get("id", "")
+                timer_content = timer_html(start_timestamp, MAX_GUESS_TIME, delay_seconds=delay, song_id=song_id)
                 timer_content += f"<!-- round:{st.session_state.current_round} ts:{start_timestamp} -->"
                 components.html(timer_content, height=220)
             else:
