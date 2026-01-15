@@ -1503,6 +1503,11 @@ def scroll_wheel_year_picker(
             track = document.getElementById('year-track');
             if (!container || !track) {{ setTimeout(init, 100); return; }}
             buildYearTrack();
+            // Set selection box height to match item height immediately
+            const selectionBox = document.getElementById('selection-box');
+            if (selectionBox) {{
+                selectionBox.style.height = itemHeight + 'px';
+            }}
             updatePosition();
             if (!isLocked) {{
                 // Mouse wheel scrolling - more responsive

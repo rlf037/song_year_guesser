@@ -1417,7 +1417,6 @@ def render_game_interface():
 
         with result_col2:
             st.markdown(correct_answer_with_diff(song["year"], guess_val), unsafe_allow_html=True)
-            st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
 
             # Listen on Deezer button
             st.markdown(spotify_button(song["deezer_url"]), unsafe_allow_html=True)
@@ -1455,6 +1454,9 @@ def render_game_interface():
                 if st.button("🏁 End Game", use_container_width=True, key="end_game"):
                     st.session_state.saving_to_leaderboard = True
                     st.rerun()
+
+        # Score card - full width below columns
+        st.markdown(score_card(last_score["score"]), unsafe_allow_html=True)
 
 
 def render_leaderboard():
