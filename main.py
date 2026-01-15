@@ -1151,8 +1151,9 @@ def render_game_interface():
                     # This prevents double-rerun if both JS detector and timer start simultaneously
 
             # Read elapsed time from query params (set by timer JS)
+            # Only read if audio has started to avoid stale values from previous round
             elapsed_from_url = st.query_params.get("et")
-            if elapsed_from_url:
+            if elapsed_from_url and st.session_state.audio_started:
                 with contextlib.suppress(ValueError, TypeError):
                     st.session_state.elapsed_playing_time = float(elapsed_from_url)
 
