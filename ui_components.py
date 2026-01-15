@@ -1491,7 +1491,7 @@ def scroll_wheel_year_picker(
                 if (submitBtn) {{
                     const text = submitBtn.textContent || '';
                     const hasTimer = text.includes('⏰');
-                    const newText = hasTimer ? '⏰ Submit ' + currentYear : 'Submit ' + currentYear;
+                    const newText = hasTimer ? '⏰ ' + currentYear : currentYear;
                     if (submitBtn.textContent !== newText) {{
                         submitBtn.textContent = newText;
                     }}

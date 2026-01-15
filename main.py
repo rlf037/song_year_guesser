@@ -1138,11 +1138,11 @@ def render_game_interface():
                 st.session_state.start_time = time.time()
                 st.rerun()
 
-            # Fallback: If audio autoplay is blocked, start timer after 2 seconds anyway
+            # Fallback: If audio autoplay is blocked, start timer after 0.5 seconds anyway
             # This ensures the timer shows even if browser blocks autoplay
             if not st.session_state.audio_started and st.session_state.song_loaded_time:
-                # If 2 seconds have passed since song loaded, start the timer anyway
-                if time.time() - st.session_state.song_loaded_time > 2:
+                # If 0.5 seconds have passed since song loaded, start the timer anyway
+                if time.time() - st.session_state.song_loaded_time > 0.5:
                     st.session_state.audio_started = True
                     st.session_state.start_time = st.session_state.song_loaded_time
                     # Don't rerun - let the normal refresh cycle handle it
