@@ -588,64 +588,70 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
 
     if not tracks:
         try:
-            # Include genre in search if specified
-            if genre_query:
-                search_url = f"https://api.spotify.com/v1/search?q={requests.utils.quote(genre_query)}+year:{year}&type=track&limit=50&market=US"
-            else:
-                search_url = (
-                    f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&market=US"
-                )
-            response = requests.get(search_url, headers=headers, timeout=5)
+            # Fetch multiple pages of search results for better variety
+            for offset in range(0, 300, 50):  # Get up to 300 results (6 pages of 50)
+                # Include genre in search if specified
+                if genre_query:
+                    search_url = f"https://api.spotify.com/v1/search?q={requests.utils.quote(genre_query)}+year:{year}&type=track&limit=50&offset={offset}&market=US"
+                else:
+                    search_url = (
+                        f"https://api.spotify.com/v1/search?q=year:{year}&type=track&limit=50&offset={offset}&market=US"
+                    )
+                response = requests.get(search_url, headers=headers, timeout=5)
 
-            if response.status_code == 200:
-                data = response.json()
-                for item in data.get("tracks", {}).get("items", []):
-                    album = item["album"]
-                    release_date = album.get("release_date", "")
+                if response.status_code == 200:
+                    data = response.json()
+                    items = data.get("tracks", {}).get("items", [])
+                    if not items:  # No more results
+                        break
 
-                    if len(release_date) >= 4:
-                        album_year = int(release_date[:4])
-                        if album_year != year:
+                    for item in items:
+                        album = item["album"]
+                        release_date = album.get("release_date", "")
+
+                        if len(release_date) >= 4:
+                            album_year = int(release_date[:4])
+                            if album_year != year:
+                                continue
+
+                        album_name = album.get("name", "")
+                        track_name = item.get("name", "")
+                        if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(
+                            track_name
+                        ):
                             continue
 
-                    album_name = album.get("name", "")
-                    track_name = item.get("name", "")
-                    if is_compilation_or_remaster(album_name) or is_compilation_or_remaster(
-                        track_name
-                    ):
-                        continue
+                        popularity = item.get("popularity", 0)
+                        if popularity < MIN_SPOTIFY_POPULARITY:
+                            continue
 
-                    popularity = item.get("popularity", 0)
-                    if popularity < MIN_SPOTIFY_POPULARITY:
-                        continue
+                        artists = item.get("artists", [])
+                        artist_name = artists[0]["name"] if artists else "Unknown"
 
-                    artists = item.get("artists", [])
-                    artist_name = artists[0]["name"] if artists else "Unknown"
+                        if not is_likely_english(track_name, artist_name):
+                            continue
 
-                    if not is_likely_english(track_name, artist_name):
-                        continue
+                        images = album.get("images", [])
+                        image_url = images[0]["url"] if images else None
 
-                    images = album.get("images", [])
-                    image_url = images[0]["url"] if images else None
+                        # Pre-compute lowercased strings for song key
+                        artist_lower = artist_name.lower()
+                        track_lower = track_name.lower()
+                        song_key = f"{artist_lower}|{track_lower}"
 
-                    # Pre-compute lowercased strings for song key
-                    artist_lower = artist_name.lower()
-                    track_lower = track_name.lower()
-                    song_key = f"{artist_lower}|{track_lower}"
-
-                    tracks.append(
-                        {
-                            "id": item["id"],
-                            "name": track_name,
-                            "artist": artist_name,
-                            "album": album_name,
-                            "year": album_year,
-                            "image_url": image_url,
-                            "popularity": popularity,
-                            "spotify_id": item["id"],
-                            "song_key": song_key,
-                        }
-                    )
+                        tracks.append(
+                            {
+                                "id": item["id"],
+                                "name": track_name,
+                                "artist": artist_name,
+                                "album": album_name,
+                                "year": album_year,
+                                "image_url": image_url,
+                                "popularity": popularity,
+                                "spotify_id": item["id"],
+                                "song_key": song_key,
+                            }
+                        )
         except Exception:
             pass
 
@@ -661,7 +667,7 @@ def get_songs_from_spotify(year: int, genre_query: str = "") -> list[dict]:
     # Shuffle before caching for better randomness
     random.shuffle(tracks)
 
-    result = tracks[:100]
+    result = tracks[:300]  # Keep up to 300 songs for better variety
     cache_key = f"{year}_{genre_query}"
     _tracks_cache[cache_key] = (time.time(), result)
     return result
