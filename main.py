@@ -1292,7 +1292,7 @@ def render_game_interface():
                                 font-weight: 700 !important;
                                 padding: 0.95em 2em !important;
                                 border-radius: 16px !important;
-                                border: none !important;
+                                border: 2px solid rgba(34, 211, 238, 0.6) !important;
                                 box-shadow:
                                     0 6px 20px rgba(34, 211, 238, 0.35),
                                     0 2px 8px rgba(0, 0, 0, 0.2),
