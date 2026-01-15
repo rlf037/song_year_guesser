@@ -1144,7 +1144,9 @@ def render_game_interface():
                 # If 0.5 seconds have passed since song loaded, start the timer anyway
                 if time.time() - st.session_state.song_loaded_time > 0.5:
                     st.session_state.audio_started = True
-                    st.session_state.start_time = st.session_state.song_loaded_time
+                    # Set start_time to current time so the timer counts correctly
+                    # (don't use song_loaded_time as that would make the timer ahead)
+                    st.session_state.start_time = time.time()
                     # Don't rerun - let the normal refresh cycle handle it
                     # This prevents double-rerun if both JS detector and timer start simultaneously
 
