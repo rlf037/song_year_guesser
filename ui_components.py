@@ -1585,8 +1585,8 @@ def scroll_wheel_year_picker(
                     }}
                 }});
 
-                // Arrow key support
-                container.setAttribute('tabindex', '0');
+                // Arrow key support - don't add to tab order to prevent stealing focus
+                // User can still interact via mouse/touch on the scroll wheel itself
                 container.addEventListener('keydown', function(e) {{
                     if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {{
                         e.preventDefault();
