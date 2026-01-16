@@ -1585,14 +1585,14 @@ def main():
     except Exception:
         pass
 
-    # Handle loading state - show spinner while fetching song
+    # Handle loading state - load silently without spinner modal
     if st.session_state.loading_game:
         st.markdown(main_title(), unsafe_allow_html=True)
-        with st.spinner("🎵 Finding a song for you..."):
-            genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
-            start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
-            st.session_state.loading_game = False
+        genre_query = GENRE_CONFIG[st.session_state.selected_genre]["query"]
+        start_new_game(st.session_state.start_year, st.session_state.end_year, genre_query)
+        st.session_state.loading_game = False
         st.rerun()
+        return
 
     # Handle guess submission (quick operation, no spinner needed)
     if st.session_state.submitting_guess:
