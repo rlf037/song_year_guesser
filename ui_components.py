@@ -1596,8 +1596,8 @@ def scroll_wheel_year_picker(
                         setYear(currentYear + 1);
                     }}
                 }});
-                // Focus container for keyboard input
-                container.focus();
+                // Don't steal focus - let user maintain focus on submit button
+                // Keyboard input still works when user clicks on the picker
                 // Ensure initial sizing and rendering
                 updatePosition();
                 // Update button text immediately on init
@@ -1888,8 +1888,9 @@ def timer_html(start_timestamp: float, max_time: int, delay_seconds: int = 0, so
             // Check if audio is already playing before first update
             // This handles the case where audio starts before timer iframe loads
             try {{
-                var audio = window.parent.document.querySelector('audio');
-                if (audio && !audio.paused && audio.currentTime > 0) {{
+                var audioPlayingKey = 'audio_playing_' + songId;
+                var isPlaying = localStorage.getItem(audioPlayingKey) === 'true';
+                if (isPlaying) {{
                     // Audio is already playing, start timer immediately
                     lastAudioState = true;
                     resume();
