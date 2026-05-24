@@ -394,13 +394,6 @@ function attachSettingsEvents() {
     state.currentPlayer = playerInput.value.slice(0, 15);
   });
 
-  playerInput.addEventListener("blur", () => {
-    if (!state.currentPlayer) {
-      state.currentPlayer = "Player 1";
-      playerInput.value = "Player 1";
-    }
-  });
-
   function syncYears(source) {
     const currentYear = new Date().getFullYear();
     const startValue = Number(source === "startRange" ? startRange.value : startNumber.value);
@@ -964,6 +957,9 @@ function updateReveal() {
 }
 
 async function startGame() {
+  if (!state.currentPlayer.trim()) {
+    state.currentPlayer = "Player 1";
+  }
   state.statusMessage = "🔍 Searching for a song...";
   renderWelcome();
 
